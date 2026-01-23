@@ -42,6 +42,7 @@ import {
   Building2,
   UserCheck,
   Briefcase,
+  TrendingDown,
 } from "lucide-react";
 
 interface IconProps {
@@ -50,6 +51,7 @@ interface IconProps {
     | "bell"
     | "plus"
     | "trending-up"
+    | "trending-down"
     | "clock"
     | "calendar"
     | "dollar-sign"
@@ -98,6 +100,7 @@ export function Icon({ name, className = "", size = 20 }: IconProps) {
     bell: Bell,
     plus: Plus,
     "trending-up": TrendingUp,
+    "trending-down": TrendingDown,
     clock: Clock,
     calendar: Calendar,
     "dollar-sign": DollarSign,

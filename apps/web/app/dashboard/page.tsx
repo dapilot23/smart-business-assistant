@@ -2,6 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { Icon } from "../components/Icon";
+import { StatsCard } from "@/components/dashboard/stats-card";
+import { RevenueChart } from "@/components/dashboard/revenue-chart";
+import { AppointmentsChart } from "@/components/dashboard/appointments-chart";
+import { TopServicesChart } from "@/components/dashboard/top-services-chart";
+import {
+  getDashboardStats,
+  getRevenueChart,
+  getAppointmentStats,
+  getTopServices,
+  type DashboardStats,
+  type RevenueDataPoint,
+  type AppointmentStats as AppointmentStatsType,
+  type TopService,
+} from "@/lib/api/reports";
 
 // Get current greeting based on time
 function getGreeting() {
@@ -24,11 +38,37 @@ function getFormattedDate() {
 export default function DashboardPage() {
   const [greeting, setGreeting] = useState("Welcome");
   const [formattedDate, setFormattedDate] = useState("");
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [revenueData, setRevenueData] = useState<RevenueDataPoint[]>([]);
+  const [appointmentStats, setAppointmentStats] = useState<AppointmentStatsType[]>([]);
+  const [topServices, setTopServices] = useState<TopService[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setGreeting(getGreeting());
     setFormattedDate(getFormattedDate());
+    loadDashboardData();
   }, []);
+
+  async function loadDashboardData() {
+    try {
+      setLoading(true);
+      const [statsData, revenueChartData, appointmentStatsData, topServicesData] = await Promise.all([
+        getDashboardStats(),
+        getRevenueChart('30d'),
+        getAppointmentStats('30d'),
+        getTopServices(),
+      ]);
+      setStats(statsData);
+      setRevenueData(revenueChartData);
+      setAppointmentStats(appointmentStatsData);
+      setTopServices(topServicesData);
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main className="flex flex-col h-full w-full">
@@ -71,85 +111,81 @@ export default function DashboardPage() {
 
       {/* Content Area */}
       <div className="flex flex-col flex-1 gap-6 p-8 overflow-auto">
-        {/* Metrics Row */}
-        <div className="flex gap-5 w-full">
-          <MetricCard title="Total Appointments" value="127" change="+12.5%" />
-          <MetricCard title="Pending Quotes" value="23" change="+5.2%" />
-          <MetricCard title="Revenue" value="$48,250" change="+17.1%" />
-          <MetricCard title="Messages" value="892" change="+8.4%" />
-        </div>
-
-        {/* Main Columns */}
-        <div className="flex gap-6 flex-1">
-          {/* Left Column */}
-          <div className="flex flex-col flex-1 gap-6">
-            <RecentActivity />
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <Icon name="loader-2" size={32} className="text-[var(--primary)] animate-spin" />
           </div>
+        ) : (
+          <>
+            {/* Stats Cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              <StatsCard
+                icon="dollar-sign"
+                label="Revenue This Month"
+                value={stats?.revenue.current.toLocaleString() || 0}
+                change={stats?.revenue.change}
+                prefix="$"
+              />
+              <StatsCard
+                icon="calendar"
+                label="Appointments"
+                value={stats?.appointments.current || 0}
+                change={stats?.appointments.change}
+              />
+              <StatsCard
+                icon="users"
+                label="Active Customers"
+                value={stats?.customers.active || 0}
+              />
+              <StatsCard
+                icon="phone"
+                label="Calls Handled"
+                value={stats?.calls.handled || 0}
+              />
+              <StatsCard
+                icon="file-text"
+                label="Pending Quotes"
+                value={stats?.quotes.pending || 0}
+              />
+              <StatsCard
+                icon="briefcase"
+                label="Jobs in Progress"
+                value={stats?.jobs.inProgress || 0}
+              />
+            </div>
 
-          {/* Right Column */}
-          <div className="flex flex-col w-[400px] gap-6">
-            <QuickActions />
-            <ScheduleCard />
-          </div>
-        </div>
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {revenueData.length > 0 && <RevenueChart data={revenueData} />}
+              {appointmentStats.length > 0 && <AppointmentsChart data={appointmentStats} />}
+            </div>
+
+            {/* Top Services */}
+            <div className="grid grid-cols-1 gap-6">
+              {topServices.length > 0 && <TopServicesChart data={topServices} />}
+            </div>
+
+            {/* Recent Activity Section */}
+            <div className="flex gap-6">
+              <div className="flex-1">
+                <RecentActivity />
+              </div>
+              <div className="w-[400px]">
+                <ScheduleCard />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </main>
-  );
-}
-
-function MetricCard({ title, value, change }: { title: string; value: string; change: string }) {
-  return (
-    <div className="flex-1 flex flex-col bg-[var(--background)] border border-[var(--border)] shadow-sm">
-      <div className="p-6 border-b border-[var(--border)]">
-        <p className="font-primary text-[16px] text-[var(--muted-foreground)]">{title}</p>
-      </div>
-      <div className="p-6 flex flex-col gap-2">
-        <p className="font-primary text-[32px] text-[var(--foreground)]">{value}</p>
-        <div className="inline-flex items-center gap-1 px-2 py-2 bg-[var(--color-success)] rounded-full w-fit">
-          <Icon name="trending-up" size={16} className="text-[var(--color-success-foreground)]" />
-          <span className="font-primary text-[14px] text-[var(--color-success-foreground)]">
-            {change}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function QuickActions() {
-  const actions = [
-    { icon: "phone" as const, label: "New Call" },
-    { icon: "mail" as const, label: "Send Email" },
-    { icon: "file-text" as const, label: "New Quote" },
-  ];
-
-  return (
-    <div className="flex flex-col gap-4 w-full">
-      <h3 className="font-primary text-[16px] font-semibold text-[var(--foreground)]">
-        Quick Actions
-      </h3>
-      <div className="flex gap-3">
-        {actions.map((action, index) => (
-          <button
-            key={index}
-            className="flex-1 flex flex-col items-center justify-center gap-2 h-[100px] p-4 bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius-m)] hover:bg-[var(--secondary)] transition-colors"
-          >
-            <Icon name={action.icon} size={28} className="text-[var(--primary)]" />
-            <span className="font-secondary text-[13px] font-medium text-[var(--foreground)] text-center">
-              {action.label}
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
 
 function ScheduleCard() {
   const scheduleItems = [
     { title: "Client Meeting - ABC Corp", time: "Tomorrow, 9:00 AM", color: "bg-[var(--primary)]" },
-    { title: "Service Call - Home Repair", time: "Tomorrow, 2:00 PM", color: "bg-[var(--color-info-foreground)]" },
-    { title: "Quote Follow-up", time: "Friday, 11:00 AM", color: "bg-[var(--color-warning-foreground)]" },
+    { title: "Service Call - Home Repair", time: "Tomorrow, 2:00 PM", color: "bg-blue-500" },
+    { title: "Quote Follow-up", time: "Friday, 11:00 AM", color: "bg-amber-500" },
   ];
 
   return (
@@ -157,7 +193,7 @@ function ScheduleCard() {
       <h3 className="font-primary text-[16px] font-semibold text-[var(--foreground)]">
         Upcoming Schedule
       </h3>
-      <div className="bg-[var(--card)] border border-[var(--border)] shadow-sm overflow-hidden">
+      <div className="bg-[var(--card)] border border-[var(--border)] shadow-sm overflow-hidden rounded-lg">
         {scheduleItems.map((item, index) => (
           <div
             key={index}
@@ -183,11 +219,11 @@ function ScheduleCard() {
 
 function RecentActivity() {
   return (
-    <div className="flex flex-col gap-4 w-full h-full">
+    <div className="flex flex-col gap-4 w-full">
       <h3 className="font-primary text-[16px] font-semibold text-[var(--foreground)]">
         Recent Activity
       </h3>
-      <div className="flex-1 bg-[var(--card)] border border-[var(--border)] shadow-sm p-6">
+      <div className="bg-[var(--card)] border border-[var(--border)] shadow-sm rounded-lg p-6">
         <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
           No recent activity to display. Your activity will appear here.
         </p>

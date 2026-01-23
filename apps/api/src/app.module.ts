@@ -22,6 +22,9 @@ import { ServicesModule } from './modules/services/services.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { TeamModule } from './modules/team/team.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { ReviewRequestsModule } from './modules/review-requests/review-requests.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
 
@@ -50,6 +53,9 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     CalendarModule,
     TeamModule,
     JobsModule,
+    ReportsModule,
+    SettingsModule,
+    ReviewRequestsModule,
   ],
   controllers: [AppController],
   providers: [
