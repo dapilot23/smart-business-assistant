@@ -1,0 +1,370 @@
+// Prisma Schema for Smart Business Assistant
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Multi-tenancy: Each business is a tenant
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  email     String   @unique
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users        User[]
+  customers    Customer[]
+  services     Service[]
+  appointments Appointment[]
+  quotes       Quote[]
+  invoices     Invoice[]
+  availability TechnicianAvailability[]
+  timeOff      TimeOff[]
+  callLogs     CallLog[]
+
+  @@map("tenants")
+}
+
+// Users belong to tenants (staff/admin)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String?
+  name      String
+  role      UserRole @default(USER)
+  tenantId  String
+  clerkId   String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  availability TechnicianAvailability[]
+  timeOff      TimeOff[]
+
+  @@index([tenantId])
+  @@index([clerkId])
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+// Customers are tenant-specific
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String
+  address   String?
+  notes     String?
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  quotes       Quote[]
+  invoices     Invoice[]
+
+  @@index([tenantId])
+  @@index([phone])
+  @@map("customers")
+}
+
+// Services catalog
+model Service {
+  id              String        @id @default(cuid())
+  name            String
+  description     String?
+  durationMinutes Int           @default(60)
+  price           Float?
+  tenantId        String
+  // Availability settings
+  bufferMinutes   Int           @default(0)      // Buffer time after appointment
+  maxPerDay       Int?                            // Max appointments per day (null = unlimited)
+  leadTimeHours   Int           @default(24)     // Minimum hours before appointment can be booked
+  isActive        Boolean       @default(true)   // Whether service accepts bookings
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  availability ServiceAvailability[]
+
+  @@index([tenantId])
+  @@map("services")
+}
+
+// Service-specific availability windows
+model ServiceAvailability {
+  id         String   @id @default(cuid())
+  serviceId  String
+  dayOfWeek  Int      // 0 = Sunday, 6 = Saturday
+  startTime  String   // Format: "HH:mm" (e.g., "09:00")
+  endTime    String   // Format: "HH:mm" (e.g., "17:00")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, dayOfWeek])
+  @@index([serviceId])
+  @@map("service_availability")
+}
+
+// Appointments for services
+model Appointment {
+  id                String            @id @default(cuid())
+  customerId        String
+  serviceId         String?
+  assignedTo        String?
+  scheduledAt       DateTime
+  duration          Int               @default(60)
+  status            AppointmentStatus @default(SCHEDULED)
+  notes             String?
+  tenantId          String
+  confirmationCode  String?           @unique
+  manageToken       String?           @unique  // Token for customer to manage their booking
+  cancelledAt       DateTime?
+  cancelReason      String?
+  googleCalendarEventId String?       // Google Calendar event ID for sync
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  service      Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  assignedUser User?    @relation(fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([scheduledAt])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([manageToken])
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Quotes/Estimates
+model Quote {
+  id          String      @id @default(cuid())
+  quoteNumber String      @unique
+  description String
+  amount      Float
+  validUntil  DateTime
+  status      QuoteStatus @default(DRAFT)
+  customerId  String
+  tenantId    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items    QuoteItem[]
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@map("quotes")
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model QuoteItem {
+  id          String   @id @default(cuid())
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+  quoteId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_items")
+}
+
+// Invoices
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  description   String
+  amount        Float
+  paidAmount    Float         @default(0)
+  status        InvoiceStatus @default(DRAFT)
+  dueDate       DateTime
+  paidAt        DateTime?
+  sentAt        DateTime?
+  customerId    String
+  quoteId       String?
+  tenantId      String
+  stripePaymentIntentId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items    InvoiceItem[]
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([quoteId])
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+  invoiceId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+// Technician regular availability schedule
+model TechnicianAvailability {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String
+  dayOfWeek  Int      // 0 = Sunday, 6 = Saturday
+  startTime  String   // Format: "HH:mm" (e.g., "09:00")
+  endTime    String   // Format: "HH:mm" (e.g., "17:00")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([dayOfWeek])
+  @@unique([tenantId, userId, dayOfWeek])
+  @@map("technician_availability")
+}
+
+// Time off / exceptions to regular schedule
+model TimeOff {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([startDate, endDate])
+  @@map("time_off")
+}
+
+// Voice AI call logs
+model CallLog {
+  id          String         @id @default(cuid())
+  tenantId    String
+  vapiCallId  String         @unique
+  callerPhone String
+  direction   CallDirection  @default(INBOUND)
+  status      CallStatus     @default(QUEUED)
+  duration    Int?           // Duration in seconds
+  transcript  String?        @db.Text
+  summary     String?
+  metadata    Json?          // Store additional call data
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vapiCallId])
+  @@index([callerPhone])
+  @@index([status])
+  @@map("call_logs")
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  QUEUED
+  RINGING
+  IN_PROGRESS
+  FORWARDING
+  ENDED
+  FAILED
+}
+
+// Google Calendar Integration
+model CalendarIntegration {
+  id           String   @id @default(cuid())
+  tenantId     String   @unique
+  accessToken  String   @db.Text
+  refreshToken String   @db.Text
+  expiresAt    DateTime
+  calendarId   String?  // Primary calendar ID to sync to
+  syncEnabled  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("calendar_integrations")
+}

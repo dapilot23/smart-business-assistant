@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Colors - Dark mode */
+  --background: #111111;
+  --foreground: #FFFFFF;
+  --card: #1A1A1A;
+  --card-foreground: #FFFFFF;
+  --border: #333333;
+  --muted: #262626;
+  --muted-foreground: #A0A0A0;
+  --primary: #FF6B00;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2A2A2A;
+  --secondary-foreground: #FFFFFF;
+  --color-success: #222924;
+  --color-success-foreground: #B6FFCE;
+  --color-warning: #1A1000;
+  --color-warning-foreground: #FF6B00;
+  --color-info: #0A1628;
+  --color-info-foreground: #3B82F6;
+
+  /* Border radius */
+  --radius-m: 16px;
+  --radius-none: 0px;
+  --radius-pill: 999px;
+}
+
+@layer base {
+  html, body {
+    height: 100%;
+  }
+
+  .font-primary {
+    font-family: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+  }
+
+  .font-secondary {
+    font-family: var(--font-geist), "Geist", sans-serif;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
