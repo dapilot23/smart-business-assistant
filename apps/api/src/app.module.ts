@@ -21,6 +21,7 @@ import { PublicBookingModule } from './modules/public-booking/public-booking.mod
 import { ServicesModule } from './modules/services/services.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { TeamModule } from './modules/team/team.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
 
@@ -48,6 +49,7 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     ServicesModule,
     CalendarModule,
     TeamModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [

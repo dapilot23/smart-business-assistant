@@ -1,6 +1,8 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Twilio } from 'twilio';
+import { PrismaService } from '../../config/prisma/prisma.service';
+import { BroadcastStatus, UserRole } from '@prisma/client';
 
 export interface AppointmentData {
   id: string;
@@ -32,7 +34,10 @@ export class SmsService {
   private readonly fromNumber: string;
   private readonly isConfigured: boolean;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
     const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
     this.fromNumber = this.configService.get<string>('TWILIO_PHONE_NUMBER') || '';
@@ -231,5 +236,186 @@ export class SmsService {
   async handleWebhook(data: any) {
     this.logger.log('Twilio webhook received:', JSON.stringify(data));
     return { received: true };
+  }
+
+  async createBroadcast(
+    tenantId: string,
+    message: string,
+    targetRoles: UserRole[] = [],
+    sentBy: string,
+  ) {
+    const where: any = {
+      tenantId,
+      status: 'ACTIVE',
+      phone: { not: null },
+    };
+
+    if (targetRoles && targetRoles.length > 0) {
+      where.role = { in: targetRoles };
+    }
+
+    const users = await this.prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+      },
+    });
+
+    const recipients = users.filter((user) => user.phone !== null);
+
+    const broadcast = await this.prisma.smsBroadcast.create({
+      data: {
+        tenantId,
+        message,
+        sentBy,
+        targetRoles: targetRoles || [],
+        recipientCount: recipients.length,
+        status: BroadcastStatus.PENDING,
+        recipients: {
+          create: recipients.map((user) => ({
+            userId: user.id,
+            phone: user.phone as string,
+            status: 'pending',
+          })),
+        },
+      },
+      include: {
+        recipients: true,
+      },
+    });
+
+    this.logger.log(
+      `Broadcast created: ${broadcast.id} with ${recipients.length} recipients`,
+    );
+
+    return broadcast;
+  }
+
+  async sendBroadcast(broadcastId: string) {
+    const broadcast = await this.prisma.smsBroadcast.findUnique({
+      where: { id: broadcastId },
+      include: {
+        recipients: {
+          where: { status: 'pending' },
+        },
+      },
+    });
+
+    if (!broadcast) {
+      throw new NotFoundException('Broadcast not found');
+    }
+
+    if (broadcast.status !== BroadcastStatus.PENDING) {
+      throw new BadRequestException(
+        `Cannot send broadcast with status: ${broadcast.status}`,
+      );
+    }
+
+    await this.prisma.smsBroadcast.update({
+      where: { id: broadcastId },
+      data: { status: BroadcastStatus.SENDING },
+    });
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (const recipient of broadcast.recipients) {
+      try {
+        await this.sendSms(recipient.phone, broadcast.message);
+
+        await this.prisma.smsBroadcastRecipient.update({
+          where: { id: recipient.id },
+          data: {
+            status: 'sent',
+            sentAt: new Date(),
+          },
+        });
+
+        successCount++;
+      } catch (error) {
+        await this.prisma.smsBroadcastRecipient.update({
+          where: { id: recipient.id },
+          data: {
+            status: 'failed',
+            error: error.message,
+          },
+        });
+
+        failureCount++;
+        this.logger.error(
+          `Failed to send broadcast SMS to ${recipient.phone}:`,
+          error,
+        );
+      }
+    }
+
+    await this.prisma.smsBroadcast.update({
+      where: { id: broadcastId },
+      data: {
+        status: BroadcastStatus.COMPLETED,
+        successCount,
+        failureCount,
+        completedAt: new Date(),
+      },
+    });
+
+    this.logger.log(
+      `Broadcast ${broadcastId} completed: ${successCount} sent, ${failureCount} failed`,
+    );
+
+    return {
+      broadcastId,
+      successCount,
+      failureCount,
+      totalRecipients: broadcast.recipients.length,
+    };
+  }
+
+  async getBroadcasts(tenantId: string) {
+    return this.prisma.smsBroadcast.findMany({
+      where: { tenantId },
+      include: {
+        recipients: {
+          select: {
+            id: true,
+            phone: true,
+            status: true,
+            sentAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getBroadcast(tenantId: string, broadcastId: string) {
+    const broadcast = await this.prisma.smsBroadcast.findUnique({
+      where: { id: broadcastId },
+      include: {
+        recipients: {
+          select: {
+            id: true,
+            userId: true,
+            phone: true,
+            status: true,
+            error: true,
+            sentAt: true,
+          },
+          orderBy: { sentAt: 'desc' },
+        },
+      },
+    });
+
+    if (!broadcast) {
+      throw new NotFoundException('Broadcast not found');
+    }
+
+    if (broadcast.tenantId !== tenantId) {
+      throw new BadRequestException('Access denied');
+    }
+
+    return broadcast;
   }
 }

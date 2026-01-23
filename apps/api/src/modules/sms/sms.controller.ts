@@ -4,14 +4,19 @@ import {
   Body,
   UseGuards,
   Get,
+  Param,
+  Req,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { SmsService } from './sms.service';
 import { SendSmsDto, SendBulkSmsDto, TestSmsDto } from './dto/send-sms.dto';
+import { CreateBroadcastDto } from './dto/create-broadcast.dto';
+import { ClerkAuthGuard } from '../../common/guards/clerk-auth.guard';
 
 @Controller('sms')
+@UseGuards(ClerkAuthGuard)
 export class SmsController {
   constructor(private readonly smsService: SmsService) {}
 
@@ -54,5 +59,37 @@ export class SmsController {
   @HttpCode(HttpStatus.OK)
   async handleWebhook(@Body() webhookData: any) {
     return this.smsService.handleWebhook(webhookData);
+  }
+
+  @Post('broadcast')
+  @HttpCode(HttpStatus.OK)
+  async createBroadcast(@Req() req: any, @Body() dto: CreateBroadcastDto) {
+    const tenantId = req.tenantId;
+    const sentBy = req.userId;
+
+    const broadcast = await this.smsService.createBroadcast(
+      tenantId,
+      dto.message,
+      dto.targetRoles || [],
+      sentBy,
+    );
+
+    const result = await this.smsService.sendBroadcast(broadcast.id);
+
+    return result;
+  }
+
+  @Get('broadcasts')
+  @HttpCode(HttpStatus.OK)
+  async getBroadcasts(@Req() req: any) {
+    const tenantId = req.tenantId;
+    return this.smsService.getBroadcasts(tenantId);
+  }
+
+  @Get('broadcasts/:id')
+  @HttpCode(HttpStatus.OK)
+  async getBroadcast(@Req() req: any, @Param('id') id: string) {
+    const tenantId = req.tenantId;
+    return this.smsService.getBroadcast(tenantId, id);
   }
 }

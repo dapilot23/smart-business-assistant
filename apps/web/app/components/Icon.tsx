@@ -41,6 +41,7 @@ import {
   Loader2,
   Building2,
   UserCheck,
+  Briefcase,
 } from "lucide-react";
 
 interface IconProps {
@@ -85,7 +86,8 @@ interface IconProps {
     | "send"
     | "loader-2"
     | "building-2"
-    | "user-check";
+    | "user-check"
+    | "briefcase";
   className?: string;
   size?: number;
 }
@@ -133,6 +135,7 @@ export function Icon({ name, className = "", size = 20 }: IconProps) {
     "loader-2": Loader2,
     "building-2": Building2,
     "user-check": UserCheck,
+    briefcase: Briefcase,
   };
 
   const IconComponent = icons[name];

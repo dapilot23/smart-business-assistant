@@ -8,10 +8,12 @@ import { Icon } from "../components/Icon";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "layout-dashboard" as const },
   { href: "/dashboard/appointments", label: "Appointments", icon: "calendar" as const },
+  { href: "/dashboard/jobs", label: "Jobs", icon: "briefcase" as const },
   { href: "/dashboard/availability", label: "Availability", icon: "calendar-days" as const },
   { href: "/dashboard/customers", label: "Customers", icon: "users" as const },
   { href: "/dashboard/team", label: "Team", icon: "users" as const },
   { href: "/dashboard/quotes", label: "Quotes", icon: "quote" as const },
+  { href: "/dashboard/sms", label: "SMS", icon: "message-square" as const },
   { href: "/dashboard/voice", label: "Voice AI", icon: "phone-call" as const },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" as const },
 ];
@@ -42,7 +44,7 @@ export default function DashboardLayout({
         {/* Navigation */}
         <nav className="flex flex-col gap-2 p-4 flex-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <Link
                 key={item.href}
