@@ -9,7 +9,7 @@ A multi-tenant SaaS platform for service businesses (plumbing, electrical, HVAC,
 - **Customer Self-Booking** - Public booking portal with email/SMS confirmations
 - **Quote Generation** - Create and send professional quotes with PDF export
 - **Invoicing & Payments** - Stripe integration for payment processing
-- **Voice AI** - Vapi.ai integration for 24/7 AI phone call handling
+- **Voice AI** - Vapi.ai integration for 24/7 AI phone call handling with appointment booking
 - **SMS Notifications** - Twilio integration for appointment reminders
 - **Email Confirmations** - Resend integration for transactional emails
 - **Google Calendar Sync** - Background queue for reliable calendar integration
@@ -159,6 +159,74 @@ Calendar sync operations run via BullMQ for reliability at scale:
 POST /api/v1/calendar/queue/stats    # Get queue statistics
 POST /api/v1/calendar/queue/retry-failed  # Retry failed jobs
 ```
+
+## AI Voice Booking
+
+The AI phone agent can book appointments for customers during phone calls using Vapi.ai function calling.
+
+### How It Works
+
+1. **Customer calls** → Vapi AI answers with a personalized greeting
+2. **AI asks** what service they need → calls `getServices()` to list options
+3. **Customer picks a service** → AI asks when they'd like to come
+4. **AI checks availability** → calls `getAvailableSlots(serviceName, date)`
+5. **Customer picks a time** → AI asks for their name
+6. **AI books the appointment** → calls `bookAppointment()` which:
+   - Creates/finds the customer by phone number (auto-captured from caller ID)
+   - Creates the appointment with confirmation code
+   - Returns booking confirmation to the caller
+
+### Example Conversation
+
+```
+AI:       "Hello! Thank you for calling Test Plumbing Co. How can I help you?"
+Customer: "I need to book a drain cleaning"
+AI:       "We offer Drain Cleaning for 60 minutes at $150. What day works for you?"
+Customer: "How about Monday?"
+AI:       "Available times for Monday: 9am, 10am, 11am, 12pm... Which time works?"
+Customer: "10am please"
+AI:       "And may I have your name?"
+Customer: "John Smith"
+AI:       "I've booked your Drain Cleaning appointment for Monday at 10am.
+          Your confirmation code is ABC123. Is there anything else?"
+```
+
+### Available AI Functions
+
+| Function | Description |
+|----------|-------------|
+| `getServices` | List available services with pricing and duration |
+| `getAvailableSlots` | Check available time slots for a service and date |
+| `bookAppointment` | Create an appointment (requires name, service, date, time) |
+| `getBusinessInfo` | Get business name and contact information |
+| `transferToHuman` | Transfer the call to a human representative |
+
+### Vapi Configuration
+
+When setting up a Vapi phone number for a tenant, configure the webhook and metadata:
+
+```json
+{
+  "serverUrl": "https://your-api.com/api/v1/voice/webhook",
+  "metadata": {
+    "tenantId": "your-tenant-id"
+  }
+}
+```
+
+The `tenantId` in metadata tells the AI which business it's answering for, so it can:
+- Greet callers with the correct business name
+- Show the correct services and pricing
+- Book appointments for the correct tenant
+
+### Webhook Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/v1/voice/webhook` | Main Vapi webhook (handles all events) |
+| `POST /api/v1/voice/webhook/function-call` | Function call handler |
+| `POST /api/v1/voice/webhook/status` | Call status updates |
+| `POST /api/v1/voice/webhook/incoming` | Incoming call notifications |
 
 ## Development
 
