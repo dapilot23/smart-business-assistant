@@ -10,6 +10,7 @@ const navItems = [
   { href: "/dashboard/appointments", label: "Appointments", icon: "calendar" as const },
   { href: "/dashboard/availability", label: "Availability", icon: "calendar-days" as const },
   { href: "/dashboard/customers", label: "Customers", icon: "users" as const },
+  { href: "/dashboard/team", label: "Team", icon: "users" as const },
   { href: "/dashboard/quotes", label: "Quotes", icon: "quote" as const },
   { href: "/dashboard/voice", label: "Voice AI", icon: "phone-call" as const },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" as const },

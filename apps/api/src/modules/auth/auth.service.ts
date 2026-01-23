@@ -48,7 +48,7 @@ export class AuthService {
         email: clerkData.email,
         name: clerkData.name,
         tenantId,
-        role: (clerkData.publicMetadata?.role as UserRole) || UserRole.USER,
+        role: (clerkData.publicMetadata?.role as UserRole) || UserRole.TECHNICIAN,
       },
       include: { tenant: true },
     });

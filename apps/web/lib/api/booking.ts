@@ -2,6 +2,9 @@
 
 import { Service, TimeSlot, CustomerInfo, Tenant } from '@/lib/types/booking';
 
+// Re-export types for convenience
+export type { TimeSlot };
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export async function getTenantBySlug(slug: string): Promise<Tenant> {

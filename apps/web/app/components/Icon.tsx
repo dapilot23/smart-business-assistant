@@ -34,6 +34,13 @@ import {
   ExternalLink,
   AlertCircle,
   CreditCard,
+  UserPlus,
+  Edit,
+  Trash2,
+  Send,
+  Loader2,
+  Building2,
+  UserCheck,
 } from "lucide-react";
 
 interface IconProps {
@@ -71,7 +78,14 @@ interface IconProps {
     | "copy"
     | "external-link"
     | "alert-circle"
-    | "credit-card";
+    | "credit-card"
+    | "user-plus"
+    | "edit"
+    | "trash-2"
+    | "send"
+    | "loader-2"
+    | "building-2"
+    | "user-check";
   className?: string;
   size?: number;
 }
@@ -112,6 +126,13 @@ export function Icon({ name, className = "", size = 20 }: IconProps) {
     "external-link": ExternalLink,
     "alert-circle": AlertCircle,
     "credit-card": CreditCard,
+    "user-plus": UserPlus,
+    edit: Edit,
+    "trash-2": Trash2,
+    send: Send,
+    "loader-2": Loader2,
+    "building-2": Building2,
+    "user-check": UserCheck,
   };
 
   const IconComponent = icons[name];

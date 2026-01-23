@@ -28,21 +28,26 @@ model Tenant {
   availability TechnicianAvailability[]
   timeOff      TimeOff[]
   callLogs     CallLog[]
+  invitations  TeamInvitation[]
 
   @@map("tenants")
 }
 
 // Users belong to tenants (staff/admin)
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String     @id @default(cuid())
+  email     String     @unique
   password  String?
   name      String
-  role      UserRole @default(USER)
+  phone     String?
+  role      UserRole   @default(TECHNICIAN)
+  status    UserStatus @default(ACTIVE)
   tenantId  String
-  clerkId   String?  @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  clerkId   String?    @unique
+  invitedBy String?
+  joinedAt  DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   // Relations
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -52,12 +57,51 @@ model User {
 
   @@index([tenantId])
   @@index([clerkId])
+  @@index([status])
   @@map("users")
 }
 
 enum UserRole {
-  ADMIN
-  USER
+  OWNER      // Business owner, full access
+  ADMIN      // Admin access, can manage team
+  DISPATCHER // Can manage appointments and customers
+  TECHNICIAN // Field worker, limited access
+}
+
+enum UserStatus {
+  PENDING    // Invited but not yet joined
+  ACTIVE     // Active team member
+  DEACTIVATED // Removed from team
+}
+
+// Team invitations
+model TeamInvitation {
+  id        String           @id @default(cuid())
+  email     String
+  name      String?
+  role      UserRole         @default(TECHNICIAN)
+  tenantId  String
+  token     String           @unique
+  status    InvitationStatus @default(PENDING)
+  expiresAt DateTime
+  invitedBy String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@index([token])
+  @@index([tenantId])
+  @@map("team_invitations")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
 }
 
 // Customers are tenant-specific
