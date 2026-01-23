@@ -76,9 +76,40 @@ export class VoiceController {
       case VapiWebhookEvent.FUNCTION_CALL:
         return this.voiceService.handleFunctionCall(webhookData);
       case VapiWebhookEvent.ASSISTANT_REQUEST:
-        return { assistant: { firstMessage: 'Hello! How can I help you?' } };
+        return this.handleAssistantRequest(webhookData);
       default:
         return { received: true };
     }
+  }
+
+  private async handleAssistantRequest(webhookData: any) {
+    // Get tenantId from the call metadata or phone number mapping
+    const tenantId = webhookData.call?.metadata?.tenantId;
+
+    if (tenantId) {
+      const config = this.voiceService.getAssistantConfig(tenantId);
+      return { assistant: config };
+    }
+
+    // Default assistant if no tenant specified
+    return {
+      assistant: {
+        firstMessage: 'Hello! How can I help you today?',
+        model: {
+          provider: 'openai',
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant. Ask how you can help and offer to transfer to a human if needed.',
+            },
+          ],
+        },
+        voice: {
+          provider: 'azure',
+          voiceId: 'andrew',
+        },
+      },
+    };
   }
 }
