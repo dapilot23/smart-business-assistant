@@ -77,8 +77,8 @@ export async function completeJob(id: string, data: CompleteJobDto): Promise<Job
 
 export async function addJobNotes(id: string, data: AddJobNoteDto): Promise<Job> {
   return fetchWithAuth(`${API_URL}/jobs/${id}/notes`, {
-    method: 'POST',
-    body: JSON.stringify(data),
+    method: 'PATCH',
+    body: JSON.stringify({ notes: data.content }),
   });
 }
 
@@ -89,7 +89,7 @@ export async function uploadJobPhoto(
 ): Promise<Job> {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('photo_type', data.photo_type);
+  formData.append('type', data.photo_type);
   if (data.caption) {
     formData.append('caption', data.caption);
   }

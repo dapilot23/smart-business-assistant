@@ -26,31 +26,31 @@ async function fetchWithAuth(url: string, options?: RequestInit) {
 }
 
 export async function getTeamMembers(): Promise<TeamMember[]> {
-  return fetchWithAuth(`${API_URL}/team/members`);
+  return fetchWithAuth(`${API_URL}/team`);
 }
 
 export async function getTeamMember(id: string): Promise<TeamMember> {
-  return fetchWithAuth(`${API_URL}/team/members/${id}`);
+  return fetchWithAuth(`${API_URL}/team/${id}`);
 }
 
 export async function updateTeamMember(
   id: string,
   data: UpdateTeamMemberData
 ): Promise<TeamMember> {
-  return fetchWithAuth(`${API_URL}/team/members/${id}`, {
+  return fetchWithAuth(`${API_URL}/team/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
 
 export async function removeTeamMember(id: string): Promise<void> {
-  return fetchWithAuth(`${API_URL}/team/members/${id}`, {
+  return fetchWithAuth(`${API_URL}/team/${id}`, {
     method: 'DELETE',
   });
 }
 
 export async function inviteTeamMember(data: InviteTeamMemberData): Promise<TeamInvitation> {
-  return fetchWithAuth(`${API_URL}/team/invitations`, {
+  return fetchWithAuth(`${API_URL}/team/invite`, {
     method: 'POST',
     body: JSON.stringify(data),
   });

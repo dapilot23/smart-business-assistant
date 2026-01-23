@@ -74,5 +74,6 @@ export async function getServices(): Promise<Service[]> {
 }
 
 export async function getTechnicians(): Promise<Technician[]> {
-  return fetchWithAuth(`${API_URL}/technicians`);
+  // Get team members - all can be assigned to appointments
+  return fetchWithAuth(`${API_URL}/team`);
 }

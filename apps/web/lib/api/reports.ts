@@ -63,17 +63,17 @@ export interface TopService {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  return fetchWithAuth(`${API_URL}/reports/dashboard-stats`);
+  return fetchWithAuth(`${API_URL}/reports/dashboard`);
 }
 
 export async function getRevenueChart(period: string = '30d'): Promise<RevenueDataPoint[]> {
-  return fetchWithAuth(`${API_URL}/reports/revenue-chart?period=${period}`);
+  return fetchWithAuth(`${API_URL}/reports/revenue?period=${period}`);
 }
 
 export async function getAppointmentStats(period: string = '30d'): Promise<AppointmentStats[]> {
-  return fetchWithAuth(`${API_URL}/reports/appointment-stats?period=${period}`);
+  return fetchWithAuth(`${API_URL}/reports/appointments?period=${period}`);
 }
 
 export async function getTopServices(): Promise<TopService[]> {
-  return fetchWithAuth(`${API_URL}/reports/top-services`);
+  return fetchWithAuth(`${API_URL}/reports/services`);
 }
