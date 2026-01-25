@@ -93,6 +93,10 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
   --shadow-glow: 0 0 20px -5px var(--primary);
+
+  /* Font families - customizable per theme */
+  --font-primary-family: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+  --font-secondary-family: var(--font-inter), "Inter", sans-serif;
 }
 
 @layer base {
@@ -101,11 +105,11 @@
   }
 
   .font-primary {
-    font-family: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+    font-family: var(--font-primary-family);
   }
 
   .font-secondary {
-    font-family: var(--font-geist), "Geist", sans-serif;
+    font-family: var(--font-secondary-family);
   }
 }
 

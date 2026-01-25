@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BusinessHoursInput } from "@/components/settings/business-hours-input";
+import { ColorThemeSwitcher } from "@/components/settings/color-theme-switcher";
+import { TypographySwitcher } from "@/components/settings/typography-switcher";
 import { getSettings, updateSettings, type Settings, type BusinessHours } from "@/lib/api/settings";
 import { Icon } from "@/app/components/Icon";
 
@@ -28,7 +30,7 @@ const TIMEZONES = [
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'business' | 'notifications' | 'reviews'>('business');
+  const [activeTab, setActiveTab] = useState<'business' | 'notifications' | 'reviews' | 'appearance'>('business');
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -179,6 +181,17 @@ export default function SettingsPage() {
             >
               <Icon name="message-square" size={18} />
               Review Requests
+            </button>
+            <button
+              onClick={() => setActiveTab('appearance')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'appearance'
+                  ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+                  : 'text-[var(--foreground)] hover:bg-[var(--secondary)]'
+              }`}
+            >
+              <Icon name="palette" size={18} />
+              Appearance
             </button>
           </nav>
         </div>
@@ -430,6 +443,47 @@ export default function SettingsPage() {
                     }
                     disabled={!settings.reviews.enabled}
                   />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'appearance' && (
+            <div className="max-w-4xl">
+              <div className="mb-8">
+                <h2 className="font-primary text-xl font-semibold mb-2">Appearance</h2>
+                <p className="text-sm text-[var(--muted-foreground)]">
+                  Customize the look and feel of your dashboard. Preferences are saved locally in your browser.
+                </p>
+              </div>
+
+              <div className="space-y-10">
+                {/* Color Theme Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Icon name="palette" size={20} className="text-[var(--primary)]" />
+                    <Label className="text-lg font-semibold">Color Theme</Label>
+                  </div>
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    Choose an accent color for buttons, links, and highlights
+                  </p>
+                  <div className="bg-card border border-border rounded-xl p-6">
+                    <ColorThemeSwitcher />
+                  </div>
+                </div>
+
+                {/* Typography Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[var(--primary)] text-xl font-bold font-primary">Aa</span>
+                    <Label className="text-lg font-semibold">Typography</Label>
+                  </div>
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    Choose a font pairing for headings and body text
+                  </p>
+                  <div className="bg-card border border-border rounded-xl p-6">
+                    <TypographySwitcher />
+                  </div>
                 </div>
               </div>
             </div>
