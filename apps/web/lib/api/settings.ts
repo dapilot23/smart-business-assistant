@@ -1,21 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-async function fetchWithAuth(url: string, options?: RequestInit) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
-}
+import { fetchWithAuth, getApiUrl } from './client';
 
 export interface BusinessHours {
   day: string;
@@ -42,11 +25,11 @@ export interface Settings {
 }
 
 export async function getSettings(): Promise<Settings> {
-  return fetchWithAuth(`${API_URL}/settings`);
+  return fetchWithAuth(getApiUrl('/settings'));
 }
 
 export async function updateSettings(data: Partial<Settings>): Promise<Settings> {
-  return fetchWithAuth(`${API_URL}/settings`, {
+  return fetchWithAuth(getApiUrl('/settings'), {
     method: 'PATCH',
     body: JSON.stringify(data),
   });

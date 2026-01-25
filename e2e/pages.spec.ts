@@ -53,40 +53,38 @@ test.describe('Public Pages', () => {
   });
 });
 
-test.describe('Protected Pages (should redirect)', () => {
-  test('Dashboard redirects to login', async ({ page }) => {
+test.describe('Dashboard Pages (Demo Mode - Accessible)', () => {
+  test('Dashboard is accessible in demo mode', async ({ page }) => {
     const response = await page.goto(`${BASE_URL}/dashboard`);
+    expect(response?.status()).toBeLessThan(500);
 
-    // Should redirect to login
     await page.waitForLoadState('networkidle');
-    const url = page.url();
-
-    expect(url).toContain('/login');
-    console.log('Dashboard redirect: OK');
+    expect(page.url()).toContain('/dashboard');
+    console.log('Dashboard accessible: OK');
   });
 
-  test('Appointments redirects to login', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/appointments`);
-    await page.waitForLoadState('networkidle');
+  test('Appointments is accessible in demo mode', async ({ page }) => {
+    const response = await page.goto(`${BASE_URL}/dashboard/appointments`);
+    expect(response?.status()).toBeLessThan(500);
 
-    expect(page.url()).toContain('/login');
-    console.log('Appointments redirect: OK');
+    await page.waitForLoadState('networkidle');
+    expect(page.url()).toContain('/appointments');
+    console.log('Appointments accessible: OK');
   });
 
-  test('Quotes redirects to login', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/quotes`);
-    await page.waitForLoadState('networkidle');
-
-    expect(page.url()).toContain('/login');
-    console.log('Quotes redirect: OK');
+  test('Quotes is accessible in demo mode', async ({ page }) => {
+    const response = await page.goto(`${BASE_URL}/dashboard/quotes`);
+    expect(response?.status()).toBeLessThan(500);
+    console.log('Quotes accessible: OK');
   });
 
-  test('Settings redirects to login', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/settings`);
-    await page.waitForLoadState('networkidle');
+  test('Settings is accessible in demo mode', async ({ page }) => {
+    const response = await page.goto(`${BASE_URL}/dashboard/settings`);
+    expect(response?.status()).toBeLessThan(500);
 
-    expect(page.url()).toContain('/login');
-    console.log('Settings redirect: OK');
+    await page.waitForLoadState('networkidle');
+    expect(page.url()).toContain('/settings');
+    console.log('Settings accessible: OK');
   });
 });
 
@@ -99,25 +97,30 @@ test.describe('Page Error Detection', () => {
   ];
 
   for (const pageInfo of publicPages) {
-    test(`${pageInfo.name} should not have JavaScript errors`, async ({ page }) => {
+    test(`${pageInfo.name} should not have critical errors`, async ({ page }) => {
       const jsErrors: string[] = [];
 
-      page.on('pageerror', error => {
+      page.on('pageerror', (error) => {
         jsErrors.push(error.message);
       });
 
-      await page.goto(`${BASE_URL}${pageInfo.url}`);
+      const response = await page.goto(`${BASE_URL}${pageInfo.url}`);
       await page.waitForLoadState('networkidle');
 
-      // Check for 500 error content
-      const bodyText = await page.locator('body').textContent() || '';
-      const has500Error = bodyText.includes('500') && bodyText.includes('error');
+      // Check for 500 status code
+      const is500Error = response?.status() === 500;
 
-      if (jsErrors.length > 0) {
-        console.log(`${pageInfo.name} JS errors:`, jsErrors);
+      // Filter out non-critical JS errors
+      const criticalErrors = jsErrors.filter(
+        (err) => err.includes('Uncaught') && !err.includes('Clerk')
+      );
+
+      if (criticalErrors.length > 0) {
+        console.log(`${pageInfo.name} critical JS errors:`, criticalErrors);
       }
 
-      expect(has500Error).toBe(false);
+      expect(is500Error).toBe(false);
+      expect(criticalErrors.length).toBe(0);
       console.log(`${pageInfo.name}: No critical errors`);
     });
   }

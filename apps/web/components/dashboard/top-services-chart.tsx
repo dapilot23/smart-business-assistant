@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TopService } from '@/lib/api/reports';
 
@@ -8,6 +9,12 @@ interface TopServicesChartProps {
 }
 
 export function TopServicesChart({ data }: TopServicesChartProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const chartData = data
     .slice(0, 5) // Show top 5
     .map(item => ({
@@ -15,6 +22,19 @@ export function TopServicesChart({ data }: TopServicesChartProps) {
       count: item.count,
       revenue: item.revenue,
     }));
+
+  if (!mounted) {
+    return (
+      <div className="bg-[var(--background)] border border-[var(--border)] shadow-sm rounded-lg p-6">
+        <h3 className="font-primary text-lg font-semibold text-[var(--foreground)] mb-6">
+          Top Services
+        </h3>
+        <div className="h-[300px] flex items-center justify-center">
+          <span className="text-[var(--muted-foreground)]">Loading chart...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[var(--background)] border border-[var(--border)] shadow-sm rounded-lg p-6">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AppointmentStats } from '@/lib/api/reports';
 
@@ -16,11 +17,30 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function AppointmentsChart({ data }: AppointmentsChartProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const chartData = data.map(item => ({
     status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
     count: item.count,
     fill: STATUS_COLORS[item.status] || 'hsl(var(--primary))',
   }));
+
+  if (!mounted) {
+    return (
+      <div className="bg-[var(--background)] border border-[var(--border)] shadow-sm rounded-lg p-6">
+        <h3 className="font-primary text-lg font-semibold text-[var(--foreground)] mb-6">
+          Appointments by Status
+        </h3>
+        <div className="h-[300px] flex items-center justify-center">
+          <span className="text-[var(--muted-foreground)]">Loading chart...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[var(--background)] border border-[var(--border)] shadow-sm rounded-lg p-6">

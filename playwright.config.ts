@@ -7,10 +7,12 @@ export default defineConfig({
   retries: 0,
   workers: 1,
   reporter: 'list',
+  timeout: 60000, // 60 seconds for each test (pages may need to compile)
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    navigationTimeout: 45000, // 45 seconds for page navigation
   },
   projects: [
     {

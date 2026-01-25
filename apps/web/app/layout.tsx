@@ -31,20 +31,27 @@ export const viewport: Viewport = {
   themeColor: "#111111",
 };
 
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <ClerkProvider>
-      <html lang="en" className="h-full">
-        <body
-          className={`${jetbrainsMono.variable} ${inter.variable} antialiased h-full`}
-        >
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+  const content = (
+    <html lang="en" className="h-full">
+      <body
+        className={`${jetbrainsMono.variable} ${inter.variable} antialiased h-full`}
+      >
+        {children}
+      </body>
+    </html>
   );
+
+  // In demo mode, skip Clerk entirely
+  if (isDemoMode) {
+    return content;
+  }
+
+  return <ClerkProvider>{content}</ClerkProvider>;
 }

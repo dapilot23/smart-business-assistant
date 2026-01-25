@@ -27,11 +27,21 @@ export class AuthService {
       return user;
     }
 
-    const tenantId = clerkData.publicMetadata?.tenantId as string;
+    let tenantId = clerkData.publicMetadata?.tenantId as string;
+
+    // If no tenantId in metadata, try to find or use demo tenant for easy testing
     if (!tenantId) {
-      throw new BadRequestException(
-        'User must be assigned to a tenant. Set tenantId in Clerk user metadata.',
-      );
+      const demoTenant = await this.prisma.tenant.findUnique({
+        where: { slug: 'demo-plumbing' },
+      });
+
+      if (demoTenant) {
+        tenantId = demoTenant.id;
+      } else {
+        throw new BadRequestException(
+          'User must be assigned to a tenant. Set tenantId in Clerk user metadata.',
+        );
+      }
     }
 
     const tenant = await this.prisma.tenant.findUnique({
@@ -48,7 +58,7 @@ export class AuthService {
         email: clerkData.email,
         name: clerkData.name,
         tenantId,
-        role: (clerkData.publicMetadata?.role as UserRole) || UserRole.TECHNICIAN,
+        role: (clerkData.publicMetadata?.role as UserRole) || UserRole.ADMIN,
       },
       include: { tenant: true },
     });

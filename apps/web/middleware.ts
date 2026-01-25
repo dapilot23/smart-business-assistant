@@ -12,7 +12,15 @@ const isPublicRoute = createRouteMatcher([
   '/invite(.*)',
 ]);
 
+// Demo mode - bypass all auth
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
 export default clerkMiddleware(async (auth, request) => {
+  // In demo mode, allow all routes
+  if (isDemoMode) {
+    return NextResponse.next();
+  }
+
   if (!isPublicRoute(request)) {
     const { userId } = await auth();
     if (!userId) {

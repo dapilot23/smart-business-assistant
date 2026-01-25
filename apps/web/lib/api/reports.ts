@@ -1,21 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-async function fetchWithAuth(url: string, options?: RequestInit) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
-}
+import { fetchWithAuth, getApiUrl } from './client';
 
 export interface DashboardStats {
   revenue: {
@@ -63,17 +46,17 @@ export interface TopService {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  return fetchWithAuth(`${API_URL}/reports/dashboard`);
+  return fetchWithAuth(getApiUrl('/reports/dashboard'));
 }
 
 export async function getRevenueChart(period: string = '30d'): Promise<RevenueDataPoint[]> {
-  return fetchWithAuth(`${API_URL}/reports/revenue?period=${period}`);
+  return fetchWithAuth(getApiUrl(`/reports/revenue?period=${period}`));
 }
 
 export async function getAppointmentStats(period: string = '30d'): Promise<AppointmentStats[]> {
-  return fetchWithAuth(`${API_URL}/reports/appointments?period=${period}`);
+  return fetchWithAuth(getApiUrl(`/reports/appointments?period=${period}`));
 }
 
 export async function getTopServices(): Promise<TopService[]> {
-  return fetchWithAuth(`${API_URL}/reports/services`);
+  return fetchWithAuth(getApiUrl('/reports/services'));
 }
