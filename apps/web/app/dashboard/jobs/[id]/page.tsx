@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ export default function JobDetailPage() {
   const [materialsUsed, setMaterialsUsed] = useState('');
   const [showCompleteForm, setShowCompleteForm] = useState(false);
 
-  const fetchJob = async () => {
+  const fetchJob = useCallback(async () => {
     setIsLoading(true);
     setError('');
     try {
@@ -62,11 +62,11 @@ export default function JobDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [jobId]);
 
   useEffect(() => {
     fetchJob();
-  }, [jobId]);
+  }, [fetchJob]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!job) return;

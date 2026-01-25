@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "../../../components/Icon";
@@ -42,13 +42,7 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (params.id) {
-      fetchInvoice(params.id as string);
-    }
-  }, [params.id]);
-
-  const fetchInvoice = async (id: string) => {
+  const fetchInvoice = useCallback(async (id: string) => {
     setLoading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/invoices/${id}`);
@@ -64,7 +58,13 @@ export default function InvoiceDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    if (params.id) {
+      fetchInvoice(params.id as string);
+    }
+  }, [params.id, fetchInvoice]);
 
   const updateStatus = async (status: string) => {
     if (!invoice) return;

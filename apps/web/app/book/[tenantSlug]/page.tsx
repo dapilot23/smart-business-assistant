@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ServiceSelector } from '@/components/booking/service-selector';
 import { DatePicker } from '@/components/booking/date-picker';
@@ -38,17 +38,7 @@ export default function BookingPage() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
 
-  useEffect(() => {
-    loadInitialData();
-  }, [tenantSlug]);
-
-  useEffect(() => {
-    if (selectedService && selectedDate) {
-      loadTimeSlots();
-    }
-  }, [selectedService, selectedDate]);
-
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -61,9 +51,9 @@ export default function BookingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantSlug]);
 
-  const loadTimeSlots = async () => {
+  const loadTimeSlots = useCallback(async () => {
     if (!selectedService || !selectedDate || !tenant) return;
 
     try {
@@ -76,7 +66,17 @@ export default function BookingPage() {
     } finally {
       setLoadingSlots(false);
     }
-  };
+  }, [selectedService, selectedDate, tenant]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  useEffect(() => {
+    if (selectedService && selectedDate) {
+      loadTimeSlots();
+    }
+  }, [selectedService, selectedDate, loadTimeSlots]);
 
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);

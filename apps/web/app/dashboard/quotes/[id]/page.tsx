@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "../../../components/Icon";
@@ -41,13 +41,7 @@ export default function QuoteDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (params.id) {
-      fetchQuote(params.id as string);
-    }
-  }, [params.id]);
-
-  const fetchQuote = async (id: string) => {
+  const fetchQuote = useCallback(async (id: string) => {
     setLoading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/quotes/${id}`);
@@ -63,7 +57,13 @@ export default function QuoteDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    if (params.id) {
+      fetchQuote(params.id as string);
+    }
+  }, [params.id, fetchQuote]);
 
   const updateStatus = async (status: string) => {
     if (!quote) return;

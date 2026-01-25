@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useCallback, useEffect, useState, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,17 +52,7 @@ function ManageBookingContent() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  useEffect(() => {
-    loadBooking();
-  }, [token]);
-
-  useEffect(() => {
-    if (selectedDate && mode === 'reschedule') {
-      loadTimeSlots();
-    }
-  }, [selectedDate, mode]);
-
-  const loadBooking = async () => {
+  const loadBooking = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -73,9 +63,9 @@ function ManageBookingContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
-  const loadTimeSlots = async () => {
+  const loadTimeSlots = useCallback(async () => {
     if (!selectedDate) return;
     try {
       setLoadingSlots(true);
@@ -87,7 +77,17 @@ function ManageBookingContent() {
     } finally {
       setLoadingSlots(false);
     }
-  };
+  }, [selectedDate, token]);
+
+  useEffect(() => {
+    loadBooking();
+  }, [loadBooking]);
+
+  useEffect(() => {
+    if (selectedDate && mode === 'reschedule') {
+      loadTimeSlots();
+    }
+  }, [selectedDate, mode, loadTimeSlots]);
 
   const handleCancel = async () => {
     try {
