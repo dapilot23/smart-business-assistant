@@ -8,7 +8,9 @@ async function runTests() {
   let browser;
   try {
     browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 720 }
+    });
     const page = await context.newPage();
 
     const tests = [
@@ -124,11 +126,11 @@ async function runTests() {
         name: 'Appointments navigation works from dashboard',
         test: async () => {
           await page.goto(`${BASE_URL}/dashboard`, { timeout: 30000, waitUntil: 'domcontentloaded' });
-          const appointmentsLink = page.locator('a[href*="appointments"]').first();
-          if (await appointmentsLink.count() > 0) {
-            await appointmentsLink.click();
-            await page.waitForURL('**/appointments**', { timeout: 10000 });
-          }
+          // Wait for sidebar to render - look for the visible desktop sidebar link
+          const appointmentsLink = page.locator('aside.lg\\:flex a[href="/dashboard/appointments"]');
+          await appointmentsLink.waitFor({ state: 'visible', timeout: 10000 });
+          await appointmentsLink.click();
+          await page.waitForURL('**/appointments**', { timeout: 10000 });
         }
       },
 
