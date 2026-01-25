@@ -43,6 +43,7 @@ import {
   UserCheck,
   Briefcase,
   TrendingDown,
+  Menu,
 } from "lucide-react";
 
 interface IconProps {
@@ -89,7 +90,8 @@ interface IconProps {
     | "loader-2"
     | "building-2"
     | "user-check"
-    | "briefcase";
+    | "briefcase"
+    | "menu";
   className?: string;
   size?: number;
 }
@@ -139,6 +141,7 @@ export function Icon({ name, className = "", size = 20 }: IconProps) {
     "building-2": Building2,
     "user-check": UserCheck,
     briefcase: Briefcase,
+    menu: Menu,
   };
 
   const IconComponent = icons[name];

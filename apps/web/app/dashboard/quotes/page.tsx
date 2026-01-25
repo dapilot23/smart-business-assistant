@@ -82,18 +82,18 @@ export default function QuotesPage() {
   return (
     <main className="flex flex-col h-full w-full">
       {/* Header */}
-      <header className="flex items-center justify-between h-20 px-8 border-b border-[var(--border)]">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:h-20 border-b border-[var(--border)]">
         <div className="flex flex-col gap-0.5">
-          <h1 className="font-primary text-[20px] font-semibold text-[var(--foreground)]">
+          <h1 className="font-primary text-lg sm:text-[20px] font-semibold text-[var(--foreground)]">
             Quotes
           </h1>
-          <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
+          <p className="font-secondary text-[13px] sm:text-[14px] text-[var(--muted-foreground)]">
             Create and manage quotes for your customers
           </p>
         </div>
         <Link
           href="/dashboard/quotes/new"
-          className="flex items-center gap-2 h-10 px-4 bg-[var(--primary)] rounded-full hover:opacity-90 transition-opacity"
+          className="flex items-center justify-center gap-2 h-10 px-4 bg-[var(--primary)] rounded-full hover:opacity-90 transition-opacity self-start sm:self-auto"
         >
           <Icon name="plus" size={18} className="text-[var(--primary-foreground)]" />
           <span className="font-primary text-[14px] font-medium text-[var(--primary-foreground)]">
@@ -103,7 +103,7 @@ export default function QuotesPage() {
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <Icon name="refresh" size={24} className="animate-spin text-[var(--muted-foreground)]" />
@@ -128,9 +128,9 @@ export default function QuotesPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-6">
             {/* Stats */}
-            <div className="flex gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
               <StatCard
                 title="Total Quotes"
                 value={quotes.length.toString()}
@@ -153,66 +153,104 @@ export default function QuotesPage() {
               />
             </div>
 
-            {/* Table */}
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[var(--border)]">
-                    <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Quote #</th>
-                    <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Customer</th>
-                    <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Description</th>
-                    <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Amount</th>
-                    <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Status</th>
-                    <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Valid Until</th>
-                    <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {quotes.map((quote) => (
-                    <tr key={quote.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--secondary)]">
-                      <td className="p-4">
-                        <Link href={`/dashboard/quotes/${quote.id}`} className="font-secondary text-[14px] text-[var(--primary)] hover:underline">
-                          {quote.quoteNumber}
-                        </Link>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex flex-col">
-                          <span className="font-secondary text-[14px] text-[var(--foreground)]">
-                            {quote.customer?.name || "Unknown"}
-                          </span>
-                          <span className="font-secondary text-[12px] text-[var(--muted-foreground)]">
-                            {quote.customer?.email || ""}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4 font-secondary text-[14px] text-[var(--foreground)] max-w-[200px] truncate">
-                        {quote.description}
-                      </td>
-                      <td className="p-4 font-secondary text-[14px] font-medium text-[var(--foreground)]">
-                        {formatCurrency(quote.amount)}
-                      </td>
-                      <td className="p-4">
-                        <span className={`inline-flex px-2 py-1 rounded-full font-secondary text-[12px] ${getStatusColor(quote.status)}`}>
-                          {quote.status}
-                        </span>
-                      </td>
-                      <td className="p-4 font-secondary text-[14px] text-[var(--muted-foreground)]">
-                        {formatDate(quote.validUntil)}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/dashboard/quotes/${quote.id}`}
-                            className="p-2 rounded-lg hover:bg-[var(--card)] transition-colors"
-                          >
-                            <Icon name="chevron-right" size={16} className="text-[var(--muted-foreground)]" />
-                          </Link>
-                        </div>
-                      </td>
+            {/* Mobile Cards View */}
+            <div className="lg:hidden space-y-3">
+              {quotes.map((quote) => (
+                <Link
+                  key={quote.id}
+                  href={`/dashboard/quotes/${quote.id}`}
+                  className="block bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 hover:bg-[var(--secondary)] transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <span className="font-secondary text-[14px] font-medium text-[var(--primary)]">
+                        {quote.quoteNumber}
+                      </span>
+                      <p className="font-secondary text-[14px] text-[var(--foreground)] mt-1">
+                        {quote.customer?.name || "Unknown"}
+                      </p>
+                    </div>
+                    <span className={`inline-flex px-2 py-1 rounded-full font-secondary text-[11px] ${getStatusColor(quote.status)}`}>
+                      {quote.status}
+                    </span>
+                  </div>
+                  <p className="font-secondary text-[13px] text-[var(--muted-foreground)] truncate mb-2">
+                    {quote.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="font-secondary text-[14px] font-semibold text-[var(--foreground)]">
+                      {formatCurrency(quote.amount)}
+                    </span>
+                    <span className="font-secondary text-[12px] text-[var(--muted-foreground)]">
+                      Valid: {formatDate(quote.validUntil)}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden lg:block bg-[var(--card)] border border-[var(--border)] rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[var(--border)]">
+                      <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Quote #</th>
+                      <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Customer</th>
+                      <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Description</th>
+                      <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Amount</th>
+                      <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Status</th>
+                      <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Valid Until</th>
+                      <th className="text-left p-4 font-secondary text-[12px] font-medium text-[var(--muted-foreground)] uppercase">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {quotes.map((quote) => (
+                      <tr key={quote.id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--secondary)]">
+                        <td className="p-4">
+                          <Link href={`/dashboard/quotes/${quote.id}`} className="font-secondary text-[14px] text-[var(--primary)] hover:underline">
+                            {quote.quoteNumber}
+                          </Link>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <span className="font-secondary text-[14px] text-[var(--foreground)]">
+                              {quote.customer?.name || "Unknown"}
+                            </span>
+                            <span className="font-secondary text-[12px] text-[var(--muted-foreground)]">
+                              {quote.customer?.email || ""}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 font-secondary text-[14px] text-[var(--foreground)] max-w-[200px] truncate">
+                          {quote.description}
+                        </td>
+                        <td className="p-4 font-secondary text-[14px] font-medium text-[var(--foreground)]">
+                          {formatCurrency(quote.amount)}
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex px-2 py-1 rounded-full font-secondary text-[12px] ${getStatusColor(quote.status)}`}>
+                            {quote.status}
+                          </span>
+                        </td>
+                        <td className="p-4 font-secondary text-[14px] text-[var(--muted-foreground)]">
+                          {formatDate(quote.validUntil)}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/dashboard/quotes/${quote.id}`}
+                              className="p-2 rounded-lg hover:bg-[var(--card)] transition-colors"
+                            >
+                              <Icon name="chevron-right" size={16} className="text-[var(--muted-foreground)]" />
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -223,13 +261,14 @@ export default function QuotesPage() {
 
 function StatCard({ title, value, icon }: { title: string; value: string; icon: "file-text" | "clock" | "check" | "dollar-sign" }) {
   return (
-    <div className="flex-1 flex items-center gap-4 p-4 bg-[var(--card)] border border-[var(--border)] rounded-lg">
-      <div className="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--primary)]/10">
-        <Icon name={icon} size={20} className="text-[var(--primary)]" />
+    <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-[var(--card)] border border-[var(--border)] rounded-lg">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[var(--primary)]/10 shrink-0">
+        <Icon name={icon} size={16} className="sm:hidden text-[var(--primary)]" />
+        <Icon name={icon} size={20} className="hidden sm:block text-[var(--primary)]" />
       </div>
-      <div>
-        <p className="font-secondary text-[12px] text-[var(--muted-foreground)]">{title}</p>
-        <p className="font-primary text-[18px] font-semibold text-[var(--foreground)]">{value}</p>
+      <div className="min-w-0">
+        <p className="font-secondary text-[11px] sm:text-[12px] text-[var(--muted-foreground)]">{title}</p>
+        <p className="font-primary text-[14px] sm:text-[18px] font-semibold text-[var(--foreground)] truncate">{value}</p>
       </div>
     </div>
   );

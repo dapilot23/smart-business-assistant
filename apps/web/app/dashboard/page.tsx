@@ -73,25 +73,30 @@ export default function DashboardPage() {
   return (
     <main className="flex flex-col h-full w-full">
       {/* Header */}
-      <header className="flex items-center justify-between h-20 px-8 border-b border-[var(--border)]">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:h-20 border-b border-[var(--border)]">
         {/* Left - Greeting */}
         <div className="flex flex-col gap-0.5">
-          <h1 className="font-primary text-[20px] font-semibold text-[var(--foreground)]">
+          <h1 className="font-primary text-lg sm:text-[20px] font-semibold text-[var(--foreground)]">
             {greeting}
           </h1>
-          <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
+          <p className="font-secondary text-[13px] sm:text-[14px] text-[var(--muted-foreground)]">
             {formattedDate}
           </p>
         </div>
 
         {/* Right - Actions */}
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <button className="flex items-center gap-2.5 h-10 px-4 w-[280px] bg-[var(--card)] border border-[var(--border)] rounded-full hover:bg-[var(--secondary)] transition-colors">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Search - hidden on mobile, icon only on tablet */}
+          <button className="hidden md:flex items-center gap-2.5 h-10 px-4 w-full md:w-[200px] lg:w-[280px] bg-[var(--card)] border border-[var(--border)] rounded-full hover:bg-[var(--secondary)] transition-colors">
             <Icon name="search" size={18} className="text-[var(--muted-foreground)]" />
-            <span className="font-secondary text-[14px] text-[var(--muted-foreground)]">
+            <span className="font-secondary text-[14px] text-[var(--muted-foreground)] truncate">
               Search anything...
             </span>
+          </button>
+
+          {/* Search icon for mobile */}
+          <button className="md:hidden flex items-center justify-center w-10 h-10 bg-[var(--card)] border border-[var(--border)] rounded-full hover:bg-[var(--secondary)] transition-colors">
+            <Icon name="search" size={20} className="text-[var(--foreground)]" />
           </button>
 
           {/* Notification */}
@@ -100,9 +105,9 @@ export default function DashboardPage() {
           </button>
 
           {/* New Appointment Button */}
-          <button className="flex items-center gap-1.5 h-10 px-4 bg-[var(--primary)] rounded-full hover:opacity-90 transition-opacity">
+          <button className="flex items-center gap-1.5 h-10 px-3 sm:px-4 bg-[var(--primary)] rounded-full hover:opacity-90 transition-opacity">
             <Icon name="plus" size={20} className="text-[var(--primary-foreground)]" />
-            <span className="font-primary text-[14px] font-medium text-[var(--primary-foreground)]">
+            <span className="hidden sm:inline font-primary text-[14px] font-medium text-[var(--primary-foreground)]">
               New Appointment
             </span>
           </button>
@@ -110,7 +115,7 @@ export default function DashboardPage() {
       </header>
 
       {/* Content Area */}
-      <div className="flex flex-col flex-1 gap-6 p-8 overflow-auto">
+      <div className="flex flex-col flex-1 gap-4 sm:gap-6 p-4 sm:p-6 lg:p-8 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Icon name="loader-2" size={32} className="text-[var(--primary)] animate-spin" />
@@ -166,13 +171,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent Activity Section */}
-            <div className="flex gap-6">
-              <div className="flex-1">
-                <RecentActivity />
-              </div>
-              <div className="w-[400px]">
-                <ScheduleCard />
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] xl:grid-cols-[1fr_400px] gap-4 sm:gap-6">
+              <RecentActivity />
+              <ScheduleCard />
             </div>
           </>
         )}

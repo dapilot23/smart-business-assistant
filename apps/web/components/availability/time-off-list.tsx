@@ -22,8 +22,8 @@ function formatDate(dateString: string): string {
 export function TimeOffList({ timeOffs, onEdit, onDelete }: TimeOffListProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Scheduled Time Off</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg">Scheduled Time Off</CardTitle>
       </CardHeader>
       <CardContent>
         {timeOffs.length === 0 ? (
@@ -35,23 +35,24 @@ export function TimeOffList({ timeOffs, onEdit, onDelete }: TimeOffListProps) {
             {timeOffs.map((timeOff) => (
               <div
                 key={timeOff.id}
-                className="flex items-start justify-between p-4 border rounded-lg"
+                className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 p-3 sm:p-4 border rounded-lg"
               >
-                <div className="flex-1">
-                  <div className="font-medium">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm sm:text-base">
                     {formatDate(timeOff.start_date)} - {formatDate(timeOff.end_date)}
                   </div>
                   {timeOff.reason && (
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-muted-foreground mt-1 truncate">
                       {timeOff.reason}
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit(timeOff)}
+                    className="h-8 px-2 sm:px-3"
                   >
                     Edit
                   </Button>
@@ -59,6 +60,7 @@ export function TimeOffList({ timeOffs, onEdit, onDelete }: TimeOffListProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete(timeOff.id)}
+                    className="h-8 px-2 sm:px-3 text-destructive hover:text-destructive"
                   >
                     Delete
                   </Button>
