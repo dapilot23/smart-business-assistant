@@ -3,40 +3,96 @@
 @tailwind utilities;
 
 :root {
-  /* Colors - Dark mode */
-  --background: #111111;
-  --foreground: #FFFFFF;
-  --card: #1A1A1A;
-  --card-foreground: #FFFFFF;
-  --border: #333333;
-  --input: #333333;
-  --ring: #FF6B00;
-  --muted: #262626;
-  --muted-foreground: #A0A0A0;
-  --primary: #FF6B00;
-  --primary-foreground: #FFFFFF;
-  --secondary: #2A2A2A;
-  --secondary-foreground: #FFFFFF;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --accent: #2A2A2A;
-  --accent-foreground: #FFFFFF;
-  --popover: #1A1A1A;
-  --popover-foreground: #FFFFFF;
-  --radius: 0.5rem;
+  /*
+   * Design System following 60-30-10 Rule
+   * 60% - Background surfaces (dark blues)
+   * 30% - Card/elevated surfaces
+   * 10% - Accent colors (orange + supporting colors)
+   */
 
-  /* Status colors */
-  --color-success: #222924;
-  --color-success-foreground: #B6FFCE;
-  --color-warning: #1A1000;
-  --color-warning-foreground: #FF6B00;
-  --color-info: #0A1628;
-  --color-info-foreground: #3B82F6;
+  /* Base backgrounds - 60% (Dark blue-gray tones for depth) */
+  --background: #0c1220;
+  --background-subtle: #101827;
+  --foreground: #f1f5f9;
+
+  /* Card surfaces - 30% (Elevated, slightly lighter) */
+  --card: #151f2e;
+  --card-elevated: #1a2638;
+  --card-foreground: #f1f5f9;
+
+  /* Borders and inputs */
+  --border: #1e3a5f;
+  --border-subtle: #172135;
+  --input: #1a2638;
+  --input-focus: #243447;
+
+  /* Primary accent - 10% (Warm orange) */
+  --primary: #f97316;
+  --primary-hover: #fb923c;
+  --primary-muted: #f9731620;
+  --primary-foreground: #ffffff;
+  --ring: #f97316;
+
+  /* Secondary surfaces */
+  --secondary: #1e293b;
+  --secondary-hover: #273548;
+  --secondary-foreground: #e2e8f0;
+
+  /* Muted elements */
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  /* Accent (for highlights, different from primary) */
+  --accent: #1e3a5f;
+  --accent-foreground: #e2e8f0;
+
+  /* Popover/Dialog surfaces */
+  --popover: #151f2e;
+  --popover-foreground: #f1f5f9;
+
+  /* Destructive/Error */
+  --destructive: #ef4444;
+  --destructive-muted: #ef444420;
+  --destructive-foreground: #ffffff;
+
+  /* Status colors - Rich, vibrant for data visualization */
+  --color-success: #10b981;
+  --color-success-muted: #10b98120;
+  --color-success-foreground: #ffffff;
+
+  --color-warning: #f59e0b;
+  --color-warning-muted: #f59e0b20;
+  --color-warning-foreground: #ffffff;
+
+  --color-info: #3b82f6;
+  --color-info-muted: #3b82f620;
+  --color-info-foreground: #ffffff;
+
+  --color-purple: #8b5cf6;
+  --color-purple-muted: #8b5cf620;
+  --color-purple-foreground: #ffffff;
+
+  --color-cyan: #06b6d4;
+  --color-cyan-muted: #06b6d420;
+  --color-cyan-foreground: #ffffff;
+
+  --color-pink: #ec4899;
+  --color-pink-muted: #ec489920;
+  --color-pink-foreground: #ffffff;
 
   /* Border radius */
-  --radius-m: 16px;
-  --radius-none: 0px;
+  --radius: 0.5rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
   --radius-pill: 999px;
+
+  /* Shadows for depth */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-glow: 0 0 20px -5px var(--primary);
 }
 
 @layer base {
@@ -56,4 +112,78 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* Gradient backgrounds for visual interest */
+.bg-gradient-subtle {
+  background: linear-gradient(135deg, var(--background) 0%, var(--background-subtle) 100%);
+}
+
+.bg-gradient-card {
+  background: linear-gradient(180deg, var(--card) 0%, var(--card-elevated) 100%);
+}
+
+/* Glow effects for accent elements */
+.glow-primary {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Status badge styles */
+.badge-success {
+  background: var(--color-success-muted);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.badge-warning {
+  background: var(--color-warning-muted);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+}
+
+.badge-info {
+  background: var(--color-info-muted);
+  color: var(--color-info);
+  border: 1px solid var(--color-info);
+}
+
+.badge-destructive {
+  background: var(--destructive-muted);
+  color: var(--destructive);
+  border: 1px solid var(--destructive);
+}
+
+/* Card variations */
+.card-elevated {
+  background: var(--card-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.card-interactive {
+  transition: all 0.2s ease;
+}
+
+.card-interactive:hover {
+  background: var(--card-elevated);
+  border-color: var(--border);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Sidebar active state with accent bar */
+.nav-item-active {
+  position: relative;
+}
+
+.nav-item-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--primary);
+  border-radius: 0 2px 2px 0;
 }

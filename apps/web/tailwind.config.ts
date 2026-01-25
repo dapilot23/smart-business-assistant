@@ -17,21 +17,34 @@ const config: Config = {
     },
     extend: {
       colors: {
-        border: "var(--border)",
-        input: "var(--input)",
+        border: {
+          DEFAULT: "var(--border)",
+          subtle: "var(--border-subtle)",
+        },
+        input: {
+          DEFAULT: "var(--input)",
+          focus: "var(--input-focus)",
+        },
         ring: "var(--ring)",
-        background: "var(--background)",
+        background: {
+          DEFAULT: "var(--background)",
+          subtle: "var(--background-subtle)",
+        },
         foreground: "var(--foreground)",
         primary: {
           DEFAULT: "var(--primary)",
+          hover: "var(--primary-hover)",
+          muted: "var(--primary-muted)",
           foreground: "var(--primary-foreground)",
         },
         secondary: {
           DEFAULT: "var(--secondary)",
+          hover: "var(--secondary-hover)",
           foreground: "var(--secondary-foreground)",
         },
         destructive: {
           DEFAULT: "var(--destructive)",
+          muted: "var(--destructive-muted)",
           foreground: "var(--destructive-foreground)",
         },
         muted: {
@@ -48,8 +61,46 @@ const config: Config = {
         },
         card: {
           DEFAULT: "var(--card)",
+          elevated: "var(--card-elevated)",
           foreground: "var(--card-foreground)",
         },
+        // Status colors for data visualization
+        success: {
+          DEFAULT: "var(--color-success)",
+          muted: "var(--color-success-muted)",
+          foreground: "var(--color-success-foreground)",
+        },
+        warning: {
+          DEFAULT: "var(--color-warning)",
+          muted: "var(--color-warning-muted)",
+          foreground: "var(--color-warning-foreground)",
+        },
+        info: {
+          DEFAULT: "var(--color-info)",
+          muted: "var(--color-info-muted)",
+          foreground: "var(--color-info-foreground)",
+        },
+        purple: {
+          DEFAULT: "var(--color-purple)",
+          muted: "var(--color-purple-muted)",
+          foreground: "var(--color-purple-foreground)",
+        },
+        cyan: {
+          DEFAULT: "var(--color-cyan)",
+          muted: "var(--color-cyan-muted)",
+          foreground: "var(--color-cyan-foreground)",
+        },
+        pink: {
+          DEFAULT: "var(--color-pink)",
+          muted: "var(--color-pink-muted)",
+          foreground: "var(--color-pink-foreground)",
+        },
+      },
+      boxShadow: {
+        'sm': 'var(--shadow-sm)',
+        'md': 'var(--shadow-md)',
+        'lg': 'var(--shadow-lg)',
+        'glow': 'var(--shadow-glow)',
       },
       borderRadius: {
         lg: "var(--radius)",

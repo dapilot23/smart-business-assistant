@@ -130,32 +130,38 @@ export default function DashboardPage() {
                 value={stats?.revenue?.current?.toLocaleString() ?? 0}
                 change={stats?.revenue?.change}
                 prefix="$"
+                color="success"
               />
               <StatsCard
                 icon="calendar"
                 label="Appointments"
                 value={stats?.appointments?.current ?? 0}
                 change={stats?.appointments?.change}
+                color="info"
               />
               <StatsCard
                 icon="users"
                 label="Active Customers"
                 value={stats?.customers?.active ?? 0}
+                color="purple"
               />
               <StatsCard
                 icon="phone"
                 label="Calls Handled"
                 value={stats?.calls?.handled ?? 0}
+                color="cyan"
               />
               <StatsCard
                 icon="file-text"
                 label="Pending Quotes"
                 value={stats?.quotes?.pending ?? 0}
+                color="warning"
               />
               <StatsCard
                 icon="briefcase"
                 label="Jobs in Progress"
                 value={stats?.jobs?.inProgress ?? 0}
+                color="primary"
               />
             </div>
 
@@ -184,33 +190,34 @@ export default function DashboardPage() {
 
 function ScheduleCard() {
   const scheduleItems = [
-    { title: "Client Meeting - ABC Corp", time: "Tomorrow, 9:00 AM", color: "bg-[var(--primary)]" },
-    { title: "Service Call - Home Repair", time: "Tomorrow, 2:00 PM", color: "bg-blue-500" },
-    { title: "Quote Follow-up", time: "Friday, 11:00 AM", color: "bg-amber-500" },
+    { title: "Client Meeting - ABC Corp", time: "Tomorrow, 9:00 AM", color: "bg-primary", borderColor: "border-primary/30" },
+    { title: "Service Call - Home Repair", time: "Tomorrow, 2:00 PM", color: "bg-info", borderColor: "border-info/30" },
+    { title: "Quote Follow-up", time: "Friday, 11:00 AM", color: "bg-warning", borderColor: "border-warning/30" },
   ];
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <h3 className="font-primary text-[16px] font-semibold text-[var(--foreground)]">
+      <h3 className="font-primary text-[16px] font-semibold text-foreground">
         Upcoming Schedule
       </h3>
-      <div className="bg-[var(--card)] border border-[var(--border)] shadow-sm overflow-hidden rounded-lg">
+      <div className="bg-card border border-border-subtle rounded-xl overflow-hidden">
         {scheduleItems.map((item, index) => (
           <div
             key={index}
-            className={`flex items-center gap-3 p-4 ${
-              index < scheduleItems.length - 1 ? "border-b border-[var(--border)]" : ""
+            className={`flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors cursor-pointer ${
+              index < scheduleItems.length - 1 ? "border-b border-border-subtle" : ""
             }`}
           >
-            <div className={`w-2 h-2 rounded-full ${item.color}`} />
+            <div className={`w-3 h-3 rounded-full ${item.color} ring-4 ring-opacity-20 ${item.borderColor}`} />
             <div className="flex flex-col gap-0.5 flex-1">
-              <span className="font-secondary text-[14px] font-medium text-[var(--foreground)]">
+              <span className="font-secondary text-[14px] font-medium text-foreground">
                 {item.title}
               </span>
-              <span className="font-secondary text-[12px] text-[var(--muted-foreground)]">
+              <span className="font-secondary text-[12px] text-muted-foreground">
                 {item.time}
               </span>
             </div>
+            <Icon name="chevron-right" size={16} className="text-muted-foreground" />
           </div>
         ))}
       </div>
@@ -219,15 +226,42 @@ function ScheduleCard() {
 }
 
 function RecentActivity() {
+  const activities = [
+    { icon: "calendar" as const, text: "Appointment scheduled with John Smith", time: "2 hours ago", color: "text-info" },
+    { icon: "file-text" as const, text: "Quote #1234 sent to ABC Corp", time: "4 hours ago", color: "text-warning" },
+    { icon: "check" as const, text: "Job #567 completed successfully", time: "Yesterday", color: "text-success" },
+  ];
+
   return (
     <div className="flex flex-col gap-4 w-full">
-      <h3 className="font-primary text-[16px] font-semibold text-[var(--foreground)]">
+      <h3 className="font-primary text-[16px] font-semibold text-foreground">
         Recent Activity
       </h3>
-      <div className="bg-[var(--card)] border border-[var(--border)] shadow-sm rounded-lg p-6">
-        <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
-          No recent activity to display. Your activity will appear here.
-        </p>
+      <div className="bg-card border border-border-subtle rounded-xl overflow-hidden">
+        {activities.length === 0 ? (
+          <div className="p-6">
+            <p className="font-secondary text-[14px] text-muted-foreground">
+              No recent activity to display. Your activity will appear here.
+            </p>
+          </div>
+        ) : (
+          activities.map((activity, index) => (
+            <div
+              key={index}
+              className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors ${
+                index < activities.length - 1 ? "border-b border-border-subtle" : ""
+              }`}
+            >
+              <div className={`mt-0.5 ${activity.color}`}>
+                <Icon name={activity.icon} size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-secondary text-[14px] text-foreground">{activity.text}</p>
+                <p className="font-secondary text-[12px] text-muted-foreground mt-0.5">{activity.time}</p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
