@@ -122,35 +122,35 @@ export default function DashboardPage() {
               <StatsCard
                 icon="dollar-sign"
                 label="Revenue This Month"
-                value={stats?.revenue.current.toLocaleString() || 0}
-                change={stats?.revenue.change}
+                value={stats?.revenue?.current?.toLocaleString() ?? 0}
+                change={stats?.revenue?.change}
                 prefix="$"
               />
               <StatsCard
                 icon="calendar"
                 label="Appointments"
-                value={stats?.appointments.current || 0}
-                change={stats?.appointments.change}
+                value={stats?.appointments?.current ?? 0}
+                change={stats?.appointments?.change}
               />
               <StatsCard
                 icon="users"
                 label="Active Customers"
-                value={stats?.customers.active || 0}
+                value={stats?.customers?.active ?? 0}
               />
               <StatsCard
                 icon="phone"
                 label="Calls Handled"
-                value={stats?.calls.handled || 0}
+                value={stats?.calls?.handled ?? 0}
               />
               <StatsCard
                 icon="file-text"
                 label="Pending Quotes"
-                value={stats?.quotes.pending || 0}
+                value={stats?.quotes?.pending ?? 0}
               />
               <StatsCard
                 icon="briefcase"
                 label="Jobs in Progress"
-                value={stats?.jobs.inProgress || 0}
+                value={stats?.jobs?.inProgress ?? 0}
               />
             </div>
 

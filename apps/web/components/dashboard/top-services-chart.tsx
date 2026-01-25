@@ -16,11 +16,12 @@ export function TopServicesChart({ data }: TopServicesChartProps) {
   }, []);
 
   const chartData = data
+    .filter(item => item?.name) // Filter out items without names
     .slice(0, 5) // Show top 5
     .map(item => ({
       name: item.name.length > 20 ? item.name.slice(0, 20) + '...' : item.name,
-      count: item.count,
-      revenue: item.revenue,
+      count: item.count ?? 0,
+      revenue: item.revenue ?? 0,
     }));
 
   if (!mounted) {
