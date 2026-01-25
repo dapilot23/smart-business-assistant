@@ -26,32 +26,39 @@ export function CalendarWeekView({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b bg-gray-50">
-        <div className="px-2 py-3 text-xs font-medium"></div>
+    <div className="border border-border rounded-lg overflow-hidden bg-card">
+      {/* Header row with days */}
+      <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-border bg-secondary/50">
+        <div className="px-2 py-3 text-xs font-medium text-muted-foreground"></div>
         {weekDays.map((day) => (
           <div
             key={day.toISOString()}
-            className={`px-2 py-3 text-center border-l ${
-              isToday(day) ? 'bg-blue-50' : ''
+            className={`px-2 py-3 text-center border-l border-border ${
+              isToday(day) ? 'bg-primary/10' : ''
             }`}
           >
-            <div className="text-xs font-medium">{formatDate(day)}</div>
+            <div className={`text-xs font-medium ${isToday(day) ? 'text-primary' : 'text-foreground'}`}>
+              {formatDate(day)}
+            </div>
+            {isToday(day) && (
+              <div className="w-2 h-2 rounded-full bg-primary mx-auto mt-1" />
+            )}
           </div>
         ))}
       </div>
 
+      {/* Time slots grid */}
       <div className="overflow-y-auto max-h-[600px]">
         {timeSlots.map((slot) => (
           <div
             key={`${slot.hour}-${slot.minute}`}
             className="grid grid-cols-[80px_repeat(7,1fr)]"
           >
-            <div className="px-2 py-3 text-xs text-gray-500 border-b border-gray-200 text-right">
+            <div className="px-2 py-3 text-xs text-muted-foreground border-b border-border text-right">
               {slot.label}
             </div>
             {weekDays.map((day) => (
-              <div key={day.toISOString()} className="border-l">
+              <div key={day.toISOString()} className={`border-l border-border ${isToday(day) ? 'bg-primary/5' : ''}`}>
                 <TimeSlot
                   hour={slot.hour}
                   minute={slot.minute}

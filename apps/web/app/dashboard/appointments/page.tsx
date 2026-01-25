@@ -109,9 +109,9 @@ export default function AppointmentsPage() {
 
   if (loading) {
     return (
-      <div className="container py-8">
+      <div className="p-8">
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">Loading appointments...</p>
+          <p className="text-muted-foreground">Loading appointments...</p>
         </div>
       </div>
     );
@@ -119,10 +119,10 @@ export default function AppointmentsPage() {
 
   if (error) {
     return (
-      <div className="container py-8">
+      <div className="p-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-red-500 mb-4">Error: {error}</p>
+            <p className="text-destructive mb-4">Error: {error}</p>
             <Button onClick={loadData}>Retry</Button>
           </div>
         </div>
@@ -131,11 +131,11 @@ export default function AppointmentsPage() {
   }
 
   return (
-    <div className="container py-8">
+    <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Appointments</h1>
-          <p className="text-gray-500 mt-1">Manage your appointment schedule</p>
+          <h1 className="text-2xl font-semibold text-foreground">Appointments</h1>
+          <p className="text-muted-foreground mt-1">Manage your appointment schedule</p>
         </div>
         <Button onClick={() => handleSlotClick(new Date())}>
           <Plus className="h-4 w-4 mr-2" />
@@ -166,7 +166,7 @@ export default function AppointmentsPage() {
       />
 
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-card border-border">
           {selectedAppointment && (
             <AppointmentDetails
               appointment={selectedAppointment}

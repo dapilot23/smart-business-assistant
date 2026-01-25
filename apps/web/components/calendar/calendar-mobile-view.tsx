@@ -44,8 +44,8 @@ export function CalendarMobileView({
       </div>
 
       {sortedAppointments.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg bg-gray-50">
-          <p className="text-gray-500 text-sm">No appointments scheduled</p>
+        <div className="text-center py-12 border border-border rounded-lg bg-card">
+          <p className="text-muted-foreground text-sm">No appointments scheduled</p>
           <Button
             variant="outline"
             size="sm"
