@@ -35,6 +35,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { CustomerContextModule } from './modules/customer-context/customer-context.module';
 import { OutboundCampaignsModule } from './modules/outbound-campaigns/outbound-campaigns.module';
 import { PhotoQuotesModule } from './modules/photo-quotes/photo-quotes.module';
+import { AiSchedulingModule } from './modules/ai-scheduling/ai-scheduling.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -77,6 +78,7 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     CustomerContextModule,
     OutboundCampaignsModule,
     PhotoQuotesModule,
+    AiSchedulingModule,
   ],
   controllers: [AppController],
   providers: [

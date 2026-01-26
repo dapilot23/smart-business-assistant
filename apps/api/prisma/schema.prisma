@@ -59,6 +59,7 @@ model User {
   availability TechnicianAvailability[]
   timeOff      TimeOff[]
   jobs         Job[]
+  locations    TechnicianLocation[]
 
   @@index([tenantId])
   @@index([clerkId])
@@ -128,6 +129,8 @@ model Customer {
   invoices     Invoice[]
   reviewRequests ReviewRequest[]
   context      CustomerContext?
+  preferences  CustomerPreference?
+  location     CustomerLocation?
 
   @@index([tenantId])
   @@index([phone])
@@ -735,4 +738,114 @@ enum PhotoComplexity {
   MEDIUM        // Standard job
   COMPLEX       // Major repair, multiple issues
   REQUIRES_INSPECTION // Cannot estimate from photo alone
+}
+
+// ============================================
+// Sprint 2.3: Smart Scheduling
+// ============================================
+
+// Customer scheduling preferences (learned from behavior)
+model CustomerPreference {
+  id                 String   @id @default(cuid())
+  customerId         String   @unique
+  tenantId           String
+  preferredDays      Int[]    // 0=Sunday, 6=Saturday
+  preferredTimeStart String?  // e.g., "09:00"
+  preferredTimeEnd   String?  // e.g., "12:00"
+  preferredTechnician String? // Preferred technician ID
+  avoidDays          Int[]    // Days to avoid
+  learningConfidence Float    @default(0)  // 0-1, increases with more data points
+  dataPoints         Int      @default(0)  // Number of appointments used for learning
+  lastUpdated        DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@map("customer_preferences")
+}
+
+// Real-time technician location tracking
+model TechnicianLocation {
+  id         String   @id @default(cuid())
+  userId     String
+  tenantId   String
+  latitude   Float
+  longitude  Float
+  accuracy   Float?   // GPS accuracy in meters
+  heading    Float?   // Direction in degrees
+  speed      Float?   // Speed in m/s
+  status     TechnicianLocationStatus @default(IDLE)
+  recordedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([recordedAt])
+  @@map("technician_locations")
+}
+
+enum TechnicianLocationStatus {
+  IDLE        // Not on a job
+  EN_ROUTE    // Traveling to customer
+  ON_SITE     // At customer location
+  BREAK       // On break
+  OFFLINE     // Not tracking
+}
+
+// Customer address with geocoded coordinates
+model CustomerLocation {
+  id          String   @id @default(cuid())
+  customerId  String   @unique
+  tenantId    String
+  address     String
+  city        String?
+  state       String?
+  zipCode     String?
+  country     String   @default("US")
+  latitude    Float?
+  longitude   Float?
+  geocoded    Boolean  @default(false)
+  geocodedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@map("customer_locations")
+}
+
+// Optimized route for a technician's day
+model OptimizedRoute {
+  id              String   @id @default(cuid())
+  tenantId        String
+  technicianId    String
+  date            DateTime @db.Date
+  totalDistance   Float?   // Total distance in km
+  totalDuration   Int?     // Total duration in minutes
+  stops           Json     // Array of stop objects with order
+  optimizedAt     DateTime @default(now())
+  appliedAt       DateTime?
+  status          RouteStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, technicianId, date])
+  @@index([tenantId])
+  @@index([technicianId])
+  @@index([date])
+  @@map("optimized_routes")
+}
+
+enum RouteStatus {
+  PENDING     // Generated but not applied
+  APPLIED     // Technician accepted route
+  IN_PROGRESS // Route being executed
+  COMPLETED   // All stops completed
+  MODIFIED    // Manual changes made
 }
