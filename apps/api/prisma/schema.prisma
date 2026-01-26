@@ -132,6 +132,7 @@ model Customer {
   preferences  CustomerPreference?
   location     CustomerLocation?
   auth         CustomerAuth?
+  equipment    CustomerEquipment[]
 
   @@index([tenantId])
   @@index([phone])
@@ -935,4 +936,450 @@ enum NpsSurveyStatus {
   REVIEW_PROMPTED // Prompted for public review
   REVIEW_CLICKED  // Customer clicked review link
   EXPIRED     // Survey expired without response
+}
+
+// ============================================
+// Phase 4: Advanced Features
+// ============================================
+
+// Sprint 4.1: Predictive Maintenance
+
+// Customer equipment tracking
+model CustomerEquipment {
+  id              String              @id @default(cuid())
+  tenantId        String
+  customerId      String
+  equipmentType   String              // e.g., "HVAC", "Water Heater", "Furnace"
+  brand           String?
+  model           String?
+  serialNumber    String?
+  installDate     DateTime?
+  warrantyExpiry  DateTime?
+  lastServiceDate DateTime?
+  nextServiceDue  DateTime?
+  condition       EquipmentCondition  @default(GOOD)
+  notes           String?             @db.Text
+  metadata        Json?               // Additional equipment-specific data
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceHistory  EquipmentServiceHistory[]
+  alerts          MaintenanceAlert[]
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([equipmentType])
+  @@index([nextServiceDue])
+  @@map("customer_equipment")
+}
+
+enum EquipmentCondition {
+  EXCELLENT   // Like new
+  GOOD        // Normal wear
+  FAIR        // Needs attention soon
+  POOR        // Requires immediate service
+  CRITICAL    // Non-functional or unsafe
+}
+
+// Equipment service history
+model EquipmentServiceHistory {
+  id           String   @id @default(cuid())
+  equipmentId  String
+  tenantId     String
+  jobId        String?  // Link to job if service was done through app
+  serviceDate  DateTime
+  serviceType  String   // e.g., "Routine Maintenance", "Repair", "Inspection"
+  description  String?  @db.Text
+  cost         Float?
+  partsReplaced String?  @db.Text
+  technicianId String?
+  technicianName String?
+  condition    EquipmentCondition?  // Condition after service
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  equipment CustomerEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId])
+  @@index([tenantId])
+  @@index([serviceDate])
+  @@map("equipment_service_history")
+}
+
+// Maintenance alerts and predictions
+model MaintenanceAlert {
+  id           String              @id @default(cuid())
+  tenantId     String
+  customerId   String
+  equipmentId  String?             // Optional link to specific equipment
+  alertType    MaintenanceAlertType
+  priority     AlertPriority       @default(MEDIUM)
+  title        String
+  description  String              @db.Text
+  reasoning    String?             @db.Text  // AI reasoning for the prediction
+  confidence   Float?              // AI confidence score (0-1)
+  dueDate      DateTime?           // When maintenance should be performed
+  dismissedAt  DateTime?
+  dismissReason String?
+  convertedToCampaign String?      // Campaign ID if converted to outreach
+  status       MaintenanceAlertStatus @default(PENDING)
+  metadata     Json?               // Alert-specific data
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  equipment CustomerEquipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([equipmentId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@map("maintenance_alerts")
+}
+
+enum MaintenanceAlertType {
+  AGE_BASED           // Equipment reaching end of typical lifespan
+  USAGE_BASED         // Based on usage patterns
+  SEASONAL            // Seasonal maintenance (e.g., HVAC before summer)
+  WARRANTY_EXPIRING   // Warranty about to expire
+  OVERDUE_SERVICE     // Missed scheduled service
+  AI_PREDICTED        // AI-detected potential issue
+  RECALL              // Product recall or safety issue
+  EFFICIENCY          // Efficiency degradation detected
+}
+
+enum AlertPriority {
+  LOW       // Informational, can wait
+  MEDIUM    // Should be addressed within weeks
+  HIGH      // Should be addressed soon
+  URGENT    // Requires immediate attention
+}
+
+enum MaintenanceAlertStatus {
+  PENDING     // Alert created, awaiting action
+  NOTIFIED    // Customer has been notified
+  SCHEDULED   // Maintenance appointment scheduled
+  IN_PROGRESS // Work in progress
+  COMPLETED   // Maintenance completed
+  DISMISSED   // Alert dismissed (not needed)
+  EXPIRED     // Alert expired without action
+}
+
+// Sprint 4.2: Dynamic Pricing
+
+// Demand metrics for pricing calculations
+model DemandMetrics {
+  id           String   @id @default(cuid())
+  tenantId     String
+  date         DateTime @db.Date
+  hour         Int?     // 0-23, null for daily aggregate
+  dayOfWeek    Int?     // 0-6, Sunday to Saturday
+  bookingCount Int      @default(0)
+  completedJobs Int     @default(0)
+  cancelledJobs Int     @default(0)
+  capacityUsed Float    @default(0)  // Percentage of available slots used
+  revenue      Float    @default(0)
+  avgJobDuration Int?   // Average job duration in minutes
+  peakHour     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, date, hour])
+  @@index([tenantId])
+  @@index([date])
+  @@index([dayOfWeek])
+  @@map("demand_metrics")
+}
+
+// Pricing rules for dynamic pricing
+model PricingRule {
+  id            String          @id @default(cuid())
+  tenantId      String
+  name          String
+  description   String?
+  ruleType      PricingRuleType
+  conditions    Json            // Rule conditions (time, demand, urgency, etc.)
+  multiplierMin Float           @default(1.0)  // Minimum multiplier
+  multiplierMax Float           @default(1.5)  // Maximum multiplier
+  flatAdjustment Float?         // Flat fee adjustment (optional)
+  priority      Int             @default(0)    // Higher priority rules apply first
+  isActive      Boolean         @default(true)
+  startsAt      DateTime?       // Optional rule validity period
+  endsAt        DateTime?
+  appliedCount  Int             @default(0)    // How many times this rule was applied
+  totalRevenue  Float           @default(0)    // Revenue attributed to this rule
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([tenantId])
+  @@index([ruleType])
+  @@index([isActive])
+  @@index([priority])
+  @@map("pricing_rules")
+}
+
+enum PricingRuleType {
+  TIME_OF_DAY       // Different prices for morning/afternoon/evening
+  DAY_OF_WEEK       // Weekend vs weekday pricing
+  DEMAND_BASED      // Price increases with demand
+  URGENCY           // Emergency/urgent service premium
+  SEASONAL          // Holiday or seasonal pricing
+  EARLY_BIRD        // Discount for booking in advance
+  LOYALTY           // Customer loyalty discounts
+  PROMOTIONAL       // Promotional pricing campaigns
+}
+
+// Service pricing configuration
+model ServicePricing {
+  id              String   @id @default(cuid())
+  tenantId        String
+  serviceId       String
+  basePrice       Float
+  minPrice        Float?   // Floor price
+  maxPrice        Float?   // Ceiling price
+  urgentMultiplier Float   @default(1.5)  // Standard urgency multiplier
+  emergencyMultiplier Float @default(2.0) // Emergency multiplier
+  dynamicPricingEnabled Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, serviceId])
+  @@index([tenantId])
+  @@index([serviceId])
+  @@map("service_pricing")
+}
+
+// Price quote history for auditing
+model PriceQuoteHistory {
+  id              String   @id @default(cuid())
+  tenantId        String
+  customerId      String?
+  serviceId       String?
+  basePrice       Float
+  finalPrice      Float
+  appliedRules    Json     // Array of rule IDs and their effects
+  urgencyLevel    UrgencyLevel @default(STANDARD)
+  demandFactor    Float    @default(1.0)
+  requestedAt     DateTime
+  scheduledFor    DateTime?
+  converted       Boolean  @default(false)  // Whether this led to a booking
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([serviceId])
+  @@index([requestedAt])
+  @@map("price_quote_history")
+}
+
+enum UrgencyLevel {
+  STANDARD      // Normal booking
+  NEXT_DAY      // Next day service
+  SAME_DAY      // Same day service
+  URGENT        // Within hours
+  EMERGENCY     // Immediate response
+}
+
+// Sprint 4.3: WhatsApp & Unified Messaging
+
+// Customer messaging channels
+model MessageChannel {
+  id         String         @id @default(cuid())
+  tenantId   String
+  customerId String
+  channel    ChannelType
+  channelId  String         // Phone number for SMS/WhatsApp, email for email
+  isActive   Boolean        @default(true)
+  isVerified Boolean        @default(false)
+  verifiedAt DateTime?
+  preferences Json?         // Channel-specific preferences
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([tenantId, customerId, channel])
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([channel])
+  @@map("message_channels")
+}
+
+enum ChannelType {
+  SMS
+  WHATSAPP
+  EMAIL
+  IMESSAGE
+}
+
+// Conversation threads
+model ConversationThread {
+  id             String             @id @default(cuid())
+  tenantId       String
+  customerId     String
+  customerName   String?
+  customerPhone  String
+  channel        ChannelType
+  status         ConversationStatus @default(OPEN)
+  priority       ConversationPriority @default(NORMAL)
+  assignedTo     String?            // Staff user ID
+  subject        String?
+  lastMessageAt  DateTime?
+  lastMessagePreview String?
+  unreadCount    Int               @default(0)
+  tags           String[]
+  metadata       Json?
+  closedAt       DateTime?
+  closedBy       String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  messages Message[]
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([lastMessageAt])
+  @@map("conversation_threads")
+}
+
+enum ConversationStatus {
+  OPEN          // Active conversation
+  PENDING       // Awaiting response
+  RESOLVED      // Completed/resolved
+  CLOSED        // Closed without resolution
+  SPAM          // Marked as spam
+}
+
+enum ConversationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// Individual messages
+model Message {
+  id           String           @id @default(cuid())
+  threadId     String
+  tenantId     String
+  direction    MessageDirection
+  content      String           @db.Text
+  contentType  MessageContentType @default(TEXT)
+  mediaUrl     String?
+  mediaType    String?          // MIME type
+  mediaSize    Int?             // Size in bytes
+  status       MessageStatus    @default(PENDING)
+  sentAt       DateTime?
+  deliveredAt  DateTime?
+  readAt       DateTime?
+  failedAt     DateTime?
+  failureReason String?
+  externalId   String?          // Twilio message SID, WhatsApp ID, etc.
+  senderName   String?
+  senderPhone  String?
+  metadata     Json?
+  createdAt    DateTime         @default(now())
+
+  thread ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+  @@index([tenantId])
+  @@index([direction])
+  @@index([status])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+enum MessageDirection {
+  INBOUND    // From customer
+  OUTBOUND   // To customer
+}
+
+enum MessageContentType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  LOCATION
+  CONTACT
+  TEMPLATE     // WhatsApp template message
+}
+
+enum MessageStatus {
+  PENDING      // Not yet sent
+  QUEUED       // In send queue
+  SENT         // Sent to provider
+  DELIVERED    // Delivered to recipient
+  READ         // Read by recipient
+  FAILED       // Failed to send
+}
+
+// WhatsApp message templates (required by WhatsApp Business API)
+model WhatsAppTemplate {
+  id            String               @id @default(cuid())
+  tenantId      String
+  name          String               // Template name (alphanumeric + underscore only)
+  language      String               @default("en")
+  category      WhatsAppTemplateCategory
+  status        WhatsAppTemplateStatus @default(DRAFT)
+  headerType    String?              // TEXT, IMAGE, VIDEO, DOCUMENT
+  headerContent String?
+  bodyText      String               @db.Text
+  footerText    String?
+  buttons       Json?                // Array of button configurations
+  exampleValues Json?                // Sample values for template variables
+  whatsappId    String?              // Template ID from WhatsApp
+  submittedAt   DateTime?
+  approvedAt    DateTime?
+  rejectedAt    DateTime?
+  rejectionReason String?
+  usageCount    Int                  @default(0)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@unique([tenantId, name, language])
+  @@index([tenantId])
+  @@index([category])
+  @@index([status])
+  @@map("whatsapp_templates")
+}
+
+enum WhatsAppTemplateCategory {
+  MARKETING        // Promotional messages
+  UTILITY          // Transactional messages (confirmations, reminders)
+  AUTHENTICATION   // OTP and verification codes
+}
+
+enum WhatsAppTemplateStatus {
+  DRAFT            // Not yet submitted
+  PENDING          // Submitted, awaiting approval
+  APPROVED         // Approved for use
+  REJECTED         // Rejected by WhatsApp
+  DISABLED         // Disabled by tenant
+}
+
+// Quick reply templates for agents
+model QuickReply {
+  id           String   @id @default(cuid())
+  tenantId     String
+  title        String   // Short title for display
+  content      String   @db.Text
+  category     String?  // Grouping category
+  shortcut     String?  // Keyboard shortcut (e.g., "/greeting")
+  channels     ChannelType[]  // Which channels this can be used on
+  usageCount   Int      @default(0)
+  createdBy    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([category])
+  @@index([shortcut])
+  @@map("quick_replies")
 }

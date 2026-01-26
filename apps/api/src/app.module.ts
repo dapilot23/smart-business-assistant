@@ -39,6 +39,9 @@ import { AiSchedulingModule } from './modules/ai-scheduling/ai-scheduling.module
 import { CustomerPortalModule } from './modules/customer-portal/customer-portal.module';
 import { GatewaysModule } from './gateways/gateways.module';
 import { NpsModule } from './modules/nps/nps.module';
+import { PredictiveMaintenanceModule } from './modules/predictive-maintenance/predictive-maintenance.module';
+import { DynamicPricingModule } from './modules/dynamic-pricing/dynamic-pricing.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -85,6 +88,9 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     CustomerPortalModule,
     GatewaysModule,
     NpsModule,
+    PredictiveMaintenanceModule,
+    DynamicPricingModule,
+    MessagingModule,
   ],
   controllers: [AppController],
   providers: [
