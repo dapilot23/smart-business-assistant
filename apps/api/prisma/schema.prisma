@@ -131,6 +131,7 @@ model Customer {
   context      CustomerContext?
   preferences  CustomerPreference?
   location     CustomerLocation?
+  auth         CustomerAuth?
 
   @@index([tenantId])
   @@index([phone])
@@ -848,4 +849,87 @@ enum RouteStatus {
   IN_PROGRESS // Route being executed
   COMPLETED   // All stops completed
   MODIFIED    // Manual changes made
+}
+
+// ============================================
+// Phase 3: Customer Experience
+// ============================================
+
+// Customer authentication (separate from staff/Clerk auth)
+model CustomerAuth {
+  id               String   @id @default(cuid())
+  customerId       String   @unique
+  tenantId         String
+  email            String?
+  phone            String
+  verificationCode String?
+  codeExpiry       DateTime?
+  magicLinkToken   String?  @unique
+  magicLinkExpiry  DateTime?
+  isVerified       Boolean  @default(false)
+  lastLoginAt      DateTime?
+  failedAttempts   Int      @default(0)
+  lockedUntil      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  sessions CustomerSession[]
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([phone])
+  @@index([email])
+  @@index([magicLinkToken])
+  @@map("customer_auth")
+}
+
+// Customer portal sessions
+model CustomerSession {
+  id           String   @id @default(cuid())
+  customerId   String
+  customerAuthId String
+  token        String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  customerAuth CustomerAuth @relation(fields: [customerAuthId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([token])
+  @@map("customer_sessions")
+}
+
+// NPS Survey responses
+model NpsSurvey {
+  id            String   @id @default(cuid())
+  tenantId      String
+  jobId         String   @unique
+  customerId    String
+  score         Int?     // 1-10 NPS score
+  feedback      String?  @db.Text
+  sentAt        DateTime?
+  respondedAt   DateTime?
+  reviewClicked Boolean  @default(false)
+  reviewPlatform String?  // "google", "yelp", etc.
+  status        NpsSurveyStatus @default(PENDING)
+  token         String   @unique
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([status])
+  @@index([token])
+  @@map("nps_surveys")
+}
+
+enum NpsSurveyStatus {
+  PENDING     // Not yet sent
+  SENT        // Survey sent to customer
+  RESPONDED   // Customer submitted score
+  REVIEW_PROMPTED // Prompted for public review
+  REVIEW_CLICKED  // Customer clicked review link
+  EXPIRED     // Survey expired without response
 }
