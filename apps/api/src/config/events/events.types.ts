@@ -33,6 +33,12 @@ export const EVENTS = {
   // Review Events
   REVIEW_REQUEST_SENT: 'review.request.sent',
   REVIEW_RECEIVED: 'review.received',
+
+  // NPS Events
+  NPS_SURVEY_SENT: 'nps.survey.sent',
+  NPS_SCORE_SUBMITTED: 'nps.score.submitted',
+  NPS_LOW_SCORE_ALERT: 'nps.low_score.alert',
+  NPS_REVIEW_CLICKED: 'nps.review.clicked',
 } as const;
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS];
@@ -100,4 +106,13 @@ export interface ReviewEventPayload extends BaseEventPayload {
   customerId: string;
   customerName: string;
   customerPhone: string;
+}
+
+export interface NpsEventPayload extends BaseEventPayload {
+  surveyId?: string;
+  jobId: string;
+  customerId?: string;
+  score?: number;
+  feedback?: string;
+  admins?: string[];
 }

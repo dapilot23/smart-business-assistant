@@ -446,6 +446,7 @@ model Job {
   technician  User?      @relation(fields: [technicianId], references: [id], onDelete: SetNull)
   photos      JobPhoto[]
   reviewRequest ReviewRequest?
+  npsSurvey   NpsSurvey?
 
   @@index([tenantId])
   @@index([appointmentId])
@@ -917,6 +918,8 @@ model NpsSurvey {
   status        NpsSurveyStatus @default(PENDING)
   token         String   @unique
   createdAt     DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([customerId])
