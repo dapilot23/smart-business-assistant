@@ -1,7 +1,8 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Twilio } from 'twilio';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
 import { BroadcastStatus, UserRole } from '@prisma/client';
 
 export interface AppointmentData {
@@ -28,15 +29,17 @@ export interface SmsResult {
 }
 
 @Injectable()
-export class SmsService {
+export class SmsService implements OnModuleInit {
   private readonly logger = new Logger(SmsService.name);
   private twilioClient: Twilio | null = null;
   private readonly fromNumber: string;
   private readonly isConfigured: boolean;
+  private smsBreaker: any | null = null;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly circuitBreakerService: CircuitBreakerService,
   ) {
     const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
     const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
@@ -54,6 +57,31 @@ export class SmsService {
     }
   }
 
+  onModuleInit() {
+    if (this.isConfigured && this.twilioClient) {
+      this.smsBreaker = this.circuitBreakerService.createBreaker(
+        'twilio-sms',
+        this.sendSmsInternal.bind(this),
+        {
+          timeout: 15000,
+          errorThresholdPercentage: 50,
+          resetTimeout: 60000,
+        },
+      );
+    }
+  }
+
+  private async sendSmsInternal(to: string, message: string): Promise<unknown> {
+    if (!this.twilioClient) {
+      throw new Error('Twilio client not initialized');
+    }
+    return this.twilioClient.messages.create({
+      body: message,
+      from: this.fromNumber,
+      to: to,
+    });
+  }
+
   async sendSms(to: string, message: string): Promise<any> {
     if (!this.isConfigured || !this.twilioClient) {
       throw new BadRequestException(
@@ -62,11 +90,12 @@ export class SmsService {
     }
 
     try {
-      const result = await this.twilioClient.messages.create({
-        body: message,
-        from: this.fromNumber,
-        to: to,
-      });
+      let result: any;
+      if (this.smsBreaker) {
+        result = await this.smsBreaker.fire(to, message);
+      } else {
+        result = await this.sendSmsInternal(to, message);
+      }
 
       this.logger.log(`SMS sent successfully to ${to}. SID: ${result.sid}`);
       return {
@@ -77,6 +106,11 @@ export class SmsService {
       };
     } catch (error) {
       this.logger.error(`Failed to send SMS to ${to}:`, error);
+      if (error.message?.includes('Breaker is open')) {
+        throw new BadRequestException(
+          'SMS service temporarily unavailable. Please try again later.',
+        );
+      }
       throw new BadRequestException(
         `Failed to send SMS: ${error.message || 'Unknown error'}`,
       );

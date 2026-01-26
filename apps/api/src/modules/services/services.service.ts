@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { CacheService, CACHE_KEYS, CACHE_TTL } from '../../config/cache/cache.service';
 import {
   CreateServiceAvailabilityDto,
   UpdateServiceAvailabilityDto,
@@ -8,21 +9,36 @@ import {
 
 @Injectable()
 export class ServicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
 
   async findAll(tenantId: string) {
-    return this.prisma.service.findMany({
-      where: { tenantId },
-      include: { availability: true },
-      orderBy: { name: 'asc' },
-    });
+    const cacheKey = CACHE_KEYS.SERVICES(tenantId);
+    return this.cacheService.wrap(
+      cacheKey,
+      () =>
+        this.prisma.service.findMany({
+          where: { tenantId },
+          include: { availability: true },
+          orderBy: { name: 'asc' },
+        }),
+      CACHE_TTL.MEDIUM,
+    );
   }
 
   async findOne(tenantId: string, id: string) {
-    const service = await this.prisma.service.findFirst({
-      where: { id, tenantId },
-      include: { availability: true },
-    });
+    const cacheKey = CACHE_KEYS.SERVICE(tenantId, id);
+    const service = await this.cacheService.wrap(
+      cacheKey,
+      () =>
+        this.prisma.service.findFirst({
+          where: { id, tenantId },
+          include: { availability: true },
+        }),
+      CACHE_TTL.MEDIUM,
+    );
     if (!service) {
       throw new NotFoundException('Service not found');
     }
@@ -35,10 +51,23 @@ export class ServicesService {
     durationMinutes?: number;
     price?: number;
   }) {
-    return this.prisma.service.create({
+    const service = await this.prisma.service.create({
       data: { ...data, tenantId },
       include: { availability: true },
     });
+    await this.invalidateServicesCache(tenantId);
+    return service;
+  }
+
+  private async invalidateServicesCache(tenantId: string) {
+    await this.cacheService.del(CACHE_KEYS.SERVICES(tenantId));
+  }
+
+  private async invalidateServiceCache(tenantId: string, serviceId: string) {
+    await Promise.all([
+      this.cacheService.del(CACHE_KEYS.SERVICES(tenantId)),
+      this.cacheService.del(CACHE_KEYS.SERVICE(tenantId, serviceId)),
+    ]);
   }
 
   async update(tenantId: string, id: string, data: Partial<{
@@ -48,11 +77,13 @@ export class ServicesService {
     price: number;
   }>) {
     await this.findOne(tenantId, id);
-    return this.prisma.service.update({
+    const service = await this.prisma.service.update({
       where: { id },
       data,
       include: { availability: true },
     });
+    await this.invalidateServiceCache(tenantId, id);
+    return service;
   }
 
   async updateSettings(
@@ -71,6 +102,7 @@ export class ServicesService {
   async delete(tenantId: string, id: string) {
     await this.findOne(tenantId, id);
     await this.prisma.service.delete({ where: { id } });
+    await this.invalidateServiceCache(tenantId, id);
     return { success: true };
   }
 

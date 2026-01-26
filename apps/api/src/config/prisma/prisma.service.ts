@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  private isRlsEnabled = process.env.FEATURE_RLS_ENABLED === 'true';
+
   async onModuleInit() {
     await this.$connect();
     console.log('Database connected successfully');
@@ -11,6 +13,45 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleDestroy() {
     await this.$disconnect();
     console.log('Database disconnected');
+  }
+
+  /**
+   * Sets the current tenant context for RLS policies.
+   * Must be called at the start of each request that needs tenant isolation.
+   */
+  async setTenantContext(tenantId: string): Promise<void> {
+    if (!this.isRlsEnabled || !tenantId) return;
+    await this.$executeRawUnsafe(
+      `SELECT set_config('app.current_tenant_id', $1, TRUE)`,
+      tenantId
+    );
+  }
+
+  /**
+   * Clears the current tenant context.
+   * Should be called at the end of requests or for system-level operations.
+   */
+  async clearTenantContext(): Promise<void> {
+    if (!this.isRlsEnabled) return;
+    await this.$executeRawUnsafe(
+      `SELECT set_config('app.current_tenant_id', '', TRUE)`
+    );
+  }
+
+  /**
+   * Executes a callback with tenant context set.
+   * Automatically clears context after execution.
+   */
+  async withTenantContext<T>(
+    tenantId: string,
+    callback: () => Promise<T>
+  ): Promise<T> {
+    await this.setTenantContext(tenantId);
+    try {
+      return await callback();
+    } finally {
+      await this.clearTenantContext();
+    }
   }
 
   async cleanDatabase() {

@@ -1,7 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './config/prisma/prisma.module';
@@ -25,7 +25,13 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { ReviewRequestsModule } from './modules/review-requests/review-requests.module';
+import { HealthModule } from './modules/health/health.module';
+import { CircuitBreakerModule } from './common/circuit-breaker/circuit-breaker.module';
+import { ThrottleModule } from './config/throttle/throttle.module';
+import { CacheConfigModule } from './config/cache/cache.module';
+import { StorageModule } from './config/storage/storage.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
+import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
 
 @Module({
@@ -56,6 +62,11 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     ReportsModule,
     SettingsModule,
     ReviewRequestsModule,
+    HealthModule,
+    CircuitBreakerModule,
+    ThrottleModule,
+    CacheConfigModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [
@@ -63,6 +74,10 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     {
       provide: APP_GUARD,
       useClass: ClerkAuthGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TenantContextInterceptor,
     },
   ],
 })
