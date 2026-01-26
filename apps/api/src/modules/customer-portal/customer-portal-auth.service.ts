@@ -1,6 +1,6 @@
 import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, randomInt } from 'crypto';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
 
@@ -44,8 +44,8 @@ export class CustomerPortalAuthService {
       throw new BadRequestException(`Account locked. Try again in ${minutesLeft} minutes`);
     }
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate cryptographically secure 6-digit code
+    const code = randomInt(100000, 999999).toString();
     const codeExpiry = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60000);
 
     // Upsert auth record

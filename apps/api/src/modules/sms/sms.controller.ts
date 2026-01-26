@@ -8,7 +8,12 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  Headers,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Request } from 'express';
+import { validateRequest } from 'twilio';
 import { Public } from '../../common/decorators/public.decorator';
 import { SmsService } from './sms.service';
 import { SendSmsDto, SendBulkSmsDto, TestSmsDto } from './dto/send-sms.dto';
@@ -18,7 +23,10 @@ import { ClerkAuthGuard } from '../../common/guards/clerk-auth.guard';
 @Controller('sms')
 @UseGuards(ClerkAuthGuard)
 export class SmsController {
-  constructor(private readonly smsService: SmsService) {}
+  constructor(
+    private readonly smsService: SmsService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('send')
   @HttpCode(HttpStatus.OK)
@@ -57,7 +65,28 @@ export class SmsController {
   @Public()
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
-  async handleWebhook(@Body() webhookData: any) {
+  async handleWebhook(
+    @Req() req: Request,
+    @Body() webhookData: any,
+    @Headers('x-twilio-signature') twilioSignature?: string,
+  ) {
+    // Security: Validate Twilio webhook signature in production
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const authToken = this.configService.get('TWILIO_AUTH_TOKEN');
+
+    if (isProduction && authToken) {
+      if (!twilioSignature) {
+        throw new UnauthorizedException('Missing Twilio signature');
+      }
+
+      const webhookUrl = `${this.configService.get('API_BASE_URL')}/api/v1/sms/webhook`;
+      const isValid = validateRequest(authToken, twilioSignature, webhookUrl, webhookData);
+
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid Twilio signature');
+      }
+    }
+
     return this.smsService.handleWebhook(webhookData);
   }
 

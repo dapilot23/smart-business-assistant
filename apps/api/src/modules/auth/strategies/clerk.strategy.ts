@@ -20,12 +20,14 @@ export class ClerkStrategy extends PassportStrategy(Strategy, 'clerk') {
   }
 
   async validate(req: Request): Promise<any> {
-    // Demo mode - return demo user without auth
+    // Demo mode - ONLY allowed in development environment
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
     const demoMode = this.configService.get('DEMO_MODE') === 'true';
     const authHeader = req.headers.authorization;
 
-    if (demoMode && (!authHeader || !authHeader.startsWith('Bearer '))) {
-      // Return demo user
+    // SECURITY: Demo mode is completely disabled in production
+    if (demoMode && !isProduction && (!authHeader || !authHeader.startsWith('Bearer '))) {
+      // Return demo user only in non-production environments
       const demoUser = await this.prisma.user.findFirst({
         where: {
           tenant: { slug: 'demo-plumbing' },

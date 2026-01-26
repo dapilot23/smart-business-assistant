@@ -9,8 +9,10 @@ import {
   Request,
   Res,
   Headers,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator';
 import { CustomerPortalAuthService } from './customer-portal-auth.service';
 import { CustomerPortalGuard } from './customer-portal.guard';
@@ -27,7 +29,9 @@ export class CustomerPortalController {
   // Authentication Endpoints (Public)
   // ============================================
 
+  // Rate limit: 3 OTP requests per minute per IP
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('auth/otp/request')
   async requestOtp(@Body() body: { phone: string; tenantSlug: string }) {
     // Look up tenant by slug
@@ -42,7 +46,9 @@ export class CustomerPortalController {
     return this.authService.requestOtpCode(body.phone, tenant.id);
   }
 
+  // Rate limit: 5 OTP verification attempts per 5 minutes per IP
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 300000 } })
   @Post('auth/otp/verify')
   async verifyOtp(
     @Body() body: { phone: string; code: string; tenantSlug: string },
@@ -55,7 +61,8 @@ export class CustomerPortalController {
     });
 
     if (!tenant) {
-      throw new Error('Invalid tenant');
+      // SECURITY: Don't reveal tenant validation logic
+      throw new NotFoundException('Resource not found');
     }
 
     const { token, expiresAt } = await this.authService.verifyOtpCode(
@@ -143,10 +150,13 @@ export class CustomerPortalController {
   @Get('appointments')
   async getAppointments(@Request() req, @Query('status') status?: string) {
     const customerId = req.customerId;
+    const tenantId = req.tenantId;
 
+    // SECURITY: Always enforce tenant isolation
     return this.prisma.appointment.findMany({
       where: {
         customerId,
+        tenantId,
         ...(status && { status: status as any }),
       },
       include: {
@@ -162,25 +172,34 @@ export class CustomerPortalController {
   @Get('appointments/:id')
   async getAppointment(@Request() req, @Param('id') id: string) {
     const customerId = req.customerId;
+    const tenantId = req.tenantId;
 
-    return this.prisma.appointment.findFirst({
-      where: { id, customerId },
+    const appointment = await this.prisma.appointment.findFirst({
+      where: { id, customerId, tenantId },
       include: {
         service: true,
         assignedUser: { select: { name: true, phone: true } },
         job: true,
       },
     });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    return appointment;
   }
 
   @UseGuards(CustomerPortalGuard)
   @Get('invoices')
   async getInvoices(@Request() req, @Query('status') status?: string) {
     const customerId = req.customerId;
+    const tenantId = req.tenantId;
 
     return this.prisma.invoice.findMany({
       where: {
         customerId,
+        tenantId,
         ...(status && { status: status as any }),
       },
       orderBy: { createdAt: 'desc' },
@@ -192,22 +211,30 @@ export class CustomerPortalController {
   @Get('invoices/:id')
   async getInvoice(@Request() req, @Param('id') id: string) {
     const customerId = req.customerId;
+    const tenantId = req.tenantId;
 
-    return this.prisma.invoice.findFirst({
-      where: { id, customerId },
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id, customerId, tenantId },
       include: {
         items: true,
       },
     });
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+
+    return invoice;
   }
 
   @UseGuards(CustomerPortalGuard)
   @Get('quotes')
   async getQuotes(@Request() req) {
     const customerId = req.customerId;
+    const tenantId = req.tenantId;
 
     return this.prisma.quote.findMany({
-      where: { customerId },
+      where: { customerId, tenantId },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -217,10 +244,12 @@ export class CustomerPortalController {
   @Get('jobs')
   async getJobs(@Request() req) {
     const customerId = req.customerId;
+    const tenantId = req.tenantId;
 
     return this.prisma.job.findMany({
       where: {
-        appointment: { customerId },
+        tenantId,
+        appointment: { customerId, tenantId },
       },
       include: {
         appointment: {
@@ -240,11 +269,13 @@ export class CustomerPortalController {
   @Get('jobs/:id')
   async getJob(@Request() req, @Param('id') id: string) {
     const customerId = req.customerId;
+    const tenantId = req.tenantId;
 
-    return this.prisma.job.findFirst({
+    const job = await this.prisma.job.findFirst({
       where: {
         id,
-        appointment: { customerId },
+        tenantId,
+        appointment: { customerId, tenantId },
       },
       include: {
         appointment: {
@@ -257,5 +288,11 @@ export class CustomerPortalController {
         photos: true,
       },
     });
+
+    if (!job) {
+      throw new NotFoundException('Job not found');
+    }
+
+    return job;
   }
 }

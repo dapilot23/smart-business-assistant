@@ -1,18 +1,47 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { PrismaClient, Prisma } from '@prisma/client';
+
+// UUID regex pattern for tenant ID validation
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// CUID regex pattern (Prisma default IDs)
+const CUID_REGEX = /^c[a-z0-9]{24}$/i;
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private isRlsEnabled = process.env.FEATURE_RLS_ENABLED === 'true';
+  private readonly logger = new Logger(PrismaService.name);
+  private readonly isProduction = process.env.NODE_ENV === 'production';
+
+  // SECURITY: RLS is mandatory in production
+  private readonly isRlsEnabled = process.env.NODE_ENV === 'production'
+    ? true
+    : process.env.FEATURE_RLS_ENABLED === 'true';
 
   async onModuleInit() {
     await this.$connect();
-    console.log('Database connected successfully');
+    this.logger.log('Database connected successfully');
+
+    // SECURITY: Verify RLS configuration in production
+    if (this.isProduction) {
+      if (!this.isRlsEnabled) {
+        throw new Error('CRITICAL: RLS must be enabled in production');
+      }
+      this.logger.log('RLS enforcement: ENABLED (production mode)');
+    } else {
+      this.logger.log(`RLS enforcement: ${this.isRlsEnabled ? 'ENABLED' : 'DISABLED'} (development mode)`);
+    }
   }
 
   async onModuleDestroy() {
     await this.$disconnect();
-    console.log('Database disconnected');
+    this.logger.log('Database disconnected');
+  }
+
+  /**
+   * Validates tenant ID format to prevent SQL injection
+   */
+  private validateTenantId(tenantId: string): boolean {
+    // Accept both UUID and CUID formats
+    return UUID_REGEX.test(tenantId) || CUID_REGEX.test(tenantId);
   }
 
   /**
@@ -21,10 +50,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    */
   async setTenantContext(tenantId: string): Promise<void> {
     if (!this.isRlsEnabled || !tenantId) return;
-    await this.$executeRawUnsafe(
-      `SELECT set_config('app.current_tenant_id', $1, TRUE)`,
-      tenantId
-    );
+
+    // SECURITY: Validate tenant ID format to prevent injection
+    if (!this.validateTenantId(tenantId)) {
+      this.logger.error(`Invalid tenant ID format: ${tenantId}`);
+      throw new Error('Invalid tenant ID format');
+    }
+
+    // Use parameterized query (Prisma.sql tagged template is safe)
+    await this.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenantId}::text, TRUE)`;
   }
 
   /**
@@ -33,9 +67,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    */
   async clearTenantContext(): Promise<void> {
     if (!this.isRlsEnabled) return;
-    await this.$executeRawUnsafe(
-      `SELECT set_config('app.current_tenant_id', '', TRUE)`
-    );
+    await this.$executeRaw`SELECT set_config('app.current_tenant_id', '', TRUE)`;
   }
 
   /**
@@ -55,8 +87,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async cleanDatabase() {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Cannot clean database in production');
+    // SECURITY: Prevent database wipe in production
+    if (this.isProduction) {
+      throw new Error('CRITICAL: Cannot clean database in production');
     }
 
     const models = Reflect.ownKeys(this).filter(

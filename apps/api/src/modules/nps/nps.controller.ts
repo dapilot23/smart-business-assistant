@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { NpsService } from './nps.service';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { SubmitScoreDto, RecordReviewClickDto } from './dto/submit-score.dto';
 
 @Controller('nps')
 export class NpsController {
@@ -42,9 +43,9 @@ export class NpsController {
   @Post('survey/:token/submit')
   async submitScore(
     @Param('token') token: string,
-    @Body() body: { score: number; feedback?: string },
+    @Body() dto: SubmitScoreDto,
   ) {
-    return this.npsService.submitScore(token, body.score, body.feedback);
+    return this.npsService.submitScore(token, dto.score, dto.feedback);
   }
 
   /**
@@ -54,9 +55,9 @@ export class NpsController {
   @Post('survey/:token/review-click')
   async recordReviewClick(
     @Param('token') token: string,
-    @Body() body: { platform: string },
+    @Body() dto: RecordReviewClickDto,
   ) {
-    await this.npsService.recordReviewClick(token, body.platform);
+    await this.npsService.recordReviewClick(token, dto.platform);
     return { success: true };
   }
 

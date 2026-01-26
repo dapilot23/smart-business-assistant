@@ -50,6 +50,7 @@
     "class-validator": "^0.14.0",
     "google-auth-library": "^10.5.0",
     "googleapis": "^170.1.0",
+    "helmet": "^8.1.0",
     "ioredis": "^5.9.2",
     "opossum": "^9.0.0",
     "passport": "^0.7.0",

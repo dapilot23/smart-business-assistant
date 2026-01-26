@@ -6,7 +6,10 @@ import {
   UseGuards,
   Request,
   Query,
+  Headers,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { VoiceService } from './voice.service';
@@ -16,7 +19,24 @@ import { VapiWebhookEvent } from './dto/webhook-payload.dto';
 
 @Controller('voice')
 export class VoiceController {
-  constructor(private readonly voiceService: VoiceService) {}
+  constructor(
+    private readonly voiceService: VoiceService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  /**
+   * Validate Vapi webhook secret
+   */
+  private validateVapiWebhook(vapiSecret?: string): void {
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const expectedSecret = this.configService.get('VAPI_WEBHOOK_SECRET');
+
+    if (isProduction && expectedSecret) {
+      if (!vapiSecret || vapiSecret !== expectedSecret) {
+        throw new UnauthorizedException('Invalid Vapi webhook secret');
+      }
+    }
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post('assistant')
@@ -40,32 +60,52 @@ export class VoiceController {
 
   @Public()
   @Post('webhook/incoming')
-  async handleIncomingCall(@Body() webhookData: any) {
+  async handleIncomingCall(
+    @Body() webhookData: any,
+    @Headers('x-vapi-secret') vapiSecret?: string,
+  ) {
+    this.validateVapiWebhook(vapiSecret);
     const tenantId = webhookData.metadata?.tenantId || 'default';
     return this.voiceService.handleIncomingCall(webhookData, tenantId);
   }
 
   @Public()
   @Post('webhook/status')
-  async handleStatusUpdate(@Body() webhookData: any) {
+  async handleStatusUpdate(
+    @Body() webhookData: any,
+    @Headers('x-vapi-secret') vapiSecret?: string,
+  ) {
+    this.validateVapiWebhook(vapiSecret);
     return this.voiceService.handleCallStatusUpdate(webhookData);
   }
 
   @Public()
   @Post('webhook/transcript')
-  async handleTranscript(@Body() webhookData: any) {
+  async handleTranscript(
+    @Body() webhookData: any,
+    @Headers('x-vapi-secret') vapiSecret?: string,
+  ) {
+    this.validateVapiWebhook(vapiSecret);
     return { received: true };
   }
 
   @Public()
   @Post('webhook/function-call')
-  async handleFunctionCall(@Body() webhookData: any) {
+  async handleFunctionCall(
+    @Body() webhookData: any,
+    @Headers('x-vapi-secret') vapiSecret?: string,
+  ) {
+    this.validateVapiWebhook(vapiSecret);
     return this.voiceService.handleFunctionCall(webhookData);
   }
 
   @Public()
   @Post('webhook')
-  async handleVapiWebhook(@Body() webhookData: any) {
+  async handleVapiWebhook(
+    @Body() webhookData: any,
+    @Headers('x-vapi-secret') vapiSecret?: string,
+  ) {
+    this.validateVapiWebhook(vapiSecret);
     const { message } = webhookData;
 
     switch (message) {
