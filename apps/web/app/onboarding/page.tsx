@@ -16,6 +16,7 @@ import {
 import { BusinessHoursInput } from "@/components/settings/business-hours-input";
 import { Icon } from "@/app/components/Icon";
 import { updateSettings } from "@/lib/api/settings";
+import { createServices } from "@/lib/api/services";
 
 const TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -106,8 +107,11 @@ export default function OnboardingPage() {
         },
       });
 
-      // TODO: Save services via API
-      // await createServices(services);
+      // Save services
+      const validServices = services.filter(s => s.name.trim());
+      if (validServices.length > 0) {
+        await createServices(validServices);
+      }
 
       router.push('/dashboard');
     } catch (error) {

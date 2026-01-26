@@ -23,15 +23,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { MessageSquare, Send, Loader2, Users } from 'lucide-react';
-
-interface Broadcast {
-  id: string;
-  message: string;
-  recipients: string[];
-  sent_count: number;
-  created_at: string;
-  created_by_name: string;
-}
+import * as smsApi from '@/lib/api/sms';
+import type { Broadcast } from '@/lib/api/sms';
 
 export default function SMSPage() {
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -51,14 +44,11 @@ export default function SMSPage() {
     setIsLoading(true);
     setError('');
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sms/broadcasts`);
-      if (!response.ok) throw new Error('Failed to fetch broadcasts');
-      const data = await response.json();
+      const data = await smsApi.getBroadcasts();
       setBroadcasts(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load broadcasts');
-      setBroadcasts([]); // Set empty array on error for now
+      setBroadcasts([]);
     } finally {
       setIsLoading(false);
     }
@@ -90,14 +80,7 @@ export default function SMSPage() {
 
     setIsSending(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sms/broadcast`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, roles }),
-      });
-
-      if (!response.ok) throw new Error('Failed to send broadcast');
-
+      await smsApi.createBroadcast({ message, targetRoles: roles });
       await fetchBroadcasts();
       setMessage('');
       setSendToAdmin(false);

@@ -13,9 +13,7 @@ import {
   CreateTimeOffData,
   UpdateTimeOffData,
 } from '@/lib/types/availability';
-
-// Mock technician ID - replace with actual user context
-const MOCK_TECHNICIAN_ID = 'tech-1';
+import * as availabilityApi from '@/lib/api/availability';
 
 export default function AvailabilityPage() {
   const [schedule, setSchedule] = useState<WeeklySchedule[]>([]);
@@ -31,12 +29,12 @@ export default function AvailabilityPage() {
   async function loadData() {
     setLoading(true);
     try {
-      // TODO: Replace with actual API calls
-      const mockSchedule: WeeklySchedule[] = [];
-      const mockTimeOffs: TimeOff[] = [];
-
-      setSchedule(mockSchedule);
-      setTimeOffs(mockTimeOffs);
+      const [scheduleData, timeOffData] = await Promise.all([
+        availabilityApi.getSchedule(),
+        availabilityApi.getTimeOffs(),
+      ]);
+      setSchedule(scheduleData);
+      setTimeOffs(timeOffData);
     } catch (error) {
       console.error('Failed to load availability data:', error);
     } finally {
@@ -46,9 +44,13 @@ export default function AvailabilityPage() {
 
   async function handleSaveSchedule(scheduleData: Partial<WeeklySchedule>[]) {
     try {
-      // TODO: Replace with actual API call
-      console.log('Saving schedule:', scheduleData);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      for (const item of scheduleData) {
+        if (item.id) {
+          await availabilityApi.updateSchedule(item.id, item);
+        } else if (item.technician_id) {
+          await availabilityApi.createSchedule(item as WeeklySchedule);
+        }
+      }
       await loadData();
     } catch (error) {
       console.error('Failed to save schedule:', error);
@@ -61,14 +63,10 @@ export default function AvailabilityPage() {
   ) {
     try {
       if (editingTimeOff) {
-        // TODO: Replace with actual API call to update
-        console.log('Updating time off:', editingTimeOff.id, data);
+        await availabilityApi.updateTimeOff(editingTimeOff.id, data as UpdateTimeOffData);
       } else {
-        // TODO: Replace with actual API call to create
-        console.log('Creating time off:', data);
+        await availabilityApi.createTimeOff(data as CreateTimeOffData);
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
       await loadData();
       setShowTimeOffModal(false);
       setEditingTimeOff(undefined);
@@ -80,9 +78,7 @@ export default function AvailabilityPage() {
 
   async function handleDeleteTimeOff(id: string) {
     try {
-      // TODO: Replace with actual API call
-      console.log('Deleting time off:', id);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await availabilityApi.deleteTimeOff(id);
       await loadData();
     } catch (error) {
       console.error('Failed to delete time off:', error);
