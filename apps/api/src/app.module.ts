@@ -37,6 +37,7 @@ import { OutboundCampaignsModule } from './modules/outbound-campaigns/outbound-c
 import { PhotoQuotesModule } from './modules/photo-quotes/photo-quotes.module';
 import { AiSchedulingModule } from './modules/ai-scheduling/ai-scheduling.module';
 import { CustomerPortalModule } from './modules/customer-portal/customer-portal.module';
+import { GatewaysModule } from './gateways/gateways.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -81,6 +82,7 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     PhotoQuotesModule,
     AiSchedulingModule,
     CustomerPortalModule,
+    GatewaysModule,
   ],
   controllers: [AppController],
   providers: [
