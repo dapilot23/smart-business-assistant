@@ -6,6 +6,10 @@ import { CreateAssistantDto } from './dto/create-assistant.dto';
 import { OutboundCallDto } from './dto/outbound-call.dto';
 import { CallStatus } from '@prisma/client';
 import { randomBytes } from 'crypto';
+import {
+  CustomerContextService,
+  CustomerVoiceContext,
+} from '../customer-context/customer-context.service';
 
 @Injectable()
 export class VoiceService {
@@ -16,6 +20,7 @@ export class VoiceService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly customerContext: CustomerContextService,
   ) {
     const apiKey = this.configService.get<string>('VAPI_API_KEY');
     this.isConfigured = !!apiKey && apiKey.length > 0;
@@ -81,6 +86,66 @@ export class VoiceService {
 
   /**
    * Get assistant configuration for dynamic assistant request from Vapi
+   * Now includes customer context for personalized interactions
+   */
+  async getAssistantConfigWithContext(
+    tenantId: string,
+    callerPhone?: string,
+  ): Promise<{
+    assistant: any;
+    customerContext: CustomerVoiceContext | null;
+  }> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+    const businessName = tenant?.name || 'our business';
+
+    // Get customer context if phone is available
+    let context: CustomerVoiceContext | null = null;
+    if (callerPhone) {
+      context = await this.customerContext.getContextByPhone(tenantId, callerPhone);
+      if (context) {
+        await this.customerContext.recordInteraction(context.customerId);
+      }
+    }
+
+    // Build personalized first message
+    const firstMessage = this.customerContext.buildGreeting(context, businessName);
+
+    // Build personalized system prompt with customer context
+    const systemPrompt = this.getPersonalizedSystemPrompt(businessName, context);
+
+    return {
+      assistant: {
+        model: {
+          provider: 'openai',
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+          ],
+          functions: this.getBookingFunctionDefinitions(),
+        },
+        voice: {
+          provider: 'azure',
+          voiceId: 'andrew',
+        },
+        firstMessage,
+        transcriber: {
+          provider: 'deepgram',
+          model: 'nova-2',
+          language: 'en',
+        },
+      },
+      customerContext: context,
+    };
+  }
+
+  /**
+   * Get assistant configuration for dynamic assistant request from Vapi
+   * @deprecated Use getAssistantConfigWithContext for personalized interactions
    */
   getAssistantConfig(tenantId: string, tenant?: any) {
     const businessName = tenant?.name || 'our business';
@@ -262,6 +327,41 @@ export class VoiceService {
 
   private getDefaultSystemPrompt(): string {
     return this.getBookingSystemPrompt('our business');
+  }
+
+  /**
+   * Build personalized system prompt with customer context
+   */
+  private getPersonalizedSystemPrompt(
+    businessName: string,
+    context: CustomerVoiceContext | null,
+  ): string {
+    let basePrompt = this.getBookingSystemPrompt(businessName);
+
+    if (context && context.isReturningCustomer) {
+      const contextSection = `
+
+## Customer Context (IMPORTANT - Use this to personalize the conversation)
+- Customer Name: ${context.name}
+- Returning Customer: Yes (${context.totalVisits} previous visits)
+- Total Spent: $${context.totalSpent.toFixed(2)}
+${context.lastServiceType ? `- Last Service: ${context.lastServiceType}` : ''}
+${context.preferredTime ? `- Preferred Time: ${context.preferredTime}` : ''}
+${context.aiSummary ? `- AI Notes: ${context.aiSummary}` : ''}
+${context.upcomingAppointment ? `- Upcoming Appointment: ${context.upcomingAppointment.serviceName} on ${context.upcomingAppointment.date.toLocaleDateString()}` : ''}
+${context.pendingInvoice ? `- Pending Invoice: $${context.pendingInvoice.amount.toFixed(2)} due ${context.pendingInvoice.dueDate.toLocaleDateString()}` : ''}
+
+## Personalization Guidelines
+- Address the customer by name naturally in conversation
+- Reference their history when relevant (e.g., "Would you like to book another [last service]?")
+- If they have an upcoming appointment, mention it if they seem to be calling about scheduling
+- If they have a pending invoice, mention it if the conversation turns to payments
+- Don't be overly familiar, but show that you remember them
+`;
+      basePrompt = basePrompt + contextSection;
+    }
+
+    return basePrompt;
   }
 
   private getBookingSystemPrompt(businessName: string): string {

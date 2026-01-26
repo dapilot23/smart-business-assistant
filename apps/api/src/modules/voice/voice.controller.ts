@@ -85,10 +85,25 @@ export class VoiceController {
   private async handleAssistantRequest(webhookData: any) {
     // Get tenantId from the call metadata or phone number mapping
     const tenantId = webhookData.call?.metadata?.tenantId;
+    // Get caller's phone number for context lookup
+    const callerPhone = webhookData.call?.customer?.number;
 
     if (tenantId) {
-      const config = this.voiceService.getAssistantConfig(tenantId);
-      return { assistant: config };
+      // Use the context-aware method for personalized interactions
+      const { assistant, customerContext } =
+        await this.voiceService.getAssistantConfigWithContext(tenantId, callerPhone);
+
+      // Include customer context in the response for logging/debugging
+      return {
+        assistant,
+        // Optionally include context for debugging (remove in production)
+        ...(customerContext && {
+          _context: {
+            isReturningCustomer: customerContext.isReturningCustomer,
+            totalVisits: customerContext.totalVisits,
+          },
+        }),
+      };
     }
 
     // Default assistant if no tenant specified
@@ -101,7 +116,8 @@ export class VoiceController {
           messages: [
             {
               role: 'system',
-              content: 'You are a helpful assistant. Ask how you can help and offer to transfer to a human if needed.',
+              content:
+                'You are a helpful assistant. Ask how you can help and offer to transfer to a human if needed.',
             },
           ],
         },

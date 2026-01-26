@@ -32,6 +32,8 @@ import { CacheConfigModule } from './config/cache/cache.module';
 import { StorageModule } from './config/storage/storage.module';
 import { EventsModule } from './config/events/events.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { CustomerContextModule } from './modules/customer-context/customer-context.module';
+import { OutboundCampaignsModule } from './modules/outbound-campaigns/outbound-campaigns.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -71,6 +73,8 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     StorageModule,
     EventsModule,
     NotificationsModule,
+    CustomerContextModule,
+    OutboundCampaignsModule,
   ],
   controllers: [AppController],
   providers: [

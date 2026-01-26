@@ -127,6 +127,7 @@ model Customer {
   quotes       Quote[]
   invoices     Invoice[]
   reviewRequests ReviewRequest[]
+  context      CustomerContext?
 
   @@index([tenantId])
   @@index([phone])
@@ -576,5 +577,112 @@ enum ReviewRequestStatus {
   PENDING
   SENT
   CLICKED
+  SKIPPED
+}
+
+// ============================================
+// Phase 2: AI Core Features
+// ============================================
+
+// Customer context for AI personalization
+model CustomerContext {
+  id              String   @id @default(cuid())
+  tenantId        String
+  customerId      String   @unique
+  lastServiceType String?
+  preferredTime   String?  // e.g., "morning", "afternoon", "evening"
+  totalVisits     Int      @default(0)
+  totalSpent      Float    @default(0)
+  aiSummary       String?  @db.Text  // AI-generated summary of customer history
+  preferences     Json?    // Additional preferences (e.g., specific technician, communication style)
+  lastInteraction DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@map("customer_contexts")
+}
+
+// Outbound campaign management
+model OutboundCampaign {
+  id           String               @id @default(cuid())
+  tenantId     String
+  name         String
+  type         OutboundCampaignType
+  status       OutboundCampaignStatus @default(DRAFT)
+  scheduledFor DateTime?
+  completedAt  DateTime?
+  targetCount  Int                  @default(0)
+  successCount Int                  @default(0)
+  failureCount Int                  @default(0)
+  template     String?              @db.Text  // Message/call script template
+  metadata     Json?                // Campaign-specific settings
+  createdBy    String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  // Relations
+  calls OutboundCall[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("outbound_campaigns")
+}
+
+enum OutboundCampaignType {
+  APPOINTMENT_REMINDER  // Remind about upcoming appointments
+  FOLLOW_UP_SURVEY      // Post-job satisfaction survey
+  PAYMENT_REMINDER      // Payment due reminders
+  MAINTENANCE_REMINDER  // Scheduled maintenance reminders
+  PROMOTIONAL           // Promotional campaigns
+}
+
+enum OutboundCampaignStatus {
+  DRAFT
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  PAUSED
+}
+
+// Individual outbound calls within a campaign
+model OutboundCall {
+  id           String             @id @default(cuid())
+  campaignId   String
+  customerId   String
+  customerPhone String
+  status       OutboundCallStatus @default(PENDING)
+  scheduledFor DateTime?
+  attemptCount Int                @default(0)
+  lastAttemptAt DateTime?
+  completedAt  DateTime?
+  vapiCallId   String?            // Link to Vapi call if initiated
+  outcome      String?            // Call outcome (answered, voicemail, no_answer, etc.)
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  // Relations
+  campaign OutboundCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([customerId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("outbound_calls")
+}
+
+enum OutboundCallStatus {
+  PENDING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
   SKIPPED
 }
