@@ -686,3 +686,53 @@ enum OutboundCallStatus {
   FAILED
   SKIPPED
 }
+
+// Photo-based quote requests with AI analysis
+model PhotoQuoteRequest {
+  id                String              @id @default(cuid())
+  tenantId          String
+  customerId        String?
+  customerPhone     String?
+  customerEmail     String?
+  photoUrl          String              // S3/storage URL of uploaded photo
+  photoKey          String?             // Storage key for deletion
+  aiAnalysis        Json?               // Full AI analysis response
+  issueDescription  String?             // AI-identified issue description
+  suggestedService  String?             // Recommended service type
+  estimatedPriceMin Float?              // Lower bound estimate
+  estimatedPriceMax Float?              // Upper bound estimate
+  confidence        Float?              // AI confidence score (0-1)
+  complexity        PhotoComplexity     @default(MEDIUM)
+  status            PhotoQuoteStatus    @default(PENDING)
+  customerNotes     String?             // Customer's description of the issue
+  staffNotes        String?             // Staff follow-up notes
+  convertedToQuote  String?             // Quote ID if converted
+  expiresAt         DateTime
+  viewedAt          DateTime?
+  respondedAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("photo_quote_requests")
+}
+
+enum PhotoQuoteStatus {
+  PENDING       // Uploaded, waiting for AI analysis
+  ANALYZING     // AI analysis in progress
+  READY         // Analysis complete, awaiting customer response
+  ACCEPTED      // Customer accepted the estimate
+  REJECTED      // Customer declined
+  CONVERTED     // Converted to formal quote
+  EXPIRED       // Request expired
+}
+
+enum PhotoComplexity {
+  SIMPLE        // Minor repair, quick fix
+  MEDIUM        // Standard job
+  COMPLEX       // Major repair, multiple issues
+  REQUIRES_INSPECTION // Cannot estimate from photo alone
+}
