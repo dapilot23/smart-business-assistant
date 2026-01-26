@@ -30,6 +30,8 @@ import { CircuitBreakerModule } from './common/circuit-breaker/circuit-breaker.m
 import { ThrottleModule } from './config/throttle/throttle.module';
 import { CacheConfigModule } from './config/cache/cache.module';
 import { StorageModule } from './config/storage/storage.module';
+import { EventsModule } from './config/events/events.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -67,6 +69,8 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     ThrottleModule,
     CacheConfigModule,
     StorageModule,
+    EventsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

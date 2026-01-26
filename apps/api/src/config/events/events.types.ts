@@ -1,0 +1,103 @@
+// Event Catalog - All domain events in the system
+
+export const EVENTS = {
+  // Appointment Events
+  APPOINTMENT_CREATED: 'appointment.created',
+  APPOINTMENT_UPDATED: 'appointment.updated',
+  APPOINTMENT_CONFIRMED: 'appointment.confirmed',
+  APPOINTMENT_CANCELLED: 'appointment.cancelled',
+  APPOINTMENT_REMINDER_DUE: 'appointment.reminder.due',
+
+  // Job Events
+  JOB_CREATED: 'job.created',
+  JOB_STARTED: 'job.started',
+  JOB_COMPLETED: 'job.completed',
+  JOB_CANCELLED: 'job.cancelled',
+
+  // Payment Events
+  PAYMENT_RECEIVED: 'payment.received',
+  PAYMENT_FAILED: 'payment.failed',
+  INVOICE_SENT: 'invoice.sent',
+  INVOICE_OVERDUE: 'invoice.overdue',
+
+  // Quote Events
+  QUOTE_CREATED: 'quote.created',
+  QUOTE_SENT: 'quote.sent',
+  QUOTE_ACCEPTED: 'quote.accepted',
+  QUOTE_REJECTED: 'quote.rejected',
+
+  // Customer Events
+  CUSTOMER_CREATED: 'customer.created',
+  CUSTOMER_UPDATED: 'customer.updated',
+
+  // Review Events
+  REVIEW_REQUEST_SENT: 'review.request.sent',
+  REVIEW_RECEIVED: 'review.received',
+} as const;
+
+export type EventType = (typeof EVENTS)[keyof typeof EVENTS];
+
+// Event Payloads
+export interface BaseEventPayload {
+  tenantId: string;
+  timestamp: Date;
+  correlationId?: string;
+}
+
+export interface AppointmentEventPayload extends BaseEventPayload {
+  appointmentId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  scheduledAt: Date;
+  serviceName?: string;
+  assignedToId?: string;
+  assignedToName?: string;
+}
+
+export interface JobEventPayload extends BaseEventPayload {
+  jobId: string;
+  appointmentId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  technicianId?: string;
+  technicianName?: string;
+  status: string;
+}
+
+export interface PaymentEventPayload extends BaseEventPayload {
+  invoiceId: string;
+  customerId: string;
+  customerName: string;
+  customerEmail?: string;
+  amount: number;
+  currency: string;
+}
+
+export interface QuoteEventPayload extends BaseEventPayload {
+  quoteId: string;
+  quoteNumber: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  amount: number;
+  validUntil: Date;
+}
+
+export interface CustomerEventPayload extends BaseEventPayload {
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+}
+
+export interface ReviewEventPayload extends BaseEventPayload {
+  reviewRequestId: string;
+  jobId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+}
