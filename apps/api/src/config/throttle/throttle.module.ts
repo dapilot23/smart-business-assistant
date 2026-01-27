@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerStorage } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TenantThrottlerGuard } from './tenant-throttler.guard';
+import { ThrottlerStorageRedisService } from './throttler-storage-redis.service';
 
 @Module({
   imports: [
@@ -35,6 +36,11 @@ import { TenantThrottlerGuard } from './tenant-throttler.guard';
     {
       provide: APP_GUARD,
       useClass: TenantThrottlerGuard,
+    },
+    ThrottlerStorageRedisService,
+    {
+      provide: ThrottlerStorage,
+      useExisting: ThrottlerStorageRedisService,
     },
   ],
   exports: [ThrottlerModule],

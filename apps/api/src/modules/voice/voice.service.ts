@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VapiClient } from '@vapi-ai/server-sdk';
 import { PrismaService } from '../../config/prisma/prisma.service';
@@ -10,17 +10,20 @@ import {
   CustomerContextService,
   CustomerVoiceContext,
 } from '../customer-context/customer-context.service';
+import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
 
 @Injectable()
-export class VoiceService {
+export class VoiceService implements OnModuleInit {
   private readonly logger = new Logger(VoiceService.name);
   private vapiClient: VapiClient | null = null;
   private readonly isConfigured: boolean;
+  private vapiBreaker: any | null = null;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly customerContext: CustomerContextService,
+    private readonly circuitBreakerService: CircuitBreakerService,
   ) {
     const apiKey = this.configService.get<string>('VAPI_API_KEY');
     this.isConfigured = !!apiKey && apiKey.length > 0;
@@ -31,6 +34,27 @@ export class VoiceService {
     } else {
       this.logger.warn('Vapi.ai not configured - VAPI_API_KEY missing');
     }
+  }
+
+  onModuleInit() {
+    if (this.isConfigured && this.vapiClient) {
+      this.vapiBreaker = this.circuitBreakerService.createBreaker(
+        'vapi-voice',
+        async (fn: () => Promise<unknown>) => fn(),
+        {
+          timeout: 30000,
+          errorThresholdPercentage: 50,
+          resetTimeout: 60000,
+        },
+      );
+    }
+  }
+
+  private async callVapi<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.vapiBreaker) {
+      return this.vapiBreaker.fire(fn) as Promise<T>;
+    }
+    return fn();
   }
 
   private ensureConfigured(): void {
@@ -79,7 +103,9 @@ export class VoiceService {
       serverUrlSecret: this.configService.get('VAPI_WEBHOOK_SECRET'),
     };
 
-    const assistant = await this.vapiClient!.assistants.create(assistantConfig);
+    const assistant = await this.callVapi(() =>
+      this.vapiClient!.assistants.create(assistantConfig)
+    );
     this.logger.log(`Created assistant: ${(assistant as any).id}`);
     return assistant;
   }
@@ -190,7 +216,9 @@ export class VoiceService {
       ...(dto.metadata && { metadata: dto.metadata }),
     };
 
-    const call = await this.vapiClient!.calls.create(callConfig);
+    const call = await this.callVapi(() =>
+      this.vapiClient!.calls.create(callConfig)
+    );
     const callId = (call as any).id || 'unknown';
 
     await this.prisma.callLog.create({

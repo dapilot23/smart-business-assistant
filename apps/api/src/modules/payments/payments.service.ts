@@ -1,19 +1,23 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
 import Stripe from 'stripe';
 import { InvoiceStatus } from '@prisma/client';
 
 @Injectable()
-export class PaymentsService {
+export class PaymentsService implements OnModuleInit {
   private readonly logger = new Logger(PaymentsService.name);
   private stripe: Stripe | null = null;
   private readonly isConfigured: boolean;
   private readonly webhookSecret: string;
+  private stripePaymentIntentBreaker: any | null = null;
+  private stripeCheckoutBreaker: any | null = null;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly circuitBreakerService: CircuitBreakerService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     this.webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET') || '';
@@ -27,10 +31,56 @@ export class PaymentsService {
     }
   }
 
+  onModuleInit() {
+    if (this.isConfigured && this.stripe) {
+      this.stripePaymentIntentBreaker = this.circuitBreakerService.createBreaker(
+        'stripe-payment-intent',
+        this.createPaymentIntentInternal.bind(this),
+        {
+          timeout: 15000,
+          errorThresholdPercentage: 50,
+          resetTimeout: 60000,
+        },
+      );
+
+      this.stripeCheckoutBreaker = this.circuitBreakerService.createBreaker(
+        'stripe-checkout-session',
+        this.createCheckoutSessionInternal.bind(this),
+        {
+          timeout: 15000,
+          errorThresholdPercentage: 50,
+          resetTimeout: 60000,
+        },
+      );
+    }
+  }
+
   private ensureConfigured(): void {
     if (!this.isConfigured || !this.stripe) {
       throw new BadRequestException('Stripe is not configured');
     }
+  }
+
+  private async createPaymentIntentInternal(params: {
+    amount: number;
+    currency: string;
+    metadata: Record<string, string>;
+    description: string;
+    receipt_email?: string;
+  }): Promise<Stripe.PaymentIntent> {
+    if (!this.stripe) {
+      throw new Error('Stripe client not initialized');
+    }
+    return this.stripe.paymentIntents.create(params);
+  }
+
+  private async createCheckoutSessionInternal(
+    params: Stripe.Checkout.SessionCreateParams,
+  ): Promise<Stripe.Checkout.Session> {
+    if (!this.stripe) {
+      throw new Error('Stripe client not initialized');
+    }
+    return this.stripe.checkout.sessions.create(params);
   }
 
   async createPaymentIntent(invoiceId: string, tenantId: string) {
@@ -53,7 +103,7 @@ export class PaymentsService {
     }
 
     // Create Stripe payment intent
-    const paymentIntent = await this.stripe!.paymentIntents.create({
+    const paymentIntentParams = {
       amount: amountDue,
       currency: 'usd',
       metadata: {
@@ -64,7 +114,26 @@ export class PaymentsService {
       },
       description: `Payment for Invoice ${invoice.invoiceNumber}`,
       receipt_email: invoice.customer.email || undefined,
-    });
+    };
+
+    let paymentIntent: Stripe.PaymentIntent;
+    try {
+      if (this.stripePaymentIntentBreaker) {
+        paymentIntent = await this.stripePaymentIntentBreaker.fire(paymentIntentParams);
+      } else {
+        paymentIntent = await this.createPaymentIntentInternal(paymentIntentParams);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to create payment intent for invoice ${invoiceId}:`, error);
+      if (error.message?.includes('Breaker is open')) {
+        throw new BadRequestException(
+          'Payment service temporarily unavailable. Please try again later.',
+        );
+      }
+      throw new BadRequestException(
+        `Failed to create payment intent: ${error.message || 'Unknown error'}`,
+      );
+    }
 
     // Update invoice with payment intent ID
     await this.prisma.invoice.update({
@@ -99,7 +168,7 @@ export class PaymentsService {
       throw new BadRequestException('Invoice is already fully paid');
     }
 
-    const session = await this.stripe!.checkout.sessions.create({
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       line_items: [
         {
           price_data: {
@@ -122,7 +191,26 @@ export class PaymentsService {
         invoiceNumber: invoice.invoiceNumber,
         tenantId,
       },
-    });
+    };
+
+    let session: Stripe.Checkout.Session;
+    try {
+      if (this.stripeCheckoutBreaker) {
+        session = await this.stripeCheckoutBreaker.fire(sessionParams);
+      } else {
+        session = await this.createCheckoutSessionInternal(sessionParams);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to create checkout session for invoice ${invoiceId}:`, error);
+      if (error.message?.includes('Breaker is open')) {
+        throw new BadRequestException(
+          'Payment service temporarily unavailable. Please try again later.',
+        );
+      }
+      throw new BadRequestException(
+        `Failed to create checkout session: ${error.message || 'Unknown error'}`,
+      );
+    }
 
     this.logger.log(`Checkout session created: ${session.id}`);
 

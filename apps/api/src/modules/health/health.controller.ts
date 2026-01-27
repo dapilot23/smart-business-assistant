@@ -6,6 +6,8 @@ import {
   DiskHealthIndicator,
 } from '@nestjs/terminus';
 import { PrismaHealthIndicator } from './indicators/prisma.health';
+import { RedisHealthIndicator } from './indicators/redis.health';
+import { CircuitBreakerHealthIndicator } from './indicators/circuit-breaker.health';
 import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('health')
@@ -13,6 +15,8 @@ export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
     private readonly prismaHealth: PrismaHealthIndicator,
+    private readonly redisHealth: RedisHealthIndicator,
+    private readonly circuitBreakerHealth: CircuitBreakerHealthIndicator,
     private readonly memory: MemoryHealthIndicator,
     private readonly disk: DiskHealthIndicator,
   ) {}
@@ -23,6 +27,8 @@ export class HealthController {
   check() {
     return this.health.check([
       () => this.prismaHealth.isHealthy('database'),
+      () => this.redisHealth.isHealthy('redis'),
+      () => this.circuitBreakerHealth.isHealthy('circuit_breakers'),
       () => this.memory.checkHeap('memory_heap', 300 * 1024 * 1024), // 300MB
       () => this.memory.checkRSS('memory_rss', 500 * 1024 * 1024), // 500MB
       () =>
@@ -43,6 +49,9 @@ export class HealthController {
   @Public()
   @HealthCheck()
   readiness() {
-    return this.health.check([() => this.prismaHealth.isHealthy('database')]);
+    return this.health.check([
+      () => this.prismaHealth.isHealthy('database'),
+      () => this.redisHealth.isHealthy('redis'),
+    ]);
   }
 }

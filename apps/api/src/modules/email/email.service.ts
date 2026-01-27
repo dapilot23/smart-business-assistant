@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
+import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
 
 export interface BookingEmailData {
   customerName: string;
@@ -17,13 +18,17 @@ export interface BookingEmailData {
 }
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit {
   private readonly logger = new Logger(EmailService.name);
   private resend: Resend | null = null;
   private readonly isConfigured: boolean;
   private readonly fromEmail: string;
+  private emailBreaker: any | null = null;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly circuitBreakerService: CircuitBreakerService,
+  ) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     this.fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL') || 'noreply@example.com';
     this.isConfigured = !!apiKey;
@@ -34,6 +39,32 @@ export class EmailService {
     } else {
       this.logger.warn('Resend not configured - RESEND_API_KEY missing');
     }
+  }
+
+  onModuleInit() {
+    if (this.isConfigured && this.resend) {
+      this.emailBreaker = this.circuitBreakerService.createBreaker(
+        'resend-email',
+        this.sendEmailInternal.bind(this),
+        {
+          timeout: 10000,
+          errorThresholdPercentage: 50,
+          resetTimeout: 30000,
+        },
+      );
+    }
+  }
+
+  private async sendEmailInternal(params: {
+    from: string;
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<unknown> {
+    if (!this.resend) {
+      throw new Error('Resend client not initialized');
+    }
+    return this.resend.emails.send(params);
   }
 
   async sendBookingConfirmation(data: BookingEmailData): Promise<boolean> {
@@ -56,16 +87,26 @@ export class EmailService {
     });
 
     try {
-      await this.resend.emails.send({
+      const emailParams = {
         from: this.fromEmail,
         to: data.customerEmail,
         subject: `Appointment Confirmed - ${data.serviceName}`,
         html: this.getBookingConfirmationHtml(data, formattedDate, formattedTime),
-      });
+      };
+
+      if (this.emailBreaker) {
+        await this.emailBreaker.fire(emailParams);
+      } else {
+        await this.sendEmailInternal(emailParams);
+      }
 
       this.logger.log(`Booking confirmation email sent to ${data.customerEmail}`);
       return true;
     } catch (error) {
+      if (error.message?.includes('Breaker is open')) {
+        this.logger.warn('Email circuit breaker is open, email temporarily unavailable');
+        return false;
+      }
       this.logger.error(`Failed to send booking confirmation email: ${error.message}`);
       return false;
     }
@@ -90,16 +131,26 @@ export class EmailService {
     });
 
     try {
-      await this.resend.emails.send({
+      const emailParams = {
         from: this.fromEmail,
         to: data.customerEmail,
         subject: `Appointment Cancelled - ${data.serviceName}`,
         html: this.getCancellationHtml(data, formattedDate, formattedTime),
-      });
+      };
+
+      if (this.emailBreaker) {
+        await this.emailBreaker.fire(emailParams);
+      } else {
+        await this.sendEmailInternal(emailParams);
+      }
 
       this.logger.log(`Cancellation email sent to ${data.customerEmail}`);
       return true;
     } catch (error) {
+      if (error.message?.includes('Breaker is open')) {
+        this.logger.warn('Email circuit breaker is open, email temporarily unavailable');
+        return false;
+      }
       this.logger.error(`Failed to send cancellation email: ${error.message}`);
       return false;
     }
@@ -133,16 +184,26 @@ export class EmailService {
     });
 
     try {
-      await this.resend.emails.send({
+      const emailParams = {
         from: this.fromEmail,
         to: data.customerEmail,
         subject: `Appointment Rescheduled - ${data.serviceName}`,
         html: this.getRescheduleHtml(data, oldFormattedDate, newFormattedDate, newFormattedTime),
-      });
+      };
+
+      if (this.emailBreaker) {
+        await this.emailBreaker.fire(emailParams);
+      } else {
+        await this.sendEmailInternal(emailParams);
+      }
 
       this.logger.log(`Reschedule email sent to ${data.customerEmail}`);
       return true;
     } catch (error) {
+      if (error.message?.includes('Breaker is open')) {
+        this.logger.warn('Email circuit breaker is open, email temporarily unavailable');
+        return false;
+      }
       this.logger.error(`Failed to send reschedule email: ${error.message}`);
       return false;
     }
