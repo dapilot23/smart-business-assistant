@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { AiEngineService, ToolResult } from '../ai-engine/ai-engine.service';
 import { CopilotToolsService } from './copilot-tools.service';
@@ -30,12 +31,16 @@ const MAX_TOOL_ITERATIONS = 5;
 @Injectable()
 export class AiCopilotService {
   private readonly logger = new Logger(AiCopilotService.name);
+  private readonly isDemoMode: boolean;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiEngine: AiEngineService,
     private readonly toolsService: CopilotToolsService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.isDemoMode = this.configService.get('DEMO_MODE') === 'true';
+  }
 
   async chat(
     tenantId: string,
@@ -44,9 +49,13 @@ export class AiCopilotService {
     conversationId?: string,
   ): Promise<CopilotResponse> {
     if (!this.aiEngine.isReady()) {
+      // In demo mode, return simulated responses
+      if (this.isDemoMode) {
+        return this.getDemoResponse(tenantId, userId, message, conversationId);
+      }
       return {
         message:
-          'AI assistant is currently unavailable. Please try again later.',
+          'AI assistant is currently unavailable. Please configure ANTHROPIC_API_KEY to enable AI features.',
         conversationId: conversationId ?? '',
         toolsUsed: [],
       };
@@ -206,5 +215,53 @@ export class AiCopilotService {
   private parseMessages(messages: unknown): ChatMessage[] {
     if (!Array.isArray(messages)) return [];
     return messages as ChatMessage[];
+  }
+
+  private async getDemoResponse(
+    tenantId: string,
+    userId: string,
+    message: string,
+    conversationId?: string,
+  ): Promise<CopilotResponse> {
+    const conversation = await this.getOrCreateConversation(
+      tenantId,
+      userId,
+      conversationId,
+    );
+
+    const lowerMessage = message.toLowerCase();
+    let response: string;
+    let toolsUsed: string[] = [];
+
+    // Simulate different types of responses based on the question
+    if (lowerMessage.includes('revenue') || lowerMessage.includes('money')) {
+      response = `**Demo Mode Response**\n\nBased on your business data:\n\n- **Weekly Revenue**: $12,450 (+8% from last week)\n- **Monthly Revenue**: $48,200\n- **Top Service**: Plumbing repairs ($5,200)\n\n*Note: This is simulated data. Configure ANTHROPIC_API_KEY for real AI analysis.*`;
+      toolsUsed = ['get_revenue', 'get_services'];
+    } else if (lowerMessage.includes('appointment') || lowerMessage.includes('schedule')) {
+      response = `**Demo Mode Response**\n\nYour appointment overview:\n\n- **Today's Appointments**: 5 scheduled\n- **This Week**: 23 appointments\n- **Completion Rate**: 92%\n- **Next Available Slot**: Tomorrow at 9:00 AM\n\n*Note: This is simulated data. Configure ANTHROPIC_API_KEY for real AI analysis.*`;
+      toolsUsed = ['get_appointments'];
+    } else if (lowerMessage.includes('customer')) {
+      response = `**Demo Mode Response**\n\nCustomer insights:\n\n- **Total Customers**: 247\n- **New This Month**: 12\n- **At-Risk Customers**: 3\n- **Top Customer**: Johnson Family ($2,400 lifetime value)\n\n*Note: This is simulated data. Configure ANTHROPIC_API_KEY for real AI analysis.*`;
+      toolsUsed = ['get_customers', 'get_at_risk_customers'];
+    } else if (lowerMessage.includes('how did we do') || lowerMessage.includes('last week')) {
+      response = `**Demo Mode Response**\n\n**Weekly Business Summary:**\n\n**Wins:**\n- Revenue up 8% from last week\n- Zero no-shows this week\n- 2 new repeat customers\n\n**Areas for Attention:**\n- 3 quotes pending follow-up\n- 1 customer complaint to address\n\n**Recommendation:** Follow up with pending quotes to improve conversion rate.\n\n*Note: This is simulated data. Configure ANTHROPIC_API_KEY for real AI analysis.*`;
+      toolsUsed = ['get_revenue', 'get_appointments', 'get_quotes'];
+    } else {
+      response = `**Demo Mode Response**\n\nI understand you're asking about: "${message}"\n\nIn demo mode, I can provide simulated responses for:\n- Revenue and financial data\n- Appointments and scheduling\n- Customer information\n- Weekly business summaries\n\n*To enable full AI capabilities, configure ANTHROPIC_API_KEY in your environment.*`;
+      toolsUsed = [];
+    }
+
+    // Save the conversation
+    await this.updateConversation(conversation.id, [
+      ...this.parseMessages(conversation.messages),
+      { role: 'user', content: message },
+      { role: 'assistant', content: response },
+    ]);
+
+    return {
+      message: response,
+      conversationId: conversation.id,
+      toolsUsed,
+    };
   }
 }
