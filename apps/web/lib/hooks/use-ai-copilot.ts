@@ -48,6 +48,7 @@ export function useAiCopilot() {
 
     try {
       setIsLoading(true);
+      setError(null);
       const data = await getConversations({ signal: abortController.signal });
       if (!abortController.signal.aborted) {
         setConversations(data);
@@ -58,9 +59,8 @@ export function useAiCopilot() {
         err instanceof Error ? err.message : 'Failed to load conversations'
       );
     } finally {
-      if (!abortController.signal.aborted) {
-        setIsLoading(false);
-      }
+      // Always reset loading state - even on abort we're no longer loading
+      setIsLoading(false);
     }
   }, []);
 
@@ -85,9 +85,8 @@ export function useAiCopilot() {
         err instanceof Error ? err.message : 'Failed to load conversation'
       );
     } finally {
-      if (!abortController.signal.aborted) {
-        setIsLoading(false);
-      }
+      // Always reset loading state - even on abort we're no longer loading
+      setIsLoading(false);
     }
   }, []);
 
@@ -144,14 +143,10 @@ export function useAiCopilot() {
           { signal: abortController.signal }
         );
 
-        // Check if aborted - clean up user message if so
+        // If aborted after response arrived, don't process
         if (abortController.signal.aborted) {
-          setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
           return;
         }
-
-        // Clear pending message ref since we got a response
-        pendingUserMessageIdRef.current = null;
 
         const assistantMessage: ChatMessage = {
           id: `assistant-${Date.now()}`,
@@ -168,19 +163,16 @@ export function useAiCopilot() {
           loadConversations();
         }
       } catch (err) {
-        // Clean up user message on abort
-        if (err instanceof Error && err.name === 'AbortError') {
-          setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
-          pendingUserMessageIdRef.current = null;
-          return;
-        }
-        setError(err instanceof Error ? err.message : 'Failed to send message');
+        // Clean up user message on any error (including abort)
         setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
-        pendingUserMessageIdRef.current = null;
-      } finally {
-        if (!abortController.signal.aborted) {
-          setIsSending(false);
+        // Only set error for non-abort errors
+        if (!(err instanceof Error && err.name === 'AbortError')) {
+          setError(err instanceof Error ? err.message : 'Failed to send message');
         }
+      } finally {
+        // Always reset sending state - even on abort we're no longer sending
+        setIsSending(false);
+        pendingUserMessageIdRef.current = null;
       }
     },
     [currentConversationId, isSending, loadConversations]

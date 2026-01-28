@@ -1,8 +1,7 @@
 'use client';
 
 import { Circle, CheckCircle2 } from 'lucide-react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { simpleHash } from '@/lib/utils';
+import { useState, useEffect, useCallback } from 'react';
 
 interface ActionItemsProps {
   items: string[];
@@ -10,11 +9,65 @@ interface ActionItemsProps {
 }
 
 const STORAGE_KEY_PREFIX = 'action-items-completed-';
-const MAX_STORED_REPORTS = 50; // Limit localStorage entries to prevent quota issues
+const MAX_STORED_REPORTS = 50;
+
+interface StoredData {
+  completedItems: string[];  // Store actual content, not hashes (no collision risk)
+  timestamp: number;
+  version: number;  // For future schema migrations
+}
+
+const CURRENT_VERSION = 2;
 
 /**
- * Cleans up old localStorage entries to prevent quota exceeded errors.
- * Keeps only the most recent MAX_STORED_REPORTS entries.
+ * Validates stored data structure at runtime.
+ * Returns null if invalid, forcing a fresh start.
+ */
+function validateStoredData(data: unknown): StoredData | null {
+  if (!data || typeof data !== 'object') return null;
+  const obj = data as Record<string, unknown>;
+
+  // Handle version 1 (old format with completedHashes)
+  if (Array.isArray(obj.completedHashes) && !obj.version) {
+    return {
+      completedItems: obj.completedHashes as string[],
+      timestamp: typeof obj.timestamp === 'number' ? obj.timestamp : Date.now(),
+      version: CURRENT_VERSION,
+    };
+  }
+
+  // Validate current version
+  if (!Array.isArray(obj.completedItems)) return null;
+  if (typeof obj.timestamp !== 'number') return null;
+
+  return {
+    completedItems: obj.completedItems.filter((item): item is string => typeof item === 'string'),
+    timestamp: obj.timestamp,
+    version: typeof obj.version === 'number' ? obj.version : CURRENT_VERSION,
+  };
+}
+
+/**
+ * Counts action-items entries in localStorage.
+ */
+function countStoredEntries(): number {
+  let count = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(STORAGE_KEY_PREFIX)) {
+        count++;
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+  return count;
+}
+
+/**
+ * Cleans up old localStorage entries deterministically.
+ * Called when entry count exceeds MAX_STORED_REPORTS.
  */
 function cleanupOldEntries(): void {
   try {
@@ -23,27 +76,26 @@ function cleanupOldEntries(): void {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key?.startsWith(STORAGE_KEY_PREFIX)) {
-        // Try to get timestamp from stored data, or use 0 if not available
         try {
           const data = localStorage.getItem(key);
           if (data) {
             const parsed = JSON.parse(data);
             entries.push({
               key,
-              timestamp: parsed.timestamp || 0,
+              timestamp: typeof parsed.timestamp === 'number' ? parsed.timestamp : 0,
             });
           }
         } catch {
-          // If we can't parse it, mark for cleanup
+          // If we can't parse it, mark for cleanup with timestamp 0
           entries.push({ key, timestamp: 0 });
         }
       }
     }
 
-    // If we have too many entries, remove the oldest ones
+    // Remove oldest entries to get back under limit
     if (entries.length > MAX_STORED_REPORTS) {
       entries.sort((a, b) => a.timestamp - b.timestamp);
-      const toRemove = entries.slice(0, entries.length - MAX_STORED_REPORTS);
+      const toRemove = entries.slice(0, entries.length - MAX_STORED_REPORTS + 10); // Remove extra 10 for headroom
       for (const entry of toRemove) {
         localStorage.removeItem(entry.key);
       }
@@ -53,18 +105,8 @@ function cleanupOldEntries(): void {
   }
 }
 
-interface StoredData {
-  completedHashes: string[];
-  timestamp: number;
-}
-
 export function ActionItems({ items, reportId }: ActionItemsProps) {
-  // Create a map of item content hash -> item for stable identification
-  const itemHashes = useMemo(() => {
-    return items.map((item) => simpleHash(item));
-  }, [items]);
-
-  const [completedHashes, setCompletedHashes] = useState<Set<string>>(new Set());
+  const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
 
   // Load from localStorage on mount or when reportId changes
   useEffect(() => {
@@ -72,42 +114,42 @@ export function ActionItems({ items, reportId }: ActionItemsProps) {
     try {
       const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}${reportId}`);
       if (stored) {
-        const parsed: StoredData = JSON.parse(stored);
-        if (Array.isArray(parsed.completedHashes)) {
-          setCompletedHashes(new Set(parsed.completedHashes));
+        const parsed = JSON.parse(stored);
+        const validated = validateStoredData(parsed);
+        if (validated) {
+          setCompletedItems(new Set(validated.completedItems));
         }
       }
     } catch {
-      // Ignore localStorage errors
+      // Ignore localStorage errors - start fresh
     }
   }, [reportId]);
 
-  // Persist to localStorage when completed changes
-  const persistCompleted = useCallback((newCompletedHashes: Set<string>) => {
+  // Persist to localStorage
+  const persistCompleted = useCallback((newCompletedItems: Set<string>) => {
     if (!reportId) return;
-    try {
-      // Run cleanup periodically (1 in 10 saves)
-      if (Math.random() < 0.1) {
-        cleanupOldEntries();
-      }
 
-      const data: StoredData = {
-        completedHashes: Array.from(newCompletedHashes),
-        timestamp: Date.now(),
-      };
+    // Deterministic cleanup: check count before save
+    const entryCount = countStoredEntries();
+    if (entryCount >= MAX_STORED_REPORTS) {
+      cleanupOldEntries();
+    }
+
+    const data: StoredData = {
+      completedItems: Array.from(newCompletedItems),
+      timestamp: Date.now(),
+      version: CURRENT_VERSION,
+    };
+
+    try {
       localStorage.setItem(
         `${STORAGE_KEY_PREFIX}${reportId}`,
         JSON.stringify(data)
       );
     } catch {
-      // Ignore localStorage errors (quota exceeded, etc.)
-      // Try cleanup and retry once
+      // Quota exceeded - force cleanup and retry
       try {
         cleanupOldEntries();
-        const data: StoredData = {
-          completedHashes: Array.from(newCompletedHashes),
-          timestamp: Date.now(),
-        };
         localStorage.setItem(
           `${STORAGE_KEY_PREFIX}${reportId}`,
           JSON.stringify(data)
@@ -118,13 +160,13 @@ export function ActionItems({ items, reportId }: ActionItemsProps) {
     }
   }, [reportId]);
 
-  const toggleItem = useCallback((itemHash: string) => {
-    setCompletedHashes((prev) => {
+  const toggleItem = useCallback((itemContent: string) => {
+    setCompletedItems((prev) => {
       const next = new Set(prev);
-      if (next.has(itemHash)) {
-        next.delete(itemHash);
+      if (next.has(itemContent)) {
+        next.delete(itemContent);
       } else {
-        next.add(itemHash);
+        next.add(itemContent);
       }
       persistCompleted(next);
       return next;
@@ -145,13 +187,13 @@ export function ActionItems({ items, reportId }: ActionItemsProps) {
       <h3 className="font-semibold">Action Items</h3>
       <ul className="mt-4 space-y-3">
         {items.map((item, index) => {
-          const itemHash = itemHashes[index];
-          const isCompleted = completedHashes.has(itemHash);
+          const isCompleted = completedItems.has(item);
 
           return (
-            <li key={itemHash} className="flex items-start gap-3">
+            // Using index as key since items don't reorder within a report
+            <li key={index} className="flex items-start gap-3">
               <button
-                onClick={() => toggleItem(itemHash)}
+                onClick={() => toggleItem(item)}
                 className="mt-0.5 shrink-0 text-primary hover:opacity-80"
                 aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
               >
