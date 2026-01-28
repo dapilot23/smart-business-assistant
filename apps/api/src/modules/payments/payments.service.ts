@@ -4,6 +4,7 @@ import { PrismaService } from '../../config/prisma/prisma.service';
 import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
 import { EventsService } from '../../config/events/events.service';
 import { EVENTS, PaymentEventPayload } from '../../config/events/events.types';
+import { toNum } from '../../common/utils/decimal';
 import Stripe from 'stripe';
 import { InvoiceStatus } from '@prisma/client';
 
@@ -99,7 +100,7 @@ export class PaymentsService implements OnModuleInit {
     }
 
     // Calculate remaining amount
-    const amountDue = Math.round((invoice.amount - invoice.paidAmount) * 100);
+    const amountDue = Math.round((toNum(invoice.amount) - toNum(invoice.paidAmount)) * 100);
 
     if (amountDue <= 0) {
       throw new BadRequestException('Invoice is already fully paid');
@@ -165,7 +166,7 @@ export class PaymentsService implements OnModuleInit {
       throw new BadRequestException('Invoice not found');
     }
 
-    const amountDue = Math.round((invoice.amount - invoice.paidAmount) * 100);
+    const amountDue = Math.round((toNum(invoice.amount) - toNum(invoice.paidAmount)) * 100);
 
     if (amountDue <= 0) {
       throw new BadRequestException('Invoice is already fully paid');
@@ -221,6 +222,48 @@ export class PaymentsService implements OnModuleInit {
       sessionId: session.id,
       url: session.url,
     };
+  }
+
+  async createCustomCheckout(params: {
+    amount: number;
+    description: string;
+    metadata: Record<string, string>;
+    successUrl: string;
+    cancelUrl: string;
+    customerEmail?: string;
+  }) {
+    this.ensureConfigured();
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: params.description },
+          unit_amount: Math.round(params.amount * 100),
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${params.successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: params.cancelUrl,
+      customer_email: params.customerEmail,
+      metadata: params.metadata,
+    };
+
+    try {
+      const session = this.stripeCheckoutBreaker
+        ? await this.stripeCheckoutBreaker.fire(sessionParams)
+        : await this.createCheckoutSessionInternal(sessionParams);
+
+      return { sessionId: session.id, url: session.url };
+    } catch (error) {
+      this.logger.error('Failed to create custom checkout:', error);
+      throw new BadRequestException(
+        error.message?.includes('Breaker is open')
+          ? 'Payment service temporarily unavailable.'
+          : `Failed to create checkout: ${error.message}`,
+      );
+    }
   }
 
   async handleWebhook(payload: Buffer, signature: string) {

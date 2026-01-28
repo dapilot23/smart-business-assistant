@@ -1,54 +1,396 @@
 # Project Guidelines
 
 ## Stack
-- Use Playwright for all browser automation/testing
-- Use Ralph for AI assistant development workflows
-- Next.js 14 (App Router) + NestJS + Prisma + PostgreSQL
-- Vapi.ai for voice, Twilio for SMS, Stripe for payments
+- **Monorepo**: pnpm workspaces (`pnpm-workspace.yaml`)
+- **Frontend**: Next.js 14 (App Router) + Tailwind CSS + Radix UI + PWA
+- **Backend**: NestJS + Prisma ORM + PostgreSQL + Redis + BullMQ
+- **Auth**: Clerk (multi-tenant, multi-org)
+- **Voice AI**: Vapi.ai (AI phone call handling)
+- **SMS**: Twilio (text messaging + inbound webhooks)
+- **Payments**: Stripe (checkout, deposits, payment intents)
+- **Email**: Resend (transactional email)
+- **Storage**: AWS S3 or local filesystem
+- **Calendar**: Google Calendar API sync
+- **Image Analysis**: Anthropic Claude API (photo-based quotes)
+- **Messaging**: WhatsApp Business API
+- **Testing**: Jest (unit), Playwright (E2E)
+- **Dev Workflow**: Ralph for AI assistant development workflows
 
 ## Development Rules
 1. **Max 50 lines per function** - break larger logic into composable pieces
-2. **Test-first**: Write failing test → implement → verify → commit
-3. **Run tests after every change** - never proceed if tests fail
-4. **One feature at a time** - complete and test before moving on
+2. **Max 200 lines per file** - split into services/helpers if needed
+3. **Test-first**: Write failing test -> implement -> verify -> commit
+4. **Run tests after every change** - never proceed if tests fail
+5. **One feature at a time** - complete and test before moving on
+6. **Each PR/change should be independently testable**
 
-## Workflow
-- Before writing implementation: write the test
-- After each code block: run `npx playwright test` (or relevant command)
-- If tests fail: fix immediately, don't accumulate debt
-- Commit working states frequently
+## Commands
 
-## Constraints
-- No files over 200 lines
-- No functions over 50 lines
-- Each PR/change should be independently testable
+### Testing
+```bash
+pnpm test                    # Run all tests (unit + integration)
+pnpm test:e2e                # Run Playwright E2E tests
+pnpm test:unit               # Run unit tests
+```
 
-## Testing Commands
-- `pnpm test` - Run all tests
-- `pnpm test:e2e` - Run Playwright E2E tests
-- `pnpm test:unit` - Run unit tests
+### Development
+```bash
+pnpm dev                     # Run all dev servers
+pnpm dev:web                 # Web only (Next.js on port 3000)
+pnpm dev:api                 # API only (NestJS on port 3001)
+```
+
+### Build
+```bash
+pnpm build                   # Build all projects
+pnpm --filter api build      # Build API only (nest build)
+pnpm --filter web build      # Build Web only (next build)
+```
+
+### Database
+```bash
+# From apps/api/:
+npx prisma generate          # Regenerate Prisma client
+npx prisma db push           # Push schema changes (dev)
+npx prisma migrate dev       # Create migration (dev)
+npx prisma studio            # Open Prisma Studio GUI
+npx ts-node prisma/seed.ts   # Seed database
+```
+
+### Other
+```bash
+pnpm lint                    # Lint all projects
+pnpm format                  # Format with Prettier
+pnpm clean                   # Clean all node_modules + dist
+```
+
+### Node.js Path (if needed)
+```bash
+PATH=$HOME/.nvm/versions/node/v24.12.0/bin:$PATH pnpm test
+```
 
 ## Project Structure
 ```
 smart-business-assistant/
 ├── apps/
-│   ├── web/          # Next.js frontend + PWA
-│   └── api/          # NestJS backend
+│   ├── api/                          # NestJS backend (port 3001)
+│   │   ├── src/
+│   │   │   ├── main.ts               # Entry point + bootstrap
+│   │   │   ├── app.module.ts          # Root module
+│   │   │   ├── app.controller.ts
+│   │   │   ├── app.service.ts
+│   │   │   ├── common/               # Guards, decorators, middleware, interceptors
+│   │   │   ├── config/               # Prisma, events, queue, cache, clerk, storage, throttle
+│   │   │   ├── gateways/             # WebSocket gateways
+│   │   │   ├── modules/              # Business logic (31 modules)
+│   │   │   ├── scripts/              # Utility scripts
+│   │   │   └── test/                 # Test fixtures (prisma-mock.ts, jest-setup.ts)
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma         # 50+ models
+│   │   │   ├── migrations/
+│   │   │   └── seed.ts
+│   │   ├── jest.config.js
+│   │   ├── tsconfig.json
+│   │   └── .env.example
+│   │
+│   └── web/                          # Next.js frontend + PWA (port 3000)
+│       ├── app/
+│       │   ├── (auth)/               # Login, signup
+│       │   ├── (dashboard)/          # Protected routes (appointments, customers,
+│       │   │                         #   jobs, quotes, invoices, availability,
+│       │   │                         #   settings, sms, voice, team)
+│       │   ├── book/[tenantSlug]/    # Public booking page
+│       │   ├── booking/manage/[token]/ # Booking management
+│       │   ├── invite/[token]/       # Team invite acceptance
+│       │   └── onboarding/           # Tenant onboarding
+│       ├── components/               # Reusable React components
+│       ├── lib/                      # API client, helpers, validation
+│       ├── tailwind.config.ts
+│       ├── next.config.mjs
+│       └── playwright.config.ts
+│
 ├── packages/
-│   └── shared/       # Shared types, utils
-└── CLAUDE.md         # This file
+│   └── shared/                       # Shared TypeScript types & utilities
+│       └── src/
+│           ├── types/                # tenant, user, customer, appointment,
+│           │                         # quote, invoice, job
+│           └── utils/                # validation, format
+│
+├── e2e/                              # 19 Playwright E2E test files
+├── docker-compose.yml
+├── pnpm-workspace.yaml
+└── CLAUDE.md
 ```
 
+## API Modules (apps/api/src/modules/)
+
+| Module | Key Services | Purpose |
+|--------|-------------|---------|
+| **ai-scheduling** | PreferenceLearningService, RouteOptimizationService | AI scheduling + route optimization |
+| **appointments** | AppointmentsService, AppointmentsSlotsService, AppointmentsValidatorsService | Appointment CRUD, slot calculation, validation |
+| **auth** | AuthService | Clerk authentication integration |
+| **availability** | AvailabilityService, TimeoffService | Technician schedules + time-off |
+| **calendar** | CalendarService, CalendarQueueService + Processor | Google Calendar sync (BullMQ) |
+| **customer-context** | CustomerContextService | AI personalization context aggregation |
+| **customer-portal** | CustomerPortalAuthService + Guard | Customer-facing portal auth |
+| **customers** | CustomersService | Customer CRUD |
+| **dynamic-pricing** | DynamicPricingService, PricingRulesService | Demand/urgency/loyalty pricing |
+| **email** | EmailService | Resend transactional email |
+| **health** | HealthController | Database + Redis health checks |
+| **invoices** | InvoicesService, InvoicePdfService, InvoiceOverdueService | Invoice CRUD, PDF generation, overdue tracking |
+| **jobs** | JobsService | Job lifecycle (NOT_STARTED -> COMPLETED) |
+| **messaging** | ConversationService, WhatsappService, QuickReplyService | Multi-channel messaging |
+| **noshow-prevention** | NoshowPreventionService, WaitlistService, ReminderSchedulerService + Processor | No-show tracking, waitlist, appointment reminders (BullMQ) |
+| **notifications** | NotificationsService + Processor + Event handlers | Event-driven SMS/email notifications (BullMQ) |
+| **nps** | NpsService + Processor | NPS surveys, scoring, review gating (BullMQ) |
+| **outbound-campaigns** | OutboundCampaignsService + Processor | Voice campaign orchestration (BullMQ) |
+| **payment-reminders** | PaymentReminderService + Processor + Handler | Invoice payment reminder sequences (BullMQ) |
+| **payments** | PaymentsService, DepositPaymentService | Stripe payment processing + deposits |
+| **photo-quotes** | PhotoQuotesService + Processor | AI image-to-quote via Claude Vision (BullMQ) |
+| **predictive-maintenance** | PredictionService, EquipmentService, AlertService | Equipment maintenance prediction |
+| **public-booking** | PublicBookingService | Customer-facing booking (no auth) |
+| **quotes** | QuotesService, QuoteFollowupService + Processor, PdfService | Quote CRUD, follow-up sequences, PDF (BullMQ) |
+| **reports** | ReportsService | Business analytics/reports |
+| **review-requests** | ReviewRequestsService, SmartReviewService + Processor + EventHandler, ReputationAnalyticsService | NPS-gated reviews, reputation dashboard (BullMQ) |
+| **services** | ServicesService | Service catalog CRUD |
+| **settings** | SettingsService | Tenant configuration |
+| **sms** | SmsService | Twilio SMS send + inbound webhooks |
+| **team** | TeamService | Team member management + invites |
+| **tenants** | TenantsService | Tenant CRUD |
+| **voice** | VoiceService | Vapi.ai voice assistant integration |
+
+## BullMQ Queues
+
+| Queue | Module | Purpose |
+|-------|--------|---------|
+| `calendar` | calendar | Google Calendar sync |
+| `notifications` | notifications | Event-driven notifications |
+| `nps-surveys` | nps | NPS survey distribution |
+| `outbound-campaigns` | outbound-campaigns | Voice campaign orchestration |
+| `payment-reminders` | payment-reminders | Invoice payment reminder sequences |
+| `photo-quotes` | photo-quotes | AI image-to-quote processing |
+| `quote-followup` | quotes | Quote follow-up automation |
+| `review-pipeline` | review-requests | NPS-gated review request pipeline |
+| `appointment-reminders` | noshow-prevention | Appointment reminder scheduling |
+
+Queue config: Redis backend, 3 attempts, exponential backoff (2s), auto-remove completed (100 max), retain failed (500 max). Configured in `apps/api/src/config/queue/queue.module.ts`.
+
+## Event System
+
+Events defined in `apps/api/src/config/events/events.types.ts`. Emitted via `EventsService.emit()`, handled with `@OnEvent()` decorators.
+
+**Event catalog:**
+- `APPOINTMENT_CREATED`, `APPOINTMENT_UPDATED`, `APPOINTMENT_CONFIRMED`, `APPOINTMENT_CANCELLED`, `APPOINTMENT_REMINDER_DUE`
+- `JOB_CREATED`, `JOB_STARTED`, `JOB_COMPLETED`, `JOB_CANCELLED`
+- `PAYMENT_RECEIVED`, `PAYMENT_FAILED`, `INVOICE_SENT`, `INVOICE_OVERDUE`
+- `QUOTE_CREATED`, `QUOTE_SENT`, `QUOTE_ACCEPTED`, `QUOTE_REJECTED`
+- `CUSTOMER_CREATED`, `CUSTOMER_UPDATED`
+- `REVIEW_REQUEST_SENT`, `REVIEW_RECEIVED`
+- `NPS_SURVEY_SENT`, `NPS_SCORE_SUBMITTED`, `NPS_LOW_SCORE_ALERT`, `NPS_REVIEW_CLICKED`
+
+**Typed payloads:** `AppointmentEventPayload`, `JobEventPayload`, `PaymentEventPayload`, `QuoteEventPayload`, `CustomerEventPayload`, `ReviewEventPayload`, `NpsEventPayload` (all extend `BaseEventPayload` with `tenantId`, `timestamp`, `correlationId`).
+
 ## Multi-Tenant Architecture
-- All tables include `tenant_id` column
-- PostgreSQL Row-Level Security (RLS) enforces isolation
-- API middleware validates tenant context on every request
+- All tables include `tenantId` column with database indexes
+- PostgreSQL Row-Level Security (RLS) optional via `FEATURE_RLS_ENABLED` env var
+- `TenantContextMiddleware` extracts tenantId from authenticated user (applied globally)
+- `TenantContextInterceptor` injects tenantId into request context (APP_INTERCEPTOR)
+- All database queries filtered by tenantId via Prisma
+- `RequestWithTenant` interface for type-safe tenant access
+- Clerk auth provides tenantId from organization context
+
+## Guards, Decorators & Middleware
+
+### Guards
+- **ClerkAuthGuard** (`common/guards/clerk-auth.guard.ts`) - Validates Clerk JWT tokens, used as APP_GUARD, respects `@Public()`
+- **CustomerPortalGuard** (`modules/customer-portal/`) - Customer portal token validation
+- **TenantThrottlerGuard** (`config/throttle/`) - Redis-backed per-tenant rate limiting
+
+### Decorators
+- **@Public()** (`common/decorators/public.decorator.ts`) - Skip auth for endpoint
+- **@CurrentUser()** (`common/decorators/current-user.decorator.ts`) - Inject user context (returns `CurrentUserPayload` with `tenantId`, `userId`, `role`)
+
+### Interceptors
+- **TenantContextInterceptor** (`common/interceptors/tenant-context.interceptor.ts`) - Extract & inject tenantId
+- **LoggingInterceptor** (`common/interceptors/logging.interceptor.ts`) - Request/response logging
+
+### Filters
+- **HttpExceptionFilter** (`common/filters/http-exception.filter.ts`) - Global error handling
+
+### Other
+- **CircuitBreakerService** (`common/circuit-breaker/`) - Opossum-based circuit breaker for external services
+- **DecimalUtils** (`common/utils/decimal.ts`) - Decimal.js helpers for financial calculations
+
+## API Bootstrap (main.ts)
+- Helmet.js security headers (CSP, HSTS, COEP)
+- CORS with env-based origin whitelist (default: localhost:3000, localhost:3001)
+- Global ValidationPipe (whitelist, transform, forbid non-whitelisted)
+- Static file serving for `/uploads`
+- API prefix: `/api/v1`
+- Listens on `0.0.0.0:3001`
+
+## Config Modules (apps/api/src/config/)
+
+| Module | Purpose |
+|--------|---------|
+| `prisma/` | Prisma ORM with multi-tenant support |
+| `events/` | NestJS event emitter + typed event definitions |
+| `queue/` | BullMQ global configuration (Redis connection, job defaults) |
+| `cache/` | cache-manager with Redis backend |
+| `clerk/` | Clerk SDK integration (@clerk/backend) |
+| `storage/` | S3 or local filesystem abstraction |
+| `throttle/` | Redis-backed rate limiting with tenant-aware guard |
+
+## Testing
+
+### Unit Tests (Jest)
+Located in same directory as source files with `.spec.ts` extension.
+
+**Test mock pattern:** Use `createMockPrismaService()` from `src/test/prisma-mock.ts` which creates typed mocks for all Prisma models with `jest.fn()` for each operation (findMany, findFirst, findUnique, create, update, delete, deleteMany, count, aggregate, upsert, updateMany, groupBy).
+
+**Module setup pattern:**
+```typescript
+const module = await Test.createTestingModule({
+  providers: [
+    ServiceUnderTest,
+    { provide: PrismaService, useValue: prisma },
+    { provide: OtherService, useValue: mockOtherService },
+  ],
+}).compile();
+```
+
+**Current test suites:**
+- `app.controller.spec.ts`
+- `customers.service.spec.ts`
+- `appointments.service.spec.ts`
+- `quotes.service.spec.ts`
+- `invoices.service.spec.ts`
+- `noshow-prevention.service.spec.ts`
+- `waitlist.service.spec.ts`
+- `reminder-scheduler.service.spec.ts`
+- `smart-review.service.spec.ts`
+- `reputation-analytics.service.spec.ts`
+
+### E2E Tests (Playwright)
+19 test files in `/e2e/` covering: auth, appointments, availability, booking, calendar, dashboard, invoices, jobs, onboarding, quotes, settings, sms, team, voice, UI interactions.
+
+### Jest Configuration (apps/api/jest.config.js)
+- Test regex: `.*\.spec\.ts$`
+- Transform: ts-jest with isolatedModules
+- Module name mapping for `uuid` mock
+- Root dir: `src/`
+
+## Key Prisma Models (50+)
+
+### Core Business
+- **Tenant** - Multi-tenancy root
+- **User** (roles: OWNER, ADMIN, DISPATCHER, TECHNICIAN)
+- **TeamInvitation** (PENDING, ACCEPTED, EXPIRED, CANCELLED)
+- **Customer** (includes `noShowCount`)
+- **Service** + **ServiceAvailability**
+- **Appointment** (SCHEDULED, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW)
+- **Job** (NOT_STARTED, EN_ROUTE, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED)
+- **JobPhoto** (BEFORE, DURING, AFTER)
+- **Quote** + **QuoteItem** (DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED)
+- **QuoteFollowUp** (follow-up sequence tracking)
+- **Invoice** + **InvoiceItem** (deposit + late fee tracking)
+
+### Scheduling & Dispatch
+- **TechnicianAvailability** + **TimeOff**
+- **CalendarIntegration** (Google Calendar sync)
+- **CustomerPreference** (learned scheduling preferences)
+- **TechnicianLocation** (real-time GPS)
+- **CustomerLocation** (geocoded addresses)
+- **OptimizedRoute**
+
+### Communication
+- **MessageChannel**, **ConversationThread**, **Message**
+- **WhatsAppTemplate**, **QuickReply**
+- **SmsBroadcast** + **SmsBroadcastRecipient**
+- **CallLog** (Vapi call tracking)
+
+### Automation & Prevention
+- **AppointmentReminder** (scheduled reminders with status)
+- **Waitlist** (WAITING, OFFERED, BOOKED, EXPIRED)
+- **PaymentReminder** (payment sequence steps)
+- **ReviewRequest** (PENDING, SENT, CLICKED, SKIPPED; includes `npsGated`, `npsScore`)
+- **NpsSurvey** (NPS tracking with review gating)
+- **OutboundCampaign** + **OutboundCall**
+
+### AI & Advanced
+- **CustomerContext** (AI personalization)
+- **PhotoQuoteRequest** (AI image analysis)
+- **CustomerEquipment**, **EquipmentServiceHistory**, **MaintenanceAlert**
+- **DemandMetrics**, **PricingRule**, **ServicePricing**, **PriceQuoteHistory**
+- **CustomerAuth** + **CustomerSession** (portal auth)
+
+### Settings
+- **TenantSettings** (business hours, reminders, review settings, late fees, deposits, `googleReviewUrl`, `yelpReviewUrl`, `facebookReviewUrl`, `reviewTimingHours`, `reviewMaxPerDay`)
+
+## Environment Variables (apps/api/.env.example)
+```
+DATABASE_URL=postgresql://...
+JWT_SECRET=...
+JWT_EXPIRES_IN=7d
+PORT=3000
+NODE_ENV=development
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+VAPI_API_KEY=
+VAPI_PHONE_NUMBER=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+FEATURE_RLS_ENABLED=false
+REDIS_URL=
+REDIS_HOST=
+REDIS_PORT=6379
+REDIS_PASSWORD=
+STORAGE_PROVIDER=local       # "s3" or "local"
+STORAGE_LOCAL_PATH=./uploads
+API_BASE_URL=http://localhost:3001
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+```
 
 ## External Services
-| Service | Provider | Purpose |
-|---------|----------|---------|
-| Voice AI | Vapi.ai | AI phone call handling |
-| SMS | Twilio | Text messaging |
-| Payments | Stripe | Payment processing |
-| Email | Resend | Transactional email |
-| Auth | Clerk | Multi-tenant authentication |
+
+| Service | Provider | Module | Purpose |
+|---------|----------|--------|---------|
+| Auth | Clerk | auth, customer-portal | User & org management |
+| Voice AI | Vapi.ai | voice | AI phone call handling |
+| SMS | Twilio | sms, notifications, noshow-prevention | Text messaging + inbound webhooks |
+| Payments | Stripe | payments | Checkout, deposits, payment intents |
+| Email | Resend | email, notifications | Transactional email |
+| Calendar | Google Calendar API | calendar | Appointment sync |
+| Storage | AWS S3 / Local | storage, jobs | Photos, documents |
+| Image AI | Anthropic Claude | photo-quotes | Photo-based quote generation |
+| Messaging | WhatsApp Business API | messaging | Rich messaging |
+| Caching | Redis | cache | Performance optimization |
+| Queues | Redis + BullMQ | queue | Async job processing |
+
+## Implementation Plan
+
+Active sprint plan at: `~/.claude/plans/polymorphic-dreaming-nebula.md`
+
+**Sprint progress:**
+- 7.0 AI Engine Foundation - not started
+- 7.1 Quote Follow-Up Pipeline - complete (automation base)
+- 7.2 Payment Automation - complete (automation base)
+- 7.3 No-Show Prevention - complete (automation base)
+- 7.4 Smart Review Pipeline - complete (automation base)
+- 7.5-7.8 - not started
+
+Active sprint plan details at: `~/.claude/plans/jaunty-mixing-starlight.md`
+
+## Architecture Patterns
+1. **Multi-Tenant SaaS** - All data isolated by tenantId, enforced at middleware + query level
+2. **Event-Driven** - NestJS EventEmitter + BullMQ processors for async work
+3. **Service Layer** - Controllers delegate to services; services own business logic
+4. **Guard-based Auth** - Clerk tokens validated via APP_GUARD, `@Public()` for opt-out
+5. **DTO Validation** - class-validator decorators on all request DTOs
+6. **Circuit Breaker** - Opossum for resilience against external service failures
+7. **Queue-based Processing** - BullMQ with delayed jobs, retries, and dead-letter handling
+8. **Repository Abstraction** - Prisma as the data access layer (no raw SQL except `$executeRaw`)

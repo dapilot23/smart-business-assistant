@@ -181,6 +181,15 @@ export class NpsService {
       await this.alertManager(survey.tenantId, survey.jobId, score, feedback);
     }
 
+    this.events.emit<NpsEventPayload>(EVENTS.NPS_SCORE_SUBMITTED, {
+      tenantId: survey.tenantId,
+      surveyId: survey.id,
+      jobId: survey.jobId,
+      customerId: survey.customerId,
+      score,
+      feedback,
+    });
+
     this.logger.log(`NPS score submitted: ${score} (${category})`);
 
     return {

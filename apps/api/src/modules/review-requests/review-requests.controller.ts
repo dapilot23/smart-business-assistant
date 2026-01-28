@@ -4,17 +4,21 @@ import {
   Post,
   Param,
   Body,
+  Query,
   Req,
   UseGuards,
-  Redirect,
 } from '@nestjs/common';
 import { ReviewRequestsService } from './review-requests.service';
+import { ReputationAnalyticsService } from './reputation-analytics.service';
 import { CreateReviewRequestDto } from './dto/create-review-request.dto';
 import { ClerkAuthGuard } from '../../common/guards/clerk-auth.guard';
 
 @Controller('review-requests')
 export class ReviewRequestsController {
-  constructor(private readonly reviewRequestsService: ReviewRequestsService) {}
+  constructor(
+    private readonly reviewRequestsService: ReviewRequestsService,
+    private readonly analyticsService: ReputationAnalyticsService,
+  ) {}
 
   @Get()
   @UseGuards(ClerkAuthGuard)
@@ -28,6 +32,30 @@ export class ReviewRequestsController {
   async getReviewStats(@Req() req: any) {
     const tenantId = req.tenantId;
     return this.reviewRequestsService.getReviewStats(tenantId);
+  }
+
+  @Get('reputation')
+  @UseGuards(ClerkAuthGuard)
+  async getReputationDashboard(@Req() req: any) {
+    return this.analyticsService.getReputationDashboard(req.tenantId);
+  }
+
+  @Get('reputation/velocity')
+  @UseGuards(ClerkAuthGuard)
+  async getReviewVelocity(
+    @Req() req: any,
+    @Query('weeks') weeks?: string,
+  ) {
+    return this.analyticsService.getWeeklyVelocity(
+      req.tenantId,
+      weeks ? parseInt(weeks, 10) : 12,
+    );
+  }
+
+  @Get('reputation/platforms')
+  @UseGuards(ClerkAuthGuard)
+  async getPlatformBreakdown(@Req() req: any) {
+    return this.analyticsService.getPlatformBreakdown(req.tenantId);
   }
 
   @Post()

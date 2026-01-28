@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { Twilio } from 'twilio';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
+import { EventsService } from '../../config/events/events.service';
+import { EVENTS, AppointmentEventPayload } from '../../config/events/events.types';
 import { BroadcastStatus, UserRole } from '@prisma/client';
 
 export interface AppointmentData {
@@ -40,6 +42,7 @@ export class SmsService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly circuitBreakerService: CircuitBreakerService,
+    private readonly eventsService: EventsService,
   ) {
     const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
     const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
@@ -268,8 +271,76 @@ export class SmsService implements OnModuleInit {
   }
 
   async handleWebhook(data: any) {
-    this.logger.log('Twilio webhook received:', JSON.stringify(data));
+    this.logger.log('Twilio webhook received');
+
+    const from = data.From;
+    const body = (data.Body || '').trim().toUpperCase();
+
+    if (!from || !body) return { received: true };
+
+    if (body === 'C' || body === 'CONFIRM' || body === 'YES') {
+      await this.handleConfirmation(from);
+    } else if (body === 'R' || body === 'RESCHEDULE') {
+      await this.handleRescheduleRequest(from);
+    }
+
     return { received: true };
+  }
+
+  private async handleConfirmation(phone: string) {
+    const appointment = await this.findUpcomingByPhone(phone);
+    if (!appointment) return;
+
+    await this.prisma.appointment.update({
+      where: { id: appointment.id },
+      data: { confirmedAt: new Date(), status: 'CONFIRMED' },
+    });
+
+    await this.sendSms(
+      phone,
+      `Great! Your appointment is confirmed. See you soon!`,
+    );
+
+    this.eventsService.emit<AppointmentEventPayload>(
+      EVENTS.APPOINTMENT_CONFIRMED,
+      {
+        tenantId: appointment.tenantId,
+        appointmentId: appointment.id,
+        customerId: appointment.customerId,
+        customerName: appointment.customer.name,
+        customerPhone: appointment.customer.phone,
+        customerEmail: appointment.customer.email || undefined,
+        scheduledAt: appointment.scheduledAt,
+        serviceName: appointment.service?.name,
+      },
+    );
+
+    this.logger.log(`Appointment ${appointment.id} confirmed via SMS`);
+  }
+
+  private async handleRescheduleRequest(phone: string) {
+    const appointment = await this.findUpcomingByPhone(phone);
+    if (!appointment || !appointment.manageToken) return;
+
+    const baseUrl = this.configService.get('FRONTEND_URL') || 'https://app.example.com';
+    await this.sendSms(
+      phone,
+      `To reschedule your appointment: ${baseUrl}/booking/manage/${appointment.manageToken}`,
+    );
+
+    this.logger.log(`Reschedule link sent for appointment ${appointment.id}`);
+  }
+
+  private async findUpcomingByPhone(phone: string) {
+    return this.prisma.appointment.findFirst({
+      where: {
+        customer: { phone },
+        scheduledAt: { gte: new Date() },
+        status: { in: ['SCHEDULED', 'CONFIRMED'] },
+      },
+      orderBy: { scheduledAt: 'asc' },
+      include: { customer: true, service: true },
+    });
   }
 
   async createBroadcast(

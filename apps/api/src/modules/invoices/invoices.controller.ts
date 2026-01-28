@@ -15,6 +15,7 @@ import { InvoicesService, CreateInvoiceDto } from './invoices.service';
 import { InvoicePdfService } from './invoice-pdf.service';
 import { SmsService } from '../sms/sms.service';
 import { InvoiceStatus } from '@prisma/client';
+import { toNum } from '../../common/utils/decimal';
 
 @Controller('invoices')
 export class InvoicesController {
@@ -36,6 +37,12 @@ export class InvoicesController {
     return this.invoicesService.getStats(tenantId);
   }
 
+  @Get('pipeline-stats')
+  async getPipelineStats(@Request() req) {
+    const tenantId = req.user?.tenantId || 'default';
+    return this.invoicesService.getPipelineStats(tenantId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req) {
     const tenantId = req.user?.tenantId || 'default';
@@ -55,8 +62,8 @@ export class InvoicesController {
     const pdfBuffer = await this.pdfService.generateInvoicePdf({
       invoiceNumber: invoice.invoiceNumber,
       description: invoice.description,
-      amount: invoice.amount,
-      paidAmount: invoice.paidAmount,
+      amount: toNum(invoice.amount),
+      paidAmount: toNum(invoice.paidAmount),
       dueDate: invoice.dueDate,
       status: invoice.status,
       createdAt: invoice.createdAt,
@@ -66,7 +73,11 @@ export class InvoicesController {
         phone: invoice.customer.phone,
         address: invoice.customer.address || undefined,
       },
-      items: invoice.items,
+      items: invoice.items.map(item => ({
+        ...item,
+        unitPrice: toNum(item.unitPrice),
+        total: toNum(item.total),
+      })),
     });
 
     res.setHeader('Content-Disposition', `attachment; filename="${invoice.invoiceNumber}.pdf"`);
@@ -117,7 +128,7 @@ export class InvoicesController {
           invoice.customer.phone,
           invoice.customer.name,
           invoice.invoiceNumber,
-          invoice.amount - invoice.paidAmount,
+          toNum(invoice.amount) - toNum(invoice.paidAmount),
           invoice.dueDate,
         );
       } catch (error) {

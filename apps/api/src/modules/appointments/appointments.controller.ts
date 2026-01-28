@@ -75,4 +75,10 @@ export class AppointmentsController {
   async cancel(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.appointmentsService.cancel(user.tenantId, id);
   }
+
+  @Post(':id/no-show')
+  @HttpCode(HttpStatus.OK)
+  async markNoShow(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.appointmentsService.markNoShow(user.tenantId, id);
+  }
 }

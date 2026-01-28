@@ -11,6 +11,9 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PreferenceLearningService } from './preference-learning.service';
 import { RouteOptimizationService } from './route-optimization.service';
+import { SmartDispatchService } from './smart-dispatch.service';
+import { DispatchIntelligenceService } from './dispatch-intelligence.service';
+import { FindBestTechnicianDto, FillGapDto } from './dto/dispatch.dto';
 
 @Controller('ai-scheduling')
 @UseGuards(JwtAuthGuard)
@@ -18,6 +21,8 @@ export class AiSchedulingController {
   constructor(
     private readonly preferenceLearning: PreferenceLearningService,
     private readonly routeOptimization: RouteOptimizationService,
+    private readonly smartDispatch: SmartDispatchService,
+    private readonly dispatchIntelligence: DispatchIntelligenceService,
   ) {}
 
   // ============================================
@@ -120,5 +125,51 @@ export class AiSchedulingController {
   async geocodeCustomer(@Param('customerId') customerId: string) {
     const result = await this.routeOptimization.geocodeCustomerAddress(customerId);
     return { success: !!result, coordinates: result };
+  }
+
+  // ============================================
+  // Smart Dispatch (Sprint 7.6)
+  // ============================================
+
+  @Post('dispatch/best-technician')
+  async findBestTechnician(@Request() req, @Body() body: FindBestTechnicianDto) {
+    const tenantId = req.user?.tenantId;
+    const location = body.lat && body.lng ? { lat: body.lat, lng: body.lng } : undefined;
+    return this.smartDispatch.findBestTechnician({
+      tenantId,
+      serviceId: body.serviceId,
+      date: new Date(body.date),
+      location,
+    });
+  }
+
+  @Post('dispatch/suggest-reassignment/:jobId')
+  async suggestReassignment(@Request() req, @Param('jobId') jobId: string) {
+    const tenantId = req.user?.tenantId;
+    return this.smartDispatch.suggestReassignment(jobId, tenantId);
+  }
+
+  @Post('dispatch/fill-gap')
+  async fillCancellationGap(@Request() req, @Body() body: FillGapDto) {
+    const tenantId = req.user?.tenantId;
+    return this.smartDispatch.fillCancellationGap(
+      body.technicianId,
+      new Date(body.date),
+      new Date(body.startTime),
+      new Date(body.endTime),
+      tenantId,
+    );
+  }
+
+  @Post('dispatch/estimate-duration/:jobId')
+  async estimateDuration(@Request() req, @Param('jobId') jobId: string) {
+    const tenantId = req.user?.tenantId;
+    return this.dispatchIntelligence.estimateDuration(jobId, tenantId);
+  }
+
+  @Post('dispatch/suggest-upsells/:jobId')
+  async suggestUpsells(@Request() req, @Param('jobId') jobId: string) {
+    const tenantId = req.user?.tenantId;
+    return this.dispatchIntelligence.suggestUpsells(jobId, tenantId);
   }
 }

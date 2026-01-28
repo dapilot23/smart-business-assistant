@@ -62,8 +62,8 @@ export class JobsService {
   }
 
   async getJob(tenantId: string, jobId: string) {
-    const job = await this.prisma.job.findUnique({
-      where: { id: jobId },
+    const job = await this.prisma.job.findFirst({
+      where: { id: jobId, tenantId },
       include: {
         appointment: {
           include: {
@@ -82,10 +82,6 @@ export class JobsService {
 
     if (!job) {
       throw new NotFoundException('Job not found');
-    }
-
-    if (job.tenantId !== tenantId) {
-      throw new ForbiddenException('Access denied');
     }
 
     return job;
@@ -140,10 +136,10 @@ export class JobsService {
     jobId: string,
     dto: UpdateJobStatusDto,
   ) {
-    await this.getJob(tenantId, jobId);
+    const job = await this.getJob(tenantId, jobId);
 
     return this.prisma.job.update({
-      where: { id: jobId },
+      where: { id: job.id },
       data: { status: dto.status },
       include: {
         appointment: {
@@ -160,10 +156,10 @@ export class JobsService {
   }
 
   async startJob(tenantId: string, jobId: string) {
-    await this.getJob(tenantId, jobId);
+    const existing = await this.getJob(tenantId, jobId);
 
     const job = await this.prisma.job.update({
-      where: { id: jobId },
+      where: { id: existing.id },
       data: {
         status: JobStatus.IN_PROGRESS,
         startedAt: new Date(),
@@ -194,10 +190,10 @@ export class JobsService {
     jobId: string,
     dto: CompleteJobDto,
   ) {
-    await this.getJob(tenantId, jobId);
+    const existing = await this.getJob(tenantId, jobId);
 
     const job = await this.prisma.job.update({
-      where: { id: jobId },
+      where: { id: existing.id },
       data: {
         status: JobStatus.COMPLETED,
         completedAt: new Date(),
@@ -233,7 +229,7 @@ export class JobsService {
       : notes;
 
     return this.prisma.job.update({
-      where: { id: jobId },
+      where: { id: job.id },
       data: { notes: updatedNotes },
     });
   }

@@ -13,8 +13,8 @@ export class CustomersService {
   }
 
   async findOne(id: string, tenantId: string) {
-    const customer = await this.prisma.customer.findUnique({
-      where: { id },
+    const customer = await this.prisma.customer.findFirst({
+      where: { id, tenantId },
       include: {
         appointments: true,
         quotes: true,
@@ -24,10 +24,6 @@ export class CustomersService {
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
-    }
-
-    if (customer.tenantId !== tenantId) {
-      throw new ForbiddenException('Access denied');
     }
 
     return customer;
@@ -44,17 +40,17 @@ export class CustomersService {
   }
 
   async update(id: string, data: any, tenantId: string) {
-    await this.findOne(id, tenantId);
+    const customer = await this.findOne(id, tenantId);
     return this.prisma.customer.update({
-      where: { id },
+      where: { id: customer.id },
       data,
     });
   }
 
   async remove(id: string, tenantId: string) {
-    await this.findOne(id, tenantId);
+    const customer = await this.findOne(id, tenantId);
     return this.prisma.customer.delete({
-      where: { id },
+      where: { id: customer.id },
     });
   }
 }

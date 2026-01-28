@@ -38,4 +38,40 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   yelpReviewUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  depositRequired?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  depositPercentage?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  lateFeeEnabled?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  lateFeePercentage?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  paymentReminderEnabled?: boolean;
+
+  @IsOptional()
+  @IsString()
+  facebookReviewUrl?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  reviewTimingHours?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  reviewMaxPerDay?: number;
 }

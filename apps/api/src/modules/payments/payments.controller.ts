@@ -10,10 +10,14 @@ import {
 } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { PaymentsService } from './payments.service';
+import { DepositPaymentService } from './deposit-payment.service';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly depositService: DepositPaymentService,
+  ) {}
 
   @Post('create-intent')
   async createPaymentIntent(
@@ -33,6 +37,24 @@ export class PaymentsController {
     return this.paymentsService.createCheckoutSession(
       data.invoiceId,
       tenantId,
+      data.successUrl,
+      data.cancelUrl,
+    );
+  }
+
+  @Public()
+  @Post('deposit-checkout')
+  async createDepositCheckout(
+    @Body() data: {
+      tenantId: string;
+      appointmentId: string;
+      successUrl: string;
+      cancelUrl: string;
+    },
+  ) {
+    return this.depositService.createDepositCheckout(
+      data.tenantId,
+      data.appointmentId,
       data.successUrl,
       data.cancelUrl,
     );

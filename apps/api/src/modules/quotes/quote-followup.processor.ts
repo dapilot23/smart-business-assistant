@@ -8,6 +8,7 @@ import {
   QuoteFollowUpJob,
   QuoteFollowupService,
 } from './quote-followup.service';
+import { toNum } from '../../common/utils/decimal';
 
 @Processor(QUOTE_FOLLOWUP_QUEUE)
 export class QuoteFollowupProcessor extends WorkerHost {
@@ -49,7 +50,7 @@ export class QuoteFollowupProcessor extends WorkerHost {
     const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'usd',
-    }).format(quote.amount);
+    }).format(toNum(quote.amount));
 
     const { message, subject } = this.followupService.getFollowUpMessage(
       followUp.step,

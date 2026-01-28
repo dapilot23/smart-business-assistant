@@ -42,6 +42,12 @@ import { NpsModule } from './modules/nps/nps.module';
 import { PredictiveMaintenanceModule } from './modules/predictive-maintenance/predictive-maintenance.module';
 import { DynamicPricingModule } from './modules/dynamic-pricing/dynamic-pricing.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
+import { PaymentReminderModule } from './modules/payment-reminders/payment-reminder.module';
+import { NoshowPreventionModule } from './modules/noshow-prevention/noshow-prevention.module';
+import { AiEngineModule } from './modules/ai-engine/ai-engine.module';
+import { CustomerRetentionModule } from './modules/customer-retention/customer-retention.module';
+import { AiCommunicationModule } from './modules/ai-communication/ai-communication.module';
+import { AiCopilotModule } from './modules/ai-copilot/ai-copilot.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -56,6 +62,7 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     PrismaModule,
     ClerkModule,
     QueueModule,
+    AiEngineModule,
     AuthModule,
     TenantsModule,
     CustomersModule,
@@ -91,6 +98,11 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     PredictiveMaintenanceModule,
     DynamicPricingModule,
     MessagingModule,
+    PaymentReminderModule,
+    NoshowPreventionModule,
+    CustomerRetentionModule,
+    AiCommunicationModule,
+    AiCopilotModule,
   ],
   controllers: [AppController],
   providers: [

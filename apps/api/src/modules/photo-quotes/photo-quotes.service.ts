@@ -6,6 +6,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { StorageService } from '../../config/storage/storage.service';
 import { PhotoComplexity, PhotoQuoteStatus } from '@prisma/client';
+import { toNum } from '../../common/utils/decimal';
 
 export const PHOTO_QUOTE_QUEUE = 'photo-quotes';
 
@@ -282,7 +283,7 @@ export class PhotoQuotesService {
       return { avg: 150, min: 75, max: 300 }; // Default fallback
     }
 
-    const amounts = quotes.map((q) => q.amount);
+    const amounts = quotes.map((q) => toNum(q.amount));
     return {
       avg: amounts.reduce((a, b) => a + b, 0) / amounts.length,
       min: Math.min(...amounts),

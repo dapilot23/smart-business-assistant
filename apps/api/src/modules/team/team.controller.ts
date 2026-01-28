@@ -10,16 +10,21 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TeamService } from './team.service';
+import { TechnicianSkillsService } from './technician-skills.service';
 import { InviteTeamMemberDto } from './dto/invite-team-member.dto';
 import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
+import { SetSkillsDto } from './dto/set-skills.dto';
 import { ClerkAuthGuard } from '../../common/guards/clerk-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('team')
 @UseGuards(ClerkAuthGuard)
 export class TeamController {
-  constructor(private readonly teamService: TeamService) {}
+  constructor(
+    private readonly teamService: TeamService,
+    private readonly skillsService: TechnicianSkillsService,
+  ) {}
 
   @Get()
   async getTeamMembers(@Req() req: any) {
@@ -81,5 +86,46 @@ export class TeamController {
   @Post('accept-invitation')
   async acceptInvitation(@Body() data: AcceptInvitationDto) {
     return this.teamService.acceptInvitation(data.token, data.clerkId);
+  }
+
+  // ============================================
+  // Technician Skills (Sprint 7.6)
+  // ============================================
+
+  @Post(':id/skills')
+  async setSkills(
+    @Req() req: any,
+    @Param('id') userId: string,
+    @Body() data: SetSkillsDto,
+  ) {
+    const tenantId = req.tenantId;
+    await this.skillsService.setSkills(userId, tenantId, data.skills);
+    return { success: true };
+  }
+
+  @Get(':id/skills')
+  async getSkills(@Req() req: any, @Param('id') userId: string) {
+    const tenantId = req.tenantId;
+    return this.skillsService.getSkillsForUser(userId, tenantId);
+  }
+
+  @Delete(':id/skills/:serviceId')
+  async removeSkill(
+    @Req() req: any,
+    @Param('id') userId: string,
+    @Param('serviceId') serviceId: string,
+  ) {
+    const tenantId = req.tenantId;
+    await this.skillsService.removeSkill(userId, serviceId, tenantId);
+    return { success: true };
+  }
+
+  @Get('qualified/:serviceId')
+  async getTechniciansForService(
+    @Req() req: any,
+    @Param('serviceId') serviceId: string,
+  ) {
+    const tenantId = req.tenantId;
+    return this.skillsService.getTechniciansForService(serviceId, tenantId);
   }
 }

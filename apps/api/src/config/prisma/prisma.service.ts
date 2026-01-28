@@ -47,9 +47,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   /**
    * Sets the current tenant context for RLS policies.
    * Must be called at the start of each request that needs tenant isolation.
+   *
+   * SECURITY: When RLS is enabled, an empty/null tenantId will throw an error
+   * instead of silently allowing unrestricted access (fail-closed).
    */
   async setTenantContext(tenantId: string): Promise<void> {
-    if (!this.isRlsEnabled || !tenantId) return;
+    if (!this.isRlsEnabled) return;
+
+    // SECURITY: Fail-closed - refuse to proceed without a tenant ID
+    if (!tenantId) {
+      this.logger.error('setTenantContext called with empty tenantId while RLS is enabled');
+      throw new Error('Tenant ID is required when RLS is enabled');
+    }
 
     // SECURITY: Validate tenant ID format to prevent injection
     if (!this.validateTenantId(tenantId)) {
@@ -58,16 +67,33 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
 
     // Use parameterized query (Prisma.sql tagged template is safe)
+    // Also clear any bypass flag to ensure tenant isolation is enforced
     await this.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenantId}::text, TRUE)`;
+    await this.$executeRaw`SELECT set_config('app.rls_bypass', '', TRUE)`;
   }
 
   /**
-   * Clears the current tenant context.
-   * Should be called at the end of requests or for system-level operations.
+   * Sets system context for operations that need unrestricted access
+   * (e.g., cron jobs, webhooks, migrations, system-level queries).
+   *
+   * SECURITY: This explicitly sets the bypass flag so the check_tenant_access()
+   * function allows access. This is the ONLY way to get unrestricted access
+   * under the new fail-closed RLS model.
+   */
+  async setSystemContext(): Promise<void> {
+    if (!this.isRlsEnabled) return;
+    await this.$executeRaw`SELECT set_config('app.rls_bypass', 'true', TRUE)`;
+    await this.$executeRaw`SELECT set_config('app.current_tenant_id', '', TRUE)`;
+  }
+
+  /**
+   * Clears the current tenant context AND the bypass flag.
+   * Should be called at the end of requests.
    */
   async clearTenantContext(): Promise<void> {
     if (!this.isRlsEnabled) return;
     await this.$executeRaw`SELECT set_config('app.current_tenant_id', '', TRUE)`;
+    await this.$executeRaw`SELECT set_config('app.rls_bypass', '', TRUE)`;
   }
 
   /**
@@ -79,6 +105,22 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     callback: () => Promise<T>
   ): Promise<T> {
     await this.setTenantContext(tenantId);
+    try {
+      return await callback();
+    } finally {
+      await this.clearTenantContext();
+    }
+  }
+
+  /**
+   * Executes a callback with system (bypass) context set.
+   * Use for cron jobs, webhooks, migrations, and other system operations.
+   * Automatically clears context after execution.
+   */
+  async withSystemContext<T>(
+    callback: () => Promise<T>
+  ): Promise<T> {
+    await this.setSystemContext();
     try {
       return await callback();
     } finally {

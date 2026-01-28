@@ -14,6 +14,7 @@ import { Response } from 'express';
 import { QuotesService } from './quotes.service';
 import { PdfService } from './pdf.service';
 import { SmsService } from '../sms/sms.service';
+import { toNum } from '../../common/utils/decimal';
 
 @Controller('quotes')
 export class QuotesController {
@@ -54,7 +55,7 @@ export class QuotesController {
     const pdfBuffer = await this.pdfService.generateQuotePdf({
       quoteNumber: quote.quoteNumber,
       description: quote.description,
-      amount: quote.amount,
+      amount: toNum(quote.amount),
       validUntil: quote.validUntil,
       status: quote.status,
       createdAt: quote.createdAt,
@@ -64,7 +65,12 @@ export class QuotesController {
         phone: quote.customer.phone,
         address: quote.customer.address || undefined,
       },
-      items: quote.items,
+      items: quote.items.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: toNum(item.unitPrice),
+        total: toNum(item.total),
+      })),
     });
 
     res.setHeader('Content-Disposition', `attachment; filename="${quote.quoteNumber}.pdf"`);
@@ -116,7 +122,7 @@ export class QuotesController {
           quote.customer.phone,
           quote.customer.name,
           quote.quoteNumber,
-          quote.amount,
+          toNum(quote.amount),
           quote.validUntil,
         );
       } catch (error) {

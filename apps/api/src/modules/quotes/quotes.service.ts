@@ -10,6 +10,8 @@ import { EventsService } from '../../config/events/events.service';
 import { EVENTS, QuoteEventPayload } from '../../config/events/events.types';
 import { QuoteFollowupService } from './quote-followup.service';
 import { QuoteStatus } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
+import { toNum } from '../../common/utils/decimal';
 
 interface CreateQuoteDto {
   customerId: string;
@@ -44,8 +46,8 @@ export class QuotesService {
   }
 
   async findOne(id: string, tenantId: string) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id },
+    const quote = await this.prisma.quote.findFirst({
+      where: { id, tenantId },
       include: { customer: true, items: true },
     });
 
@@ -53,73 +55,36 @@ export class QuotesService {
       throw new NotFoundException('Quote not found');
     }
 
-    if (quote.tenantId !== tenantId) {
-      throw new ForbiddenException('Access denied');
-    }
-
     return quote;
   }
 
   async create(data: CreateQuoteDto, tenantId: string) {
-    // Validate customer belongs to tenant
-    const customer = await this.prisma.customer.findFirst({
-      where: { id: data.customerId, tenantId },
-    });
-
-    if (!customer) {
-      throw new BadRequestException('Customer not found');
-    }
-
-    // Generate quote number
-    const quoteNumber = await this.generateQuoteNumber(tenantId);
-
-    // Calculate total from items
-    const calculatedTotal = data.items.reduce((sum, item) => sum + item.total, 0);
-
-    // Create quote with items
-    return this.prisma.quote.create({
-      data: {
-        quoteNumber,
-        description: data.description,
-        amount: calculatedTotal,
-        validUntil: new Date(data.validUntil),
-        status: QuoteStatus.DRAFT,
-        tenantId,
-        customerId: data.customerId,
-        items: {
-          create: data.items.map(item => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.total,
-          })),
-        },
-      },
-      include: { customer: true, items: true },
-    });
-  }
-
-  async update(id: string, data: Partial<CreateQuoteDto>, tenantId: string) {
-    await this.findOne(id, tenantId);
-
-    // If items are provided, delete existing and create new
-    if (data.items) {
-      await this.prisma.quoteItem.deleteMany({
-        where: { quoteId: id },
+    return this.prisma.$transaction(async (tx) => {
+      // Validate customer belongs to tenant
+      const customer = await tx.customer.findFirst({
+        where: { id: data.customerId, tenantId },
       });
-    }
 
-    const calculatedTotal = data.items
-      ? data.items.reduce((sum, item) => sum + item.total, 0)
-      : undefined;
+      if (!customer) {
+        throw new BadRequestException('Customer not found');
+      }
 
-    return this.prisma.quote.update({
-      where: { id },
-      data: {
-        ...(data.description && { description: data.description }),
-        ...(calculatedTotal !== undefined && { amount: calculatedTotal }),
-        ...(data.validUntil && { validUntil: new Date(data.validUntil) }),
-        ...(data.items && {
+      // Generate quote number
+      const quoteNumber = await this.generateQuoteNumber(tenantId, tx);
+
+      // Calculate total from items
+      const calculatedTotal = data.items.reduce((sum, item) => sum + item.total, 0);
+
+      // Create quote with items
+      return tx.quote.create({
+        data: {
+          quoteNumber,
+          description: data.description,
+          amount: calculatedTotal,
+          validUntil: new Date(data.validUntil),
+          status: QuoteStatus.DRAFT,
+          tenantId,
+          customerId: data.customerId,
           items: {
             create: data.items.map(item => ({
               description: item.description,
@@ -128,14 +93,57 @@ export class QuotesService {
               total: item.total,
             })),
           },
-        }),
-      },
-      include: { customer: true, items: true },
+        },
+        include: { customer: true, items: true },
+      });
+    });
+  }
+
+  async update(id: string, data: Partial<CreateQuoteDto>, tenantId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const quote = await tx.quote.findFirst({
+        where: { id, tenantId },
+      });
+
+      if (!quote) {
+        throw new NotFoundException('Quote not found');
+      }
+
+      // If items are provided, delete existing and create new
+      if (data.items) {
+        await tx.quoteItem.deleteMany({
+          where: { quoteId: id },
+        });
+      }
+
+      const calculatedTotal = data.items
+        ? data.items.reduce((sum, item) => sum + item.total, 0)
+        : undefined;
+
+      return tx.quote.update({
+        where: { id: quote.id },
+        data: {
+          ...(data.description && { description: data.description }),
+          ...(calculatedTotal !== undefined && { amount: calculatedTotal }),
+          ...(data.validUntil && { validUntil: new Date(data.validUntil) }),
+          ...(data.items && {
+            items: {
+              create: data.items.map(item => ({
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                total: item.total,
+              })),
+            },
+          }),
+        },
+        include: { customer: true, items: true },
+      });
     });
   }
 
   async updateStatus(id: string, status: QuoteStatus, tenantId: string) {
-    await this.findOne(id, tenantId);
+    const existing = await this.findOne(id, tenantId);
 
     const updateData: any = { status };
 
@@ -146,7 +154,7 @@ export class QuotesService {
     }
 
     const quote = await this.prisma.quote.update({
-      where: { id },
+      where: { id: existing.id },
       data: updateData,
       include: { customer: true, items: true },
     });
@@ -172,7 +180,7 @@ export class QuotesService {
     const quote = await this.findOne(id, tenantId);
 
     const updated = await this.prisma.quote.update({
-      where: { id },
+      where: { id: quote.id },
       data: { status: QuoteStatus.SENT, sentAt: new Date() },
       include: { customer: true, items: true },
     });
@@ -195,7 +203,7 @@ export class QuotesService {
     }
 
     return this.prisma.quote.delete({
-      where: { id },
+      where: { id: quote.id },
     });
   }
 
@@ -236,7 +244,7 @@ export class QuotesService {
     quote: {
       id: string;
       quoteNumber: string;
-      amount: number;
+      amount: Decimal | number;
       validUntil: Date;
       customer: { id: string; name: string; phone: string; email: string | null };
     },
@@ -249,17 +257,18 @@ export class QuotesService {
       customerName: quote.customer.name,
       customerPhone: quote.customer.phone,
       customerEmail: quote.customer.email || undefined,
-      amount: quote.amount,
+      amount: toNum(quote.amount),
       validUntil: quote.validUntil,
     };
   }
 
-  private async generateQuoteNumber(tenantId: string): Promise<string> {
+  private async generateQuoteNumber(tenantId: string, tx?: any): Promise<string> {
+    const prisma = tx || this.prisma;
     const year = new Date().getFullYear();
     const prefix = `Q${year}-`;
 
     // Find the highest quote number for this tenant this year
-    const lastQuote = await this.prisma.quote.findFirst({
+    const lastQuote = await prisma.quote.findFirst({
       where: {
         tenantId,
         quoteNumber: { startsWith: prefix },

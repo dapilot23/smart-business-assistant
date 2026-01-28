@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { CacheService, CACHE_KEYS, CACHE_TTL } from '../../config/cache/cache.service';
+import { toNum } from '../../common/utils/decimal';
 
 export interface CustomerVoiceContext {
   customerId: string;
@@ -89,7 +90,7 @@ export class CustomerContextService {
       phone: customer.phone,
       isReturningCustomer: (context?.totalVisits ?? 0) > 0,
       totalVisits: context?.totalVisits ?? 0,
-      totalSpent: context?.totalSpent ?? 0,
+      totalSpent: toNum(context?.totalSpent),
       lastServiceType: context?.lastServiceType ?? undefined,
       preferredTime: context?.preferredTime ?? undefined,
       lastInteraction: context?.lastInteraction ?? undefined,
@@ -102,7 +103,7 @@ export class CustomerContextService {
         : undefined,
       pendingInvoice: pendingInvoice
         ? {
-            amount: pendingInvoice.amount - pendingInvoice.paidAmount,
+            amount: toNum(pendingInvoice.amount) - toNum(pendingInvoice.paidAmount),
             dueDate: pendingInvoice.dueDate,
           }
         : undefined,

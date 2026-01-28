@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { UrgencyLevel, PricingRuleType } from '@prisma/client';
+import { toNum } from '../../common/utils/decimal';
 
 export interface PriceCalculationInput {
   tenantId: string;
@@ -64,9 +65,9 @@ export class DynamicPricingService {
       select: { price: true },
     });
 
-    const basePrice = pricing?.basePrice ?? service?.price ?? 0;
-    const minPrice = pricing?.minPrice ?? basePrice * 0.5;
-    const maxPrice = pricing?.maxPrice ?? basePrice * 3;
+    const basePrice = toNum(pricing?.basePrice) || toNum(service?.price) || 0;
+    const minPrice = toNum(pricing?.minPrice) || basePrice * 0.5;
+    const maxPrice = toNum(pricing?.maxPrice) || basePrice * 3;
     const dynamicEnabled = pricing?.dynamicPricingEnabled ?? true;
 
     if (!dynamicEnabled) {
@@ -178,10 +179,10 @@ export class DynamicPricingService {
 
   private getUrgencyMultiplier(
     urgency: UrgencyLevel,
-    pricing?: { urgentMultiplier: number; emergencyMultiplier: number } | null
+    pricing?: { urgentMultiplier: any; emergencyMultiplier: any } | null
   ): number {
-    const urgentMult = pricing?.urgentMultiplier ?? 1.5;
-    const emergencyMult = pricing?.emergencyMultiplier ?? 2.0;
+    const urgentMult = toNum(pricing?.urgentMultiplier) || 1.5;
+    const emergencyMult = toNum(pricing?.emergencyMultiplier) || 2.0;
 
     switch (urgency) {
       case 'STANDARD':
@@ -221,9 +222,9 @@ export class DynamicPricingService {
     rule: {
       ruleType: PricingRuleType;
       conditions: unknown;
-      multiplierMin: number;
-      multiplierMax: number;
-      flatAdjustment: number | null;
+      multiplierMin: any;
+      multiplierMax: any;
+      flatAdjustment: any;
     },
     input: PriceCalculationInput,
     demandFactor: number
@@ -240,7 +241,7 @@ export class DynamicPricingService {
           return {
             applies: true,
             multiplier: this.interpolateMultiplier(rule, 0.5),
-            adjustment: rule.flatAdjustment ?? 0,
+            adjustment: toNum(rule.flatAdjustment),
           };
         }
         break;
@@ -252,7 +253,7 @@ export class DynamicPricingService {
           return {
             applies: true,
             multiplier: this.interpolateMultiplier(rule, 0.5),
-            adjustment: rule.flatAdjustment ?? 0,
+            adjustment: toNum(rule.flatAdjustment),
           };
         }
         break;
@@ -265,7 +266,7 @@ export class DynamicPricingService {
           return {
             applies: true,
             multiplier: this.interpolateMultiplier(rule, Math.min(1, intensity)),
-            adjustment: rule.flatAdjustment ?? 0,
+            adjustment: toNum(rule.flatAdjustment),
           };
         }
         break;
@@ -277,7 +278,7 @@ export class DynamicPricingService {
           return {
             applies: true,
             multiplier: this.interpolateMultiplier(rule, 0.8),
-            adjustment: rule.flatAdjustment ?? 0,
+            adjustment: toNum(rule.flatAdjustment),
           };
         }
         break;
@@ -292,8 +293,8 @@ export class DynamicPricingService {
         if (diffDays >= daysInAdvance) {
           return {
             applies: true,
-            multiplier: rule.multiplierMin, // Discount, use min
-            adjustment: rule.flatAdjustment ?? 0,
+            multiplier: toNum(rule.multiplierMin), // Discount, use min
+            adjustment: toNum(rule.flatAdjustment),
           };
         }
         break;
@@ -305,8 +306,8 @@ export class DynamicPricingService {
           // Simplified: would normally check CustomerContext
           return {
             applies: true,
-            multiplier: rule.multiplierMin, // Discount
-            adjustment: rule.flatAdjustment ?? 0,
+            multiplier: toNum(rule.multiplierMin), // Discount
+            adjustment: toNum(rule.flatAdjustment),
           };
         }
         break;
@@ -317,10 +318,10 @@ export class DynamicPricingService {
   }
 
   private interpolateMultiplier(
-    rule: { multiplierMin: number; multiplierMax: number },
+    rule: { multiplierMin: any; multiplierMax: any },
     intensity: number
   ): number {
-    return rule.multiplierMin + (rule.multiplierMax - rule.multiplierMin) * intensity;
+    return toNum(rule.multiplierMin) + (toNum(rule.multiplierMax) - toNum(rule.multiplierMin)) * intensity;
   }
 
   private calculateTimeAdjustment(rules: AppliedRule[], basePrice: number): number {
@@ -342,7 +343,7 @@ export class DynamicPricingService {
   private createStaticPriceResult(
     basePrice: number,
     urgency: UrgencyLevel,
-    pricing?: { urgentMultiplier: number; emergencyMultiplier: number } | null
+    pricing?: { urgentMultiplier: any; emergencyMultiplier: any } | null
   ): PriceCalculationResult {
     const urgencyMultiplier = this.getUrgencyMultiplier(urgency, pricing);
     const finalPrice = Math.round(basePrice * urgencyMultiplier * 100) / 100;

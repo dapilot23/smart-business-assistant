@@ -13,6 +13,8 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentFilterDto } from './dto/appointment-filter.dto';
 import { AppointmentsValidatorsService } from './appointments-validators.service';
+import { ReminderSchedulerService } from '../noshow-prevention/reminder-scheduler.service';
+import { NoshowPreventionService } from '../noshow-prevention/noshow-prevention.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -20,6 +22,8 @@ export class AppointmentsService {
     private readonly prisma: PrismaService,
     private readonly validators: AppointmentsValidatorsService,
     private readonly eventsService: EventsService,
+    private readonly reminderScheduler: ReminderSchedulerService,
+    private readonly noshowService: NoshowPreventionService,
   ) {}
 
   async findAll(tenantId: string, filters?: AppointmentFilterDto) {
@@ -52,8 +56,8 @@ export class AppointmentsService {
   }
 
   async findById(tenantId: string, id: string) {
-    const appointment = await this.prisma.appointment.findUnique({
-      where: { id },
+    const appointment = await this.prisma.appointment.findFirst({
+      where: { id, tenantId },
       include: {
         customer: true,
         service: true,
@@ -63,10 +67,6 @@ export class AppointmentsService {
 
     if (!appointment) {
       throw new NotFoundException('Appointment not found');
-    }
-
-    if (appointment.tenantId !== tenantId) {
-      throw new ForbiddenException('Access denied');
     }
 
     return appointment;
@@ -120,6 +120,8 @@ export class AppointmentsService {
       this.buildEventPayload(tenantId, appointment),
     );
 
+    await this.reminderScheduler.scheduleReminders(appointment.id, tenantId);
+
     return appointment;
   }
 
@@ -155,7 +157,7 @@ export class AppointmentsService {
     }
 
     const updated = await this.prisma.appointment.update({
-      where: { id },
+      where: { id: existing.id },
       data: {
         customerId: dto.customerId,
         serviceId: dto.serviceId,
@@ -177,14 +179,19 @@ export class AppointmentsService {
       this.buildEventPayload(tenantId, updated),
     );
 
+    if (dto.scheduledAt) {
+      await this.reminderScheduler.cancelReminders(id);
+      await this.reminderScheduler.scheduleReminders(id, tenantId);
+    }
+
     return updated;
   }
 
   async cancel(tenantId: string, id: string) {
-    await this.findById(tenantId, id);
+    const existing = await this.findById(tenantId, id);
 
     const cancelled = await this.prisma.appointment.update({
-      where: { id },
+      where: { id: existing.id },
       data: { status: 'CANCELLED' },
       include: {
         customer: true,
@@ -198,7 +205,13 @@ export class AppointmentsService {
       this.buildEventPayload(tenantId, cancelled),
     );
 
+    await this.reminderScheduler.cancelReminders(id);
+
     return cancelled;
+  }
+
+  async markNoShow(tenantId: string, id: string) {
+    return this.noshowService.markNoShow(id, tenantId);
   }
 
   private buildEventPayload(

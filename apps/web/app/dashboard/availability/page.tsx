@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import {
   AvailabilitySchedule,

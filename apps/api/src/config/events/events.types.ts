@@ -39,6 +39,10 @@ export const EVENTS = {
   NPS_SCORE_SUBMITTED: 'nps.score.submitted',
   NPS_LOW_SCORE_ALERT: 'nps.low_score.alert',
   NPS_REVIEW_CLICKED: 'nps.review.clicked',
+
+  // Retention Events
+  RETENTION_TRIGGERED: 'retention.triggered',
+  RETENTION_COMPLETED: 'retention.completed',
 } as const;
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS];
@@ -109,6 +113,16 @@ export interface ReviewEventPayload extends BaseEventPayload {
   customerPhone: string;
 }
 
+export interface InvoiceEventPayload extends BaseEventPayload {
+  invoiceId: string;
+  invoiceNumber: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  amount: number;
+}
+
 export interface NpsEventPayload extends BaseEventPayload {
   surveyId?: string;
   jobId: string;
@@ -116,4 +130,12 @@ export interface NpsEventPayload extends BaseEventPayload {
   score?: number;
   feedback?: string;
   admins?: string[];
+}
+
+export interface RetentionEventPayload extends BaseEventPayload {
+  campaignId: string;
+  customerId: string;
+  customerName: string;
+  type: string;
+  step: number;
 }

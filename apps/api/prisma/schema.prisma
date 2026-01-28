@@ -34,6 +34,18 @@ model Tenant {
   settings     TenantSettings?
   reviewRequests ReviewRequest[]
   quoteFollowUps QuoteFollowUp[]
+  paymentReminders PaymentReminder[]
+  appointmentReminders AppointmentReminder[]
+  waitlistEntries Waitlist[]
+  aiUsageLogs     AiUsageLog[]
+  aiFeedback      AiFeedback[]
+  retentionCampaigns RetentionCampaign[]
+  serviceIntervals   ServiceInterval[]
+  technicianSkills   TechnicianSkill[]
+  messageClassifications MessageClassification[]
+  autoResponderRules AutoResponderRule[]
+  copilotConversations CopilotConversation[]
+  weeklyReports WeeklyReport[]
 
   @@map("tenants")
 }
@@ -61,6 +73,7 @@ model User {
   timeOff      TimeOff[]
   jobs         Job[]
   locations    TechnicianLocation[]
+  skills       TechnicianSkill[]
 
   @@index([tenantId])
   @@index([clerkId])
@@ -79,6 +92,12 @@ enum UserStatus {
   PENDING    // Invited but not yet joined
   ACTIVE     // Active team member
   DEACTIVATED // Removed from team
+}
+
+enum SkillLevel {
+  BASIC
+  INTERMEDIATE
+  EXPERT
 }
 
 // Team invitations
@@ -134,6 +153,12 @@ model Customer {
   location     CustomerLocation?
   auth         CustomerAuth?
   equipment    CustomerEquipment[]
+  noShowCount  Int               @default(0)
+  healthScore    Int             @default(50)
+  churnRisk      Float           @default(0)
+  lifecycleStage String          @default("NEW")
+  waitlistEntries Waitlist[]
+  retentionCampaigns RetentionCampaign[]
 
   @@index([tenantId])
   @@index([phone])
@@ -146,7 +171,7 @@ model Service {
   name            String
   description     String?
   durationMinutes Int           @default(60)
-  price           Float?
+  price           Decimal?  @db.Decimal(10, 2)
   tenantId        String
   // Availability settings
   bufferMinutes   Int           @default(0)      // Buffer time after appointment
@@ -160,6 +185,9 @@ model Service {
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointments Appointment[]
   availability ServiceAvailability[]
+  waitlistEntries Waitlist[]
+  serviceInterval ServiceInterval?
+  technicianSkills TechnicianSkill[]
 
   @@index([tenantId])
   @@map("services")
@@ -197,6 +225,7 @@ model Appointment {
   tenantId          String
   confirmationCode  String?           @unique
   manageToken       String?           @unique  // Token for customer to manage their booking
+  confirmedAt       DateTime?
   cancelledAt       DateTime?
   cancelReason      String?
   googleCalendarEventId String?       // Google Calendar event ID for sync
@@ -209,6 +238,7 @@ model Appointment {
   service      Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   assignedUser User?    @relation(fields: [assignedTo], references: [id], onDelete: SetNull)
   job          Job?
+  reminders    AppointmentReminder[]
 
   @@index([tenantId])
   @@index([customerId])
@@ -225,6 +255,51 @@ enum AppointmentStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  NO_SHOW
+}
+
+model AppointmentReminder {
+  id            String   @id @default(cuid())
+  tenantId      String
+  appointmentId String
+  step          Int      // 1=48h email, 2=24h SMS, 3=2h SMS
+  channel       String   // SMS, EMAIL
+  scheduledAt   DateTime
+  sentAt        DateTime?
+  status        String   @default("PENDING") // PENDING, SENT, CANCELLED
+  createdAt     DateTime @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([appointmentId])
+  @@index([status, scheduledAt])
+  @@map("appointment_reminders")
+}
+
+model Waitlist {
+  id             String    @id @default(cuid())
+  tenantId       String
+  customerId     String
+  serviceId      String?
+  preferredDate  DateTime?
+  preferredStart String?   // "HH:mm"
+  preferredEnd   String?   // "HH:mm"
+  status         String    @default("WAITING") // WAITING, OFFERED, BOOKED, EXPIRED, CANCELLED
+  notifiedAt     DateTime?
+  expiresAt      DateTime
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  service  Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([serviceId, status])
+  @@map("waitlist")
 }
 
 // Quotes/Estimates
@@ -232,7 +307,7 @@ model Quote {
   id          String      @id @default(cuid())
   quoteNumber String      @unique
   description String
-  amount      Float
+  amount      Decimal   @db.Decimal(10, 2)
   validUntil  DateTime
   status      QuoteStatus @default(DRAFT)
   customerId  String
@@ -267,8 +342,8 @@ model QuoteItem {
   id          String   @id @default(cuid())
   description String
   quantity    Int
-  unitPrice   Float
-  total       Float
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  total       Decimal  @db.Decimal(10, 2)
   quoteId     String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -305,8 +380,8 @@ model Invoice {
   id            String        @id @default(cuid())
   invoiceNumber String        @unique
   description   String
-  amount        Float
-  paidAmount    Float         @default(0)
+  amount        Decimal       @db.Decimal(10, 2)
+  paidAmount    Decimal       @default(0) @db.Decimal(10, 2)
   status        InvoiceStatus @default(DRAFT)
   dueDate       DateTime
   paidAt        DateTime?
@@ -318,10 +393,15 @@ model Invoice {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
+  depositAmount     Decimal?      @db.Decimal(10, 2)
+  lateFeeApplied    Boolean       @default(false)
+  lateFeeAmount     Decimal?      @db.Decimal(10, 2)
+
   // Relations
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   items    InvoiceItem[]
+  reminders PaymentReminder[]
 
   @@index([tenantId])
   @@index([customerId])
@@ -341,8 +421,8 @@ model InvoiceItem {
   id          String   @id @default(cuid())
   description String
   quantity    Int
-  unitPrice   Float
-  total       Float
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  total       Decimal  @db.Decimal(10, 2)
   invoiceId   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -352,6 +432,26 @@ model InvoiceItem {
 
   @@index([invoiceId])
   @@map("invoice_items")
+}
+
+model PaymentReminder {
+  id          String   @id @default(cuid())
+  tenantId    String
+  invoiceId   String
+  step        Int
+  channel     String   // SMS, EMAIL, BOTH
+  scheduledAt DateTime
+  sentAt      DateTime?
+  status      String   @default("PENDING") // PENDING, SENT, CANCELLED
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@index([status, scheduledAt])
+  @@map("payment_reminders")
 }
 
 // Technician regular availability schedule
@@ -576,8 +676,18 @@ model TenantSettings {
   reviewRequestEnabled Boolean @default(true)
   reviewRequestDelay  Int     @default(24) // Hours after job completion
   quoteFollowUpEnabled Boolean @default(true)
+  depositRequired      Boolean @default(false)
+  depositPercentage    Int     @default(50)
+  lateFeeEnabled       Boolean @default(false)
+  lateFeePercentage    Int     @default(5)
+  paymentReminderEnabled Boolean @default(true)
+  retentionEnabled       Boolean @default(true)
+  retentionDormantDays   Int     @default(90)
   googleReviewUrl     String?
   yelpReviewUrl       String?
+  facebookReviewUrl   String?
+  reviewTimingHours   Int     @default(3)   // Hours after NPS to send review request
+  reviewMaxPerDay     Int     @default(2)   // Max NPS-gated review requests per day
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -594,7 +704,9 @@ model ReviewRequest {
   status      ReviewRequestStatus @default(PENDING)
   sentAt      DateTime?
   clickedAt   DateTime?
-  platform    String?  // "google" or "yelp"
+  platform    String?  // "google", "yelp", or "facebook"
+  npsScore    Int?
+  npsGated    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -625,7 +737,7 @@ model CustomerContext {
   lastServiceType String?
   preferredTime   String?  // e.g., "morning", "afternoon", "evening"
   totalVisits     Int      @default(0)
-  totalSpent      Float    @default(0)
+  totalSpent      Decimal  @default(0) @db.Decimal(10, 2)
   aiSummary       String?  @db.Text  // AI-generated summary of customer history
   preferences     Json?    // Additional preferences (e.g., specific technician, communication style)
   lastInteraction DateTime?
@@ -732,8 +844,8 @@ model PhotoQuoteRequest {
   aiAnalysis        Json?               // Full AI analysis response
   issueDescription  String?             // AI-identified issue description
   suggestedService  String?             // Recommended service type
-  estimatedPriceMin Float?              // Lower bound estimate
-  estimatedPriceMax Float?              // Upper bound estimate
+  estimatedPriceMin Decimal?             @db.Decimal(10, 2) // Lower bound estimate
+  estimatedPriceMax Decimal?             @db.Decimal(10, 2) // Upper bound estimate
   confidence        Float?              // AI confidence score (0-1)
   complexity        PhotoComplexity     @default(MEDIUM)
   status            PhotoQuoteStatus    @default(PENDING)
@@ -1020,7 +1132,7 @@ model EquipmentServiceHistory {
   serviceDate  DateTime
   serviceType  String   // e.g., "Routine Maintenance", "Repair", "Inspection"
   description  String?  @db.Text
-  cost         Float?
+  cost         Decimal? @db.Decimal(10, 2)
   partsReplaced String?  @db.Text
   technicianId String?
   technicianName String?
@@ -1109,7 +1221,7 @@ model DemandMetrics {
   completedJobs Int     @default(0)
   cancelledJobs Int     @default(0)
   capacityUsed Float    @default(0)  // Percentage of available slots used
-  revenue      Float    @default(0)
+  revenue      Decimal  @default(0) @db.Decimal(10, 2)
   avgJobDuration Int?   // Average job duration in minutes
   peakHour     Boolean  @default(false)
   createdAt    DateTime @default(now())
@@ -1130,15 +1242,15 @@ model PricingRule {
   description   String?
   ruleType      PricingRuleType
   conditions    Json            // Rule conditions (time, demand, urgency, etc.)
-  multiplierMin Float           @default(1.0)  // Minimum multiplier
-  multiplierMax Float           @default(1.5)  // Maximum multiplier
-  flatAdjustment Float?         // Flat fee adjustment (optional)
+  multiplierMin Decimal         @default(1.0) @db.Decimal(5, 2)  // Minimum multiplier
+  multiplierMax Decimal         @default(1.5) @db.Decimal(5, 2)  // Maximum multiplier
+  flatAdjustment Decimal?       @db.Decimal(10, 2) // Flat fee adjustment (optional)
   priority      Int             @default(0)    // Higher priority rules apply first
   isActive      Boolean         @default(true)
   startsAt      DateTime?       // Optional rule validity period
   endsAt        DateTime?
   appliedCount  Int             @default(0)    // How many times this rule was applied
-  totalRevenue  Float           @default(0)    // Revenue attributed to this rule
+  totalRevenue  Decimal         @default(0) @db.Decimal(10, 2)    // Revenue attributed to this rule
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -1165,11 +1277,11 @@ model ServicePricing {
   id              String   @id @default(cuid())
   tenantId        String
   serviceId       String
-  basePrice       Float
-  minPrice        Float?   // Floor price
-  maxPrice        Float?   // Ceiling price
-  urgentMultiplier Float   @default(1.5)  // Standard urgency multiplier
-  emergencyMultiplier Float @default(2.0) // Emergency multiplier
+  basePrice       Decimal  @db.Decimal(10, 2)
+  minPrice        Decimal? @db.Decimal(10, 2)   // Floor price
+  maxPrice        Decimal? @db.Decimal(10, 2)   // Ceiling price
+  urgentMultiplier Decimal @default(1.5) @db.Decimal(5, 2)  // Standard urgency multiplier
+  emergencyMultiplier Decimal @default(2.0) @db.Decimal(5, 2) // Emergency multiplier
   dynamicPricingEnabled Boolean @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1186,8 +1298,8 @@ model PriceQuoteHistory {
   tenantId        String
   customerId      String?
   serviceId       String?
-  basePrice       Float
-  finalPrice      Float
+  basePrice       Decimal  @db.Decimal(10, 2)
+  finalPrice      Decimal  @db.Decimal(10, 2)
   appliedRules    Json     // Array of rule IDs and their effects
   urgencyLevel    UrgencyLevel @default(STANDARD)
   demandFactor    Float    @default(1.0)
@@ -1264,6 +1376,7 @@ model ConversationThread {
   updatedAt      DateTime          @updatedAt
 
   messages Message[]
+  classifications MessageClassification[]
 
   @@index([tenantId])
   @@index([customerId])
@@ -1409,4 +1522,231 @@ model QuickReply {
   @@index([category])
   @@index([shortcut])
   @@map("quick_replies")
+}
+
+// ============================================
+// Sprint 7.0: AI Engine Foundation
+// ============================================
+
+enum AiFeedbackAction {
+  ACCEPTED
+  EDITED
+  REJECTED
+}
+
+// Track every Claude API call per tenant per feature
+model AiUsageLog {
+  id           String   @id @default(cuid())
+  tenantId     String
+  feature      String
+  template     String
+  inputTokens  Int
+  outputTokens Int
+  costCents    Int
+  latencyMs    Int
+  success      Boolean
+  errorMessage String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, feature])
+  @@index([createdAt])
+  @@map("ai_usage_logs")
+}
+
+// Track human feedback on AI-generated outputs
+model AiFeedback {
+  id        String           @id @default(cuid())
+  tenantId  String
+  feature   String
+  template  String
+  aiOutput  String           @db.Text
+  action    AiFeedbackAction
+  humanEdit String?          @db.Text
+  createdAt DateTime         @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, feature])
+  @@index([createdAt])
+  @@map("ai_feedback")
+}
+
+// Customer retention campaigns (win-back sequences)
+model RetentionCampaign {
+  id           String    @id @default(cuid())
+  tenantId     String
+  customerId   String
+  type         String    // DORMANT_WINBACK, SEASONAL, MAINTENANCE
+  step         Int
+  channel      String    // SMS, EMAIL, BOTH
+  scheduledAt  DateTime
+  sentAt       DateTime?
+  status       String    @default("PENDING") // PENDING, SENT, CANCELLED, FAILED
+  discountCode String?
+  message      String?   @db.Text
+  createdAt    DateTime  @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([status, scheduledAt])
+  @@index([tenantId, type])
+  @@map("retention_campaigns")
+}
+
+// Service maintenance intervals
+model ServiceInterval {
+  id           String   @id @default(cuid())
+  tenantId     String
+  serviceId    String   @unique
+  intervalDays Int
+  reminderDays Int      @default(14)
+  createdAt    DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, serviceId])
+  @@index([tenantId])
+  @@map("service_intervals")
+}
+
+// ============================================
+// Sprint 7.6: Smart Dispatch & Route Optimization
+// ============================================
+
+// Technician skill levels for service matching
+model TechnicianSkill {
+  id        String     @id @default(cuid())
+  tenantId  String
+  userId    String
+  serviceId String
+  level     SkillLevel @default(INTERMEDIATE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([serviceId])
+  @@index([tenantId, serviceId])
+  @@map("technician_skills")
+}
+
+// ============================================
+// Sprint 7.7: Communication Intelligence
+// ============================================
+
+enum MessageIntent {
+  INQUIRY
+  BOOKING_REQUEST
+  RESCHEDULE_REQUEST
+  CANCELLATION_REQUEST
+  COMPLAINT
+  FEEDBACK
+  EMERGENCY
+  FOLLOW_UP
+  GENERAL
+}
+
+enum MessageSentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  URGENT
+}
+
+// AI classification of inbound messages
+model MessageClassification {
+  id             String           @id @default(cuid())
+  tenantId       String
+  conversationId String
+  messageId      String           @unique
+  intent         MessageIntent
+  sentiment      MessageSentiment
+  confidence     Float
+  urgencyScore   Int              @default(0) // 0-100
+  keywords       String[]
+  suggestedRoute String?          // e.g., "sales", "support", "scheduling"
+  processedAt    DateTime         @default(now())
+
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation   ConversationThread @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([conversationId])
+  @@index([intent])
+  @@index([sentiment])
+  @@index([urgencyScore])
+  @@map("message_classifications")
+}
+
+// Configurable auto-responder rules
+model AutoResponderRule {
+  id               String            @id @default(cuid())
+  tenantId         String
+  name             String
+  intent           MessageIntent?    // null = any intent
+  sentiment        MessageSentiment? // null = any sentiment
+  minUrgency       Int               @default(0)
+  maxUrgency       Int               @default(100)
+  responseTemplate String            @db.Text
+  isActive         Boolean           @default(true)
+  priority         Int               @default(0) // higher = checked first
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@index([intent])
+  @@map("auto_responder_rules")
+}
+
+// ============================================
+// Sprint 7.8: AI Business Copilot
+// ============================================
+
+// AI Copilot conversation history
+model CopilotConversation {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  messages  Json     // Array of {role, content, toolCalls, toolResults}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@map("copilot_conversations")
+}
+
+// Weekly AI-generated business reports
+model WeeklyReport {
+  id        String    @id @default(cuid())
+  tenantId  String
+  weekStart DateTime  @db.Date
+  report    Json      // Structured report: metrics, wins, actions, forecast
+  sent      Boolean   @default(false)
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, weekStart])
+  @@index([tenantId])
+  @@map("weekly_reports")
 }

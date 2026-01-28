@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { PricingRuleType, Prisma } from '@prisma/client';
+import { toNum } from '../../common/utils/decimal';
 
 export interface CreatePricingRuleDto {
   name: string;
@@ -129,7 +130,7 @@ export class PricingRulesService {
       orderBy: { totalRevenue: 'desc' },
     });
 
-    const totalRevenue = rules.reduce((sum, r) => sum + r.totalRevenue, 0);
+    const totalRevenue = rules.reduce((sum, r) => sum + toNum(r.totalRevenue), 0);
     const totalApplications = rules.reduce((sum, r) => sum + r.appliedCount, 0);
 
     return {

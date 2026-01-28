@@ -7,6 +7,7 @@ import {
 } from '../../config/events/events.types';
 import { CalendarQueueService } from '../calendar/calendar-queue.service';
 import { CreatePublicBookingDto } from './dto/create-public-booking.dto';
+import { toNum } from '../../common/utils/decimal';
 import { randomBytes } from 'crypto';
 
 @Injectable()
@@ -301,11 +302,33 @@ export class PublicBookingService {
       this.logger.error('Failed to queue calendar sync:', err);
     });
 
+    const depositInfo = await this.getDepositInfo(tenantId, toNum(service.price));
+
     return {
       id: appointment.id,
       confirmationCode,
       manageToken,
       success: true,
+      ...depositInfo,
+    };
+  }
+
+  private async getDepositInfo(tenantId: string, servicePrice: number) {
+    const settings = await this.prisma.tenantSettings.findUnique({
+      where: { tenantId },
+    });
+
+    if (!settings?.depositRequired || servicePrice <= 0) {
+      return { requiresDeposit: false };
+    }
+
+    const depositPercentage = settings.depositPercentage || 50;
+    const depositAmount = Math.round(servicePrice * depositPercentage) / 100;
+
+    return {
+      requiresDeposit: true,
+      depositPercentage,
+      depositAmount,
     };
   }
 

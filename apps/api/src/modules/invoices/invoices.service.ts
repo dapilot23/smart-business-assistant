@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { InvoiceStatus } from '@prisma/client';
+import { PaymentReminderService } from '../payment-reminders/payment-reminder.service';
+import { EventsService } from '../../config/events/events.service';
+import {
+  EVENTS,
+  InvoiceEventPayload,
+} from '../../config/events/events.types';
+import { toNum } from '../../common/utils/decimal';
 
 export interface InvoiceItemDto {
   description: string;
@@ -21,7 +28,11 @@ export interface CreateInvoiceDto {
 export class InvoicesService {
   private readonly logger = new Logger(InvoicesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reminderService: PaymentReminderService,
+    private readonly eventsService: EventsService,
+  ) {}
 
   async findAll(tenantId: string) {
     return this.prisma.invoice.findMany({
@@ -32,8 +43,8 @@ export class InvoicesService {
   }
 
   async findOne(id: string, tenantId: string) {
-    const invoice = await this.prisma.invoice.findUnique({
-      where: { id },
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id, tenantId },
       include: { customer: true, items: true },
     });
 
@@ -41,97 +52,97 @@ export class InvoicesService {
       throw new NotFoundException('Invoice not found');
     }
 
-    if (invoice.tenantId !== tenantId) {
-      throw new ForbiddenException('Access denied');
-    }
-
     return invoice;
   }
 
   async create(data: CreateInvoiceDto, tenantId: string) {
-    const customer = await this.prisma.customer.findFirst({
-      where: { id: data.customerId, tenantId },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const customer = await tx.customer.findFirst({
+        where: { id: data.customerId, tenantId },
+      });
 
-    if (!customer) {
-      throw new BadRequestException('Customer not found');
-    }
+      if (!customer) {
+        throw new BadRequestException('Customer not found');
+      }
 
-    const invoiceNumber = await this.generateInvoiceNumber(tenantId);
-    const calculatedTotal = data.items.reduce((sum, item) => sum + item.total, 0);
+      const invoiceNumber = await this.generateInvoiceNumber(tenantId, tx);
+      const calculatedTotal = data.items.reduce((sum, item) => sum + item.total, 0);
 
-    return this.prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        description: data.description,
-        amount: calculatedTotal,
-        dueDate: new Date(data.dueDate),
-        status: InvoiceStatus.DRAFT,
-        tenantId,
-        customerId: data.customerId,
-        quoteId: data.quoteId,
-        items: {
-          create: data.items.map((item) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.total,
-          })),
+      return tx.invoice.create({
+        data: {
+          invoiceNumber,
+          description: data.description,
+          amount: calculatedTotal,
+          dueDate: new Date(data.dueDate),
+          status: InvoiceStatus.DRAFT,
+          tenantId,
+          customerId: data.customerId,
+          quoteId: data.quoteId,
+          items: {
+            create: data.items.map((item) => ({
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              total: item.total,
+            })),
+          },
         },
-      },
-      include: { customer: true, items: true },
+        include: { customer: true, items: true },
+      });
     });
   }
 
   async createFromQuote(quoteId: string, tenantId: string, dueDate: string) {
-    const quote = await this.prisma.quote.findFirst({
-      where: { id: quoteId, tenantId },
-      include: { customer: true, items: true },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const quote = await tx.quote.findFirst({
+        where: { id: quoteId, tenantId },
+        include: { customer: true, items: true },
+      });
 
-    if (!quote) {
-      throw new BadRequestException('Quote not found');
-    }
+      if (!quote) {
+        throw new BadRequestException('Quote not found');
+      }
 
-    if (quote.status !== 'ACCEPTED') {
-      throw new BadRequestException('Only accepted quotes can be converted to invoices');
-    }
+      if (quote.status !== 'ACCEPTED') {
+        throw new BadRequestException('Only accepted quotes can be converted to invoices');
+      }
 
-    const existingInvoice = await this.prisma.invoice.findFirst({
-      where: { quoteId, tenantId },
-    });
+      const existingInvoice = await tx.invoice.findFirst({
+        where: { quoteId, tenantId },
+      });
 
-    if (existingInvoice) {
-      throw new BadRequestException('Invoice already exists for this quote');
-    }
+      if (existingInvoice) {
+        throw new BadRequestException('Invoice already exists for this quote');
+      }
 
-    const invoiceNumber = await this.generateInvoiceNumber(tenantId);
+      const invoiceNumber = await this.generateInvoiceNumber(tenantId, tx);
 
-    return this.prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        description: quote.description,
-        amount: quote.amount,
-        dueDate: new Date(dueDate),
-        status: InvoiceStatus.DRAFT,
-        tenantId,
-        customerId: quote.customerId,
-        quoteId: quote.id,
-        items: {
-          create: quote.items.map((item) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.total,
-          })),
+      return tx.invoice.create({
+        data: {
+          invoiceNumber,
+          description: quote.description,
+          amount: quote.amount,
+          dueDate: new Date(dueDate),
+          status: InvoiceStatus.DRAFT,
+          tenantId,
+          customerId: quote.customerId,
+          quoteId: quote.id,
+          items: {
+            create: quote.items.map((item) => ({
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              total: item.total,
+            })),
+          },
         },
-      },
-      include: { customer: true, items: true },
+        include: { customer: true, items: true },
+      });
     });
   }
 
   async updateStatus(id: string, status: InvoiceStatus, tenantId: string) {
-    await this.findOne(id, tenantId);
+    const existing = await this.findOne(id, tenantId);
 
     const updateData: any = { status };
 
@@ -143,11 +154,41 @@ export class InvoicesService {
       updateData.paidAt = new Date();
     }
 
-    return this.prisma.invoice.update({
-      where: { id },
+    const invoice = await this.prisma.invoice.update({
+      where: { id: existing.id },
       data: updateData,
       include: { customer: true, items: true },
     });
+
+    await this.handleStatusSideEffects(invoice, status, tenantId);
+
+    return invoice;
+  }
+
+  private async handleStatusSideEffects(
+    invoice: any,
+    status: InvoiceStatus,
+    tenantId: string,
+  ) {
+    const payload: Omit<InvoiceEventPayload, 'timestamp' | 'correlationId'> = {
+      tenantId,
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      customerId: invoice.customerId,
+      customerName: invoice.customer.name,
+      customerPhone: invoice.customer.phone,
+      customerEmail: invoice.customer.email,
+      amount: invoice.amount,
+    };
+
+    if (status === InvoiceStatus.SENT) {
+      await this.reminderService.scheduleReminders(invoice.id, tenantId);
+      this.eventsService.emit<InvoiceEventPayload>(EVENTS.INVOICE_SENT, payload);
+    }
+
+    if (status === InvoiceStatus.PAID || status === InvoiceStatus.CANCELLED) {
+      await this.reminderService.cancelReminders(invoice.id);
+    }
   }
 
   async delete(id: string, tenantId: string) {
@@ -158,7 +199,7 @@ export class InvoicesService {
     }
 
     return this.prisma.invoice.delete({
-      where: { id },
+      where: { id: invoice.id },
     });
   }
 
@@ -173,13 +214,13 @@ export class InvoicesService {
     const paid = invoices.filter((i) => i.status === InvoiceStatus.PAID).length;
     const overdue = invoices.filter((i) => i.status === InvoiceStatus.OVERDUE).length;
 
-    const totalAmount = invoices.reduce((sum, i) => sum + i.amount, 0);
+    const totalAmount = invoices.reduce((sum, i) => sum + toNum(i.amount), 0);
     const paidAmount = invoices
       .filter((i) => i.status === InvoiceStatus.PAID)
-      .reduce((sum, i) => sum + i.amount, 0);
+      .reduce((sum, i) => sum + toNum(i.amount), 0);
     const outstandingAmount = invoices
       .filter((i) => i.status === InvoiceStatus.SENT || i.status === InvoiceStatus.OVERDUE)
-      .reduce((sum, i) => sum + (i.amount - i.paidAmount), 0);
+      .reduce((sum, i) => sum + (toNum(i.amount) - toNum(i.paidAmount)), 0);
 
     return {
       total,
@@ -193,11 +234,67 @@ export class InvoicesService {
     };
   }
 
-  private async generateInvoiceNumber(tenantId: string): Promise<string> {
+  async getPipelineStats(tenantId: string) {
+    const [outstanding, overdue, paidInvoices, lateFees, pendingReminders] =
+      await Promise.all([
+        this.prisma.invoice.findMany({
+          where: { tenantId, status: { in: ['SENT', 'OVERDUE'] } },
+        }),
+        this.prisma.invoice.findMany({
+          where: { tenantId, status: 'OVERDUE' },
+        }),
+        this.prisma.invoice.findMany({
+          where: { tenantId, status: 'PAID', sentAt: { not: null }, paidAt: { not: null } },
+        }),
+        this.prisma.invoice.aggregate({
+          where: { tenantId, lateFeeApplied: true },
+          _sum: { lateFeeAmount: true },
+        }),
+        this.prisma.paymentReminder.count({
+          where: { tenantId, status: 'PENDING' },
+        }),
+      ]);
+
+    const outstandingTotal = outstanding.reduce(
+      (sum, i) => sum + (toNum(i.amount) - toNum(i.paidAmount)), 0,
+    );
+    const overdueTotal = overdue.reduce(
+      (sum, i) => sum + (toNum(i.amount) - toNum(i.paidAmount)), 0,
+    );
+
+    const avgDaysToPayment = this.calcAvgDaysToPayment(paidInvoices);
+
+    return {
+      outstandingCount: outstanding.length,
+      outstandingTotal,
+      overdueCount: overdue.length,
+      overdueTotal,
+      avgDaysToPayment,
+      lateFeeTotal: lateFees._sum.lateFeeAmount || 0,
+      pendingReminders,
+    };
+  }
+
+  private calcAvgDaysToPayment(
+    invoices: { sentAt: Date | null; paidAt: Date | null }[],
+  ): number | null {
+    const valid = invoices.filter((i) => i.sentAt && i.paidAt);
+    if (valid.length === 0) return null;
+
+    const totalDays = valid.reduce((sum, i) => {
+      const days = (i.paidAt!.getTime() - i.sentAt!.getTime()) / 86400000;
+      return sum + days;
+    }, 0);
+
+    return Math.round((totalDays / valid.length) * 10) / 10;
+  }
+
+  private async generateInvoiceNumber(tenantId: string, tx?: any): Promise<string> {
+    const prisma = tx || this.prisma;
     const year = new Date().getFullYear();
     const prefix = `INV${year}-`;
 
-    const lastInvoice = await this.prisma.invoice.findFirst({
+    const lastInvoice = await prisma.invoice.findFirst({
       where: {
         tenantId,
         invoiceNumber: { startsWith: prefix },
