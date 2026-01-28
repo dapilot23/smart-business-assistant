@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -10,9 +10,14 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
+const DEBOUNCE_MS = 300;
+
 export function ChatInput({ onSend, isSending, disabled }: ChatInputProps) {
   const [message, setMessage] = useState('');
+  const [isDebouncing, setIsDebouncing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSentRef = useRef<number>(0);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -21,18 +26,48 @@ export function ChatInput({ onSend, isSending, disabled }: ChatInputProps) {
     }
   }, [message]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (message.trim() && !isSending && !disabled) {
-      onSend(message.trim());
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleSend = useCallback(() => {
+    const trimmed = message.trim();
+    if (!trimmed || isSending || disabled || isDebouncing) return;
+
+    const now = Date.now();
+    const timeSinceLastSend = now - lastSentRef.current;
+
+    if (timeSinceLastSend < DEBOUNCE_MS) {
+      // Too soon, debounce
+      setIsDebouncing(true);
+      debounceTimerRef.current = setTimeout(() => {
+        setIsDebouncing(false);
+        lastSentRef.current = Date.now();
+        onSend(trimmed);
+        setMessage('');
+      }, DEBOUNCE_MS - timeSinceLastSend);
+    } else {
+      // Send immediately
+      lastSentRef.current = now;
+      onSend(trimmed);
       setMessage('');
     }
+  }, [message, isSending, disabled, isDebouncing, onSend]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSend();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      handleSend();
     }
   };
 
@@ -52,10 +87,10 @@ export function ChatInput({ onSend, isSending, disabled }: ChatInputProps) {
         <Button
           type="submit"
           size="icon"
-          disabled={!message.trim() || isSending || disabled}
+          disabled={!message.trim() || isSending || disabled || isDebouncing}
           className="h-10 w-10 shrink-0"
         >
-          {isSending ? (
+          {isSending || isDebouncing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Send className="h-4 w-4" />

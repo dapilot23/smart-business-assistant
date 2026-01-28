@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ChatMessage,
   ConversationSummary,
@@ -12,6 +12,7 @@ import {
   getConversation,
   deleteConversation,
 } from '@/lib/api/ai-copilot';
+import { sanitizeMessage } from '@/lib/utils';
 
 export function useAiCopilot() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
@@ -23,12 +24,25 @@ export function useAiCopilot() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // AbortController refs for cancelling in-flight requests
+  const loadConversationAbortRef = useRef<AbortController | null>(null);
+  const sendMessageAbortRef = useRef<AbortController | null>(null);
+
+  // Cleanup abort controllers on unmount
+  useEffect(() => {
+    return () => {
+      loadConversationAbortRef.current?.abort();
+      sendMessageAbortRef.current?.abort();
+    };
+  }, []);
+
   const loadConversations = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getConversations();
       setConversations(data);
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setError(
         err instanceof Error ? err.message : 'Failed to load conversations'
       );
@@ -38,18 +52,29 @@ export function useAiCopilot() {
   }, []);
 
   const loadConversation = useCallback(async (id: string) => {
+    // Cancel any in-flight conversation load
+    loadConversationAbortRef.current?.abort();
+    const abortController = new AbortController();
+    loadConversationAbortRef.current = abortController;
+
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getConversation(id);
-      setMessages(data.messages || []);
-      setCurrentConversationId(id);
+      const data = await getConversation(id, { signal: abortController.signal });
+      // Only update state if this request wasn't aborted
+      if (!abortController.signal.aborted) {
+        setMessages(data.messages || []);
+        setCurrentConversationId(id);
+      }
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setError(
         err instanceof Error ? err.message : 'Failed to load conversation'
       );
     } finally {
-      setIsLoading(false);
+      if (!abortController.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -61,12 +86,19 @@ export function useAiCopilot() {
 
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!content.trim() || isSending) return;
+      // Sanitize input before processing
+      const sanitizedContent = sanitizeMessage(content);
+      if (!sanitizedContent || isSending) return;
+
+      // Cancel any in-flight message send (edge case)
+      sendMessageAbortRef.current?.abort();
+      const abortController = new AbortController();
+      sendMessageAbortRef.current = abortController;
 
       const userMessage: ChatMessage = {
         id: `temp-user-${Date.now()}`,
         role: 'user',
-        content,
+        content: sanitizedContent,
         createdAt: new Date().toISOString(),
       };
 
@@ -75,10 +107,16 @@ export function useAiCopilot() {
       setError(null);
 
       try {
-        const response: CopilotResponse = await sendChatMessage({
-          message: content,
-          conversationId: currentConversationId || undefined,
-        });
+        const response: CopilotResponse = await sendChatMessage(
+          {
+            message: sanitizedContent,
+            conversationId: currentConversationId || undefined,
+          },
+          { signal: abortController.signal }
+        );
+
+        // Only update state if not aborted
+        if (abortController.signal.aborted) return;
 
         const assistantMessage: ChatMessage = {
           id: `assistant-${Date.now()}`,
@@ -95,10 +133,13 @@ export function useAiCopilot() {
           loadConversations();
         }
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'Failed to send message');
         setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
       } finally {
-        setIsSending(false);
+        if (!abortController.signal.aborted) {
+          setIsSending(false);
+        }
       }
     },
     [currentConversationId, isSending, loadConversations]

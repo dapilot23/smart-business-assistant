@@ -123,7 +123,7 @@ export default function InsightsPage() {
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
-        <ActionItems items={actionItems} />
+        <ActionItems items={actionItems} reportId={currentReport.id} />
         <ForecastSection forecast={forecast} />
       </div>
     </div>

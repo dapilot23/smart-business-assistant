@@ -32,11 +32,12 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
     clearError,
   } = useAiCopilot();
 
+  // Only scroll when panel is open to prevent memory leaks
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (isOpen && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [messages, isOpen]);
 
   if (!isOpen) return null;
 

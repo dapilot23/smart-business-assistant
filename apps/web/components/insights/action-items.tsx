@@ -1,14 +1,46 @@
 'use client';
 
 import { Circle, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface ActionItemsProps {
   items: string[];
+  reportId?: string;
 }
 
-export function ActionItems({ items }: ActionItemsProps) {
+const STORAGE_KEY_PREFIX = 'action-items-completed-';
+
+export function ActionItems({ items, reportId }: ActionItemsProps) {
   const [completed, setCompleted] = useState<Set<number>>(new Set());
+
+  // Load from localStorage on mount or when reportId changes
+  useEffect(() => {
+    if (!reportId) return;
+    try {
+      const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}${reportId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setCompleted(new Set(parsed));
+        }
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [reportId]);
+
+  // Persist to localStorage when completed changes
+  const persistCompleted = useCallback((newCompleted: Set<number>) => {
+    if (!reportId) return;
+    try {
+      localStorage.setItem(
+        `${STORAGE_KEY_PREFIX}${reportId}`,
+        JSON.stringify(Array.from(newCompleted))
+      );
+    } catch {
+      // Ignore localStorage errors (quota exceeded, etc.)
+    }
+  }, [reportId]);
 
   const toggleItem = (index: number) => {
     setCompleted((prev) => {
@@ -18,6 +50,7 @@ export function ActionItems({ items }: ActionItemsProps) {
       } else {
         next.add(index);
       }
+      persistCompleted(next);
       return next;
     });
   };

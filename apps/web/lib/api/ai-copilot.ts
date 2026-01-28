@@ -7,22 +7,37 @@ import {
 } from '@/lib/types/ai-copilot';
 import { WeeklyReport } from '@/lib/types/weekly-report';
 
+interface RequestOptions {
+  signal?: AbortSignal;
+}
+
 // Chat endpoints
 export async function sendChatMessage(
-  request: SendMessageRequest
+  request: SendMessageRequest,
+  options?: RequestOptions
 ): Promise<CopilotResponse> {
   return fetchWithAuth(getApiUrl('/ai-copilot/chat'), {
     method: 'POST',
     body: JSON.stringify(request),
+    signal: options?.signal,
   });
 }
 
-export async function getConversations(): Promise<ConversationSummary[]> {
-  return fetchWithAuth(getApiUrl('/ai-copilot/conversations'));
+export async function getConversations(
+  options?: RequestOptions
+): Promise<ConversationSummary[]> {
+  return fetchWithAuth(getApiUrl('/ai-copilot/conversations'), {
+    signal: options?.signal,
+  });
 }
 
-export async function getConversation(id: string): Promise<Conversation> {
-  return fetchWithAuth(getApiUrl(`/ai-copilot/conversations/${id}`));
+export async function getConversation(
+  id: string,
+  options?: RequestOptions
+): Promise<Conversation> {
+  return fetchWithAuth(getApiUrl(`/ai-copilot/conversations/${id}`), {
+    signal: options?.signal,
+  });
 }
 
 export async function deleteConversation(id: string): Promise<void> {
