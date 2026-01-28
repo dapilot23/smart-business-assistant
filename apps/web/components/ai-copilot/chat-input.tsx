@@ -18,6 +18,9 @@ export function ChatInput({ onSend, isSending, disabled }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSentRef = useRef<number>(0);
+  // Use ref to always have current message in timeout callback
+  const messageRef = useRef(message);
+  messageRef.current = message;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -39,17 +42,26 @@ export function ChatInput({ onSend, isSending, disabled }: ChatInputProps) {
     const trimmed = message.trim();
     if (!trimmed || isSending || disabled || isDebouncing) return;
 
+    // Clear any pending debounce
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
     const now = Date.now();
     const timeSinceLastSend = now - lastSentRef.current;
 
     if (timeSinceLastSend < DEBOUNCE_MS) {
-      // Too soon, debounce
+      // Too soon, debounce - use ref to get fresh message when timer fires
       setIsDebouncing(true);
       debounceTimerRef.current = setTimeout(() => {
+        const currentMessage = messageRef.current.trim();
+        if (currentMessage) {
+          lastSentRef.current = Date.now();
+          onSend(currentMessage);
+          setMessage('');
+        }
         setIsDebouncing(false);
-        lastSentRef.current = Date.now();
-        onSend(trimmed);
-        setMessage('');
       }, DEBOUNCE_MS - timeSinceLastSend);
     } else {
       // Send immediately
@@ -80,7 +92,7 @@ export function ChatInput({ onSend, isSending, disabled }: ChatInputProps) {
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask anything about your business..."
-          disabled={isSending || disabled}
+          disabled={isSending || disabled || isDebouncing}
           rows={1}
           className="flex-1 resize-none rounded-lg border border-input bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
         />

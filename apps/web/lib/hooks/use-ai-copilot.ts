@@ -25,29 +25,42 @@ export function useAiCopilot() {
   const [error, setError] = useState<string | null>(null);
 
   // AbortController refs for cancelling in-flight requests
+  const loadConversationsAbortRef = useRef<AbortController | null>(null);
   const loadConversationAbortRef = useRef<AbortController | null>(null);
   const sendMessageAbortRef = useRef<AbortController | null>(null);
+  // Track pending user message ID for cleanup on abort
+  const pendingUserMessageIdRef = useRef<string | null>(null);
 
   // Cleanup abort controllers on unmount
   useEffect(() => {
     return () => {
+      loadConversationsAbortRef.current?.abort();
       loadConversationAbortRef.current?.abort();
       sendMessageAbortRef.current?.abort();
     };
   }, []);
 
   const loadConversations = useCallback(async () => {
+    // Cancel any in-flight request
+    loadConversationsAbortRef.current?.abort();
+    const abortController = new AbortController();
+    loadConversationsAbortRef.current = abortController;
+
     try {
       setIsLoading(true);
-      const data = await getConversations();
-      setConversations(data);
+      const data = await getConversations({ signal: abortController.signal });
+      if (!abortController.signal.aborted) {
+        setConversations(data);
+      }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setError(
         err instanceof Error ? err.message : 'Failed to load conversations'
       );
     } finally {
-      setIsLoading(false);
+      if (!abortController.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -79,6 +92,10 @@ export function useAiCopilot() {
   }, []);
 
   const startNewConversation = useCallback(() => {
+    // Cancel any pending send
+    if (sendMessageAbortRef.current) {
+      sendMessageAbortRef.current.abort();
+    }
     setCurrentConversationId(null);
     setMessages([]);
     setError(null);
@@ -90,8 +107,17 @@ export function useAiCopilot() {
       const sanitizedContent = sanitizeMessage(content);
       if (!sanitizedContent || isSending) return;
 
-      // Cancel any in-flight message send (edge case)
-      sendMessageAbortRef.current?.abort();
+      // Cancel any in-flight message send and clean up pending message
+      if (sendMessageAbortRef.current) {
+        sendMessageAbortRef.current.abort();
+        // Remove the pending user message from previous aborted request
+        if (pendingUserMessageIdRef.current) {
+          setMessages((prev) =>
+            prev.filter((m) => m.id !== pendingUserMessageIdRef.current)
+          );
+        }
+      }
+
       const abortController = new AbortController();
       sendMessageAbortRef.current = abortController;
 
@@ -101,6 +127,9 @@ export function useAiCopilot() {
         content: sanitizedContent,
         createdAt: new Date().toISOString(),
       };
+
+      // Track this message ID for potential cleanup
+      pendingUserMessageIdRef.current = userMessage.id;
 
       setMessages((prev) => [...prev, userMessage]);
       setIsSending(true);
@@ -115,8 +144,14 @@ export function useAiCopilot() {
           { signal: abortController.signal }
         );
 
-        // Only update state if not aborted
-        if (abortController.signal.aborted) return;
+        // Check if aborted - clean up user message if so
+        if (abortController.signal.aborted) {
+          setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+          return;
+        }
+
+        // Clear pending message ref since we got a response
+        pendingUserMessageIdRef.current = null;
 
         const assistantMessage: ChatMessage = {
           id: `assistant-${Date.now()}`,
@@ -133,9 +168,15 @@ export function useAiCopilot() {
           loadConversations();
         }
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
+        // Clean up user message on abort
+        if (err instanceof Error && err.name === 'AbortError') {
+          setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+          pendingUserMessageIdRef.current = null;
+          return;
+        }
         setError(err instanceof Error ? err.message : 'Failed to send message');
         setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+        pendingUserMessageIdRef.current = null;
       } finally {
         if (!abortController.signal.aborted) {
           setIsSending(false);

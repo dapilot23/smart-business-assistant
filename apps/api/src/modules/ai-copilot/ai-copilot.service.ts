@@ -231,10 +231,8 @@ export class AiCopilotService {
 
     const lowerMessage = message.toLowerCase();
     let response: string;
-    let toolsUsed: string[] = [];
 
     // Simulate different types of responses based on the question
-    // Note: toolsUsed is left empty in demo mode to avoid leaking internal API structure
     if (lowerMessage.includes('revenue') || lowerMessage.includes('money')) {
       response = `**Demo Mode Response**\n\nBased on your business data:\n\n- **Weekly Revenue**: $12,450 (+8% from last week)\n- **Monthly Revenue**: $48,200\n- **Top Service**: Plumbing repairs ($5,200)\n\n*Note: This is simulated data. Configure ANTHROPIC_API_KEY for real AI analysis.*`;
     } else if (lowerMessage.includes('appointment') || lowerMessage.includes('schedule')) {
@@ -246,7 +244,6 @@ export class AiCopilotService {
     } else {
       response = `**Demo Mode Response**\n\nI understand you're asking about: "${message}"\n\nIn demo mode, I can provide simulated responses for:\n- Revenue and financial data\n- Appointments and scheduling\n- Customer information\n- Weekly business summaries\n\n*To enable full AI capabilities, configure ANTHROPIC_API_KEY in your environment.*`;
     }
-    // toolsUsed intentionally left empty in demo mode
 
     // Save the conversation
     await this.updateConversation(conversation.id, [
@@ -258,7 +255,7 @@ export class AiCopilotService {
     return {
       message: response,
       conversationId: conversation.id,
-      toolsUsed,
+      toolsUsed: [], // Empty in demo mode to avoid leaking internal API structure
     };
   }
 }
