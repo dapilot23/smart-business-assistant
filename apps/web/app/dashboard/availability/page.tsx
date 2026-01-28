@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import {
   AvailabilitySchedule,
@@ -16,6 +17,7 @@ import {
 import * as availabilityApi from '@/lib/api/availability';
 
 export default function AvailabilityPage() {
+  const { userId } = useAuth();
   const [schedule, setSchedule] = useState<WeeklySchedule[]>([]);
   const [timeOffs, setTimeOffs] = useState<TimeOff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,7 +119,7 @@ export default function AvailabilityPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="order-1">
           <AvailabilitySchedule
-            technicianId={MOCK_TECHNICIAN_ID}
+            technicianId={userId ?? ''}
             schedule={schedule}
             onSave={handleSaveSchedule}
           />
@@ -146,7 +148,7 @@ export default function AvailabilityPage() {
         open={showTimeOffModal}
         onClose={handleCloseModal}
         onSave={handleSaveTimeOff}
-        technicianId={MOCK_TECHNICIAN_ID}
+        technicianId={userId ?? ''}
         timeOff={editingTimeOff}
       />
     </div>

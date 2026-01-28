@@ -5,6 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { CacheService, CACHE_KEYS, CACHE_TTL } from '../../config/cache/cache.service';
 import { AvailabilityValidatorsService } from './availability-validators.service';
 import { CreateAvailabilityDto, UpdateAvailabilityDto } from './dto';
 
@@ -12,22 +13,30 @@ import { CreateAvailabilityDto, UpdateAvailabilityDto } from './dto';
 export class AvailabilityService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService,
     private readonly validators: AvailabilityValidatorsService,
   ) {}
 
   async findAll(tenantId: string, userId?: string) {
-    const where: any = { tenantId };
-    if (userId) {
-      where.userId = userId;
-    }
+    const cacheKey = CACHE_KEYS.AVAILABILITY(tenantId, userId || 'all');
+    return this.cacheService.wrap(
+      cacheKey,
+      () => {
+        const where: any = { tenantId };
+        if (userId) {
+          where.userId = userId;
+        }
 
-    return this.prisma.technicianAvailability.findMany({
-      where,
-      include: {
-        user: { select: { id: true, name: true, email: true } },
+        return this.prisma.technicianAvailability.findMany({
+          where,
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+          },
+          orderBy: [{ userId: 'asc' }, { dayOfWeek: 'asc' }],
+        });
       },
-      orderBy: [{ userId: 'asc' }, { dayOfWeek: 'asc' }],
-    });
+      CACHE_TTL.MEDIUM,
+    );
   }
 
   async findById(tenantId: string, id: string) {
@@ -69,7 +78,7 @@ export class AvailabilityService {
       );
     }
 
-    return this.prisma.technicianAvailability.create({
+    const result = await this.prisma.technicianAvailability.create({
       data: {
         tenantId,
         userId: dto.userId,
@@ -82,16 +91,18 @@ export class AvailabilityService {
         user: { select: { id: true, name: true, email: true } },
       },
     });
+    await this.invalidateAvailabilityCache(tenantId, dto.userId);
+    return result;
   }
 
   async update(tenantId: string, id: string, dto: UpdateAvailabilityDto) {
-    await this.findById(tenantId, id);
+    const existing = await this.findById(tenantId, id);
 
     if (dto.startTime && dto.endTime) {
       this.validators.validateTimeRange(dto.startTime, dto.endTime);
     }
 
-    return this.prisma.technicianAvailability.update({
+    const result = await this.prisma.technicianAvailability.update({
       where: { id },
       data: {
         startTime: dto.startTime,
@@ -102,10 +113,21 @@ export class AvailabilityService {
         user: { select: { id: true, name: true, email: true } },
       },
     });
+    await this.invalidateAvailabilityCache(tenantId, existing.userId);
+    return result;
   }
 
   async delete(tenantId: string, id: string) {
-    await this.findById(tenantId, id);
-    return this.prisma.technicianAvailability.delete({ where: { id } });
+    const existing = await this.findById(tenantId, id);
+    const result = await this.prisma.technicianAvailability.delete({ where: { id } });
+    await this.invalidateAvailabilityCache(tenantId, existing.userId);
+    return result;
+  }
+
+  private async invalidateAvailabilityCache(tenantId: string, userId: string) {
+    await Promise.all([
+      this.cacheService.del(CACHE_KEYS.AVAILABILITY(tenantId, userId)),
+      this.cacheService.del(CACHE_KEYS.AVAILABILITY(tenantId, 'all')),
+    ]);
   }
 }

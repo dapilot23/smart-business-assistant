@@ -1,21 +1,31 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { CacheService, CACHE_KEYS, CACHE_TTL } from '../../config/cache/cache.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 
 @Injectable()
 export class SettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
 
   async getSettings(tenantId: string) {
-    let settings = await this.prisma.tenantSettings.findUnique({
-      where: { tenantId },
-    });
+    return this.cacheService.wrap(
+      CACHE_KEYS.TENANT_SETTINGS(tenantId),
+      async () => {
+        let settings = await this.prisma.tenantSettings.findUnique({
+          where: { tenantId },
+        });
 
-    if (!settings) {
-      settings = await this.createDefaultSettings(tenantId);
-    }
+        if (!settings) {
+          settings = await this.createDefaultSettings(tenantId);
+        }
 
-    return settings;
+        return settings;
+      },
+      CACHE_TTL.LONG,
+    );
   }
 
   async updateSettings(tenantId: string, dto: UpdateSettingsDto) {
@@ -23,19 +33,23 @@ export class SettingsService {
       where: { tenantId },
     });
 
+    let result;
     if (!settings) {
-      return this.prisma.tenantSettings.create({
+      result = await this.prisma.tenantSettings.create({
         data: {
           tenantId,
           ...dto,
         },
       });
+    } else {
+      result = await this.prisma.tenantSettings.update({
+        where: { tenantId },
+        data: dto,
+      });
     }
 
-    return this.prisma.tenantSettings.update({
-      where: { tenantId },
-      data: dto,
-    });
+    await this.cacheService.del(CACHE_KEYS.TENANT_SETTINGS(tenantId));
+    return result;
   }
 
   private async createDefaultSettings(tenantId: string) {

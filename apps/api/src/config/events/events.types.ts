@@ -77,6 +77,7 @@ export interface PaymentEventPayload extends BaseEventPayload {
   invoiceId: string;
   customerId: string;
   customerName: string;
+  customerPhone?: string;
   customerEmail?: string;
   amount: number;
   currency: string;

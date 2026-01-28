@@ -33,6 +33,7 @@ model Tenant {
   smsBroadcasts SmsBroadcast[]
   settings     TenantSettings?
   reviewRequests ReviewRequest[]
+  quoteFollowUps QuoteFollowUp[]
 
   @@map("tenants")
 }
@@ -239,10 +240,15 @@ model Quote {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  sentAt      DateTime?
+  viewedAt    DateTime?
+  convertedAt DateTime?
+
   // Relations
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   items    QuoteItem[]
+  followUps QuoteFollowUp[]
 
   @@index([tenantId])
   @@index([customerId])
@@ -272,6 +278,26 @@ model QuoteItem {
 
   @@index([quoteId])
   @@map("quote_items")
+}
+
+model QuoteFollowUp {
+  id          String   @id @default(cuid())
+  tenantId    String
+  quoteId     String
+  step        Int
+  channel     String   // SMS or EMAIL
+  scheduledAt DateTime
+  sentAt      DateTime?
+  status      String   @default("PENDING") // PENDING, SENT, CANCELLED
+  createdAt   DateTime @default(now())
+
+  quote  Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([quoteId])
+  @@index([status, scheduledAt])
+  @@map("quote_follow_ups")
 }
 
 // Invoices
@@ -549,6 +575,7 @@ model TenantSettings {
   autoConfirmBookings Boolean @default(false)
   reviewRequestEnabled Boolean @default(true)
   reviewRequestDelay  Int     @default(24) // Hours after job completion
+  quoteFollowUpEnabled Boolean @default(true)
   googleReviewUrl     String?
   yelpReviewUrl       String?
   createdAt         DateTime @default(now())

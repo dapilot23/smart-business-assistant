@@ -37,6 +37,23 @@ export class AppointmentEventHandler {
       payload.tenantId,
       payload.correlationId,
     );
+
+    if (payload.customerEmail) {
+      await this.notifications.queueEmail(
+        payload.customerEmail,
+        `Appointment Confirmed - ${serviceName || 'Appointment'}`,
+        'booking-confirmation',
+        {
+          customerName,
+          serviceName: serviceName || 'Appointment',
+          scheduledAt: scheduledAt.toString(),
+          formattedDate,
+          formattedTime,
+        },
+        payload.tenantId,
+        payload.correlationId,
+      );
+    }
   }
 
   @OnEvent(EVENTS.APPOINTMENT_CONFIRMED)
@@ -87,6 +104,22 @@ export class AppointmentEventHandler {
       payload.tenantId,
       payload.correlationId,
     );
+
+    if (payload.customerEmail) {
+      await this.notifications.queueEmail(
+        payload.customerEmail,
+        `Appointment Cancelled - ${serviceName || 'Appointment'}`,
+        'appointment-cancellation',
+        {
+          customerName,
+          serviceName: serviceName || 'Appointment',
+          scheduledAt: scheduledAt.toString(),
+          formattedDate,
+        },
+        payload.tenantId,
+        payload.correlationId,
+      );
+    }
   }
 
   @OnEvent(EVENTS.APPOINTMENT_REMINDER_DUE)

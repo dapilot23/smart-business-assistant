@@ -2,6 +2,8 @@ import { Injectable, Logger, BadRequestException, OnModuleInit } from '@nestjs/c
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
+import { EventsService } from '../../config/events/events.service';
+import { EVENTS, PaymentEventPayload } from '../../config/events/events.types';
 import Stripe from 'stripe';
 import { InvoiceStatus } from '@prisma/client';
 
@@ -18,6 +20,7 @@ export class PaymentsService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly circuitBreakerService: CircuitBreakerService,
+    private readonly eventsService: EventsService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     this.webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET') || '';
@@ -263,13 +266,25 @@ export class PaymentsService implements OnModuleInit {
 
     const paidAmount = paymentIntent.amount_received / 100;
 
-    await this.prisma.invoice.update({
+    const invoice = await this.prisma.invoice.update({
       where: { id: invoiceId },
       data: {
         paidAmount: { increment: paidAmount },
         status: InvoiceStatus.PAID,
         paidAt: new Date(),
       },
+      include: { customer: true },
+    });
+
+    this.eventsService.emit<PaymentEventPayload>(EVENTS.PAYMENT_RECEIVED, {
+      tenantId: invoice.tenantId,
+      invoiceId: invoice.id,
+      customerId: invoice.customer.id,
+      customerName: invoice.customer.name,
+      customerPhone: invoice.customer.phone || undefined,
+      customerEmail: invoice.customer.email || undefined,
+      amount: paidAmount,
+      currency: 'usd',
     });
 
     this.logger.log(`Invoice ${invoiceId} marked as paid: $${paidAmount}`);

@@ -3,12 +3,16 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { NOTIFICATION_QUEUE, NotificationJob } from './notifications.service';
 import { SmsService } from '../sms/sms.service';
+import { EmailService } from '../email/email.service';
 
 @Processor(NOTIFICATION_QUEUE)
 export class NotificationsProcessor extends WorkerHost {
   private readonly logger = new Logger(NotificationsProcessor.name);
 
-  constructor(private readonly smsService: SmsService) {
+  constructor(
+    private readonly smsService: SmsService,
+    private readonly emailService: EmailService,
+  ) {
     super();
   }
 
@@ -52,8 +56,47 @@ export class NotificationsProcessor extends WorkerHost {
   }
 
   private async processEmail(data: NotificationJob): Promise<void> {
-    // Email processing would go here
-    // For now, just log since Resend integration isn't complete
-    this.logger.log(`Email would be sent to ${data.to}: ${data.subject}`);
+    if (!this.emailService.isServiceConfigured()) {
+      this.logger.warn('Email service not configured, skipping notification');
+      return;
+    }
+
+    const templateData = (data.data || {}) as Record<string, any>;
+
+    switch (data.template) {
+      case 'booking-confirmation':
+        await this.emailService.sendBookingConfirmation({
+          customerName: templateData.customerName,
+          customerEmail: data.to,
+          serviceName: templateData.serviceName,
+          scheduledAt: new Date(templateData.scheduledAt),
+          duration: templateData.duration || 60,
+          businessName: templateData.businessName || '',
+          businessEmail: templateData.businessEmail || '',
+          businessPhone: templateData.businessPhone,
+          confirmationCode: templateData.confirmationCode,
+          cancelUrl: templateData.cancelUrl,
+          rescheduleUrl: templateData.rescheduleUrl,
+        });
+        break;
+
+      case 'appointment-cancellation':
+        await this.emailService.sendBookingCancellation({
+          customerName: templateData.customerName,
+          customerEmail: data.to,
+          serviceName: templateData.serviceName,
+          scheduledAt: new Date(templateData.scheduledAt),
+          duration: templateData.duration || 60,
+          businessName: templateData.businessName || '',
+          businessEmail: templateData.businessEmail || '',
+          businessPhone: templateData.businessPhone,
+        });
+        break;
+
+      default:
+        this.logger.warn(`Unknown email template: ${data.template}`);
+    }
+
+    this.logger.log(`Email sent to ${data.to} (template: ${data.template})`);
   }
 }

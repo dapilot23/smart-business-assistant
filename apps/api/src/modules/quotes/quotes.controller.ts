@@ -14,7 +14,6 @@ import { Response } from 'express';
 import { QuotesService } from './quotes.service';
 import { PdfService } from './pdf.service';
 import { SmsService } from '../sms/sms.service';
-import { QuoteStatus } from '@prisma/client';
 
 @Controller('quotes')
 export class QuotesController {
@@ -28,6 +27,12 @@ export class QuotesController {
   async findAll(@Request() req) {
     const tenantId = req.user?.tenantId || 'default';
     return this.quotesService.findAll(tenantId);
+  }
+
+  @Get('pipeline/stats')
+  async getPipelineStats(@Request() req) {
+    const tenantId = req.user?.tenantId || 'default';
+    return this.quotesService.getPipelineStats(tenantId);
   }
 
   @Get(':id')
@@ -105,7 +110,6 @@ export class QuotesController {
     const results: { sms?: any; email?: any } = {};
     const method = sendOptions.method || 'sms';
 
-    // Send via SMS
     if (method === 'sms' || method === 'both') {
       try {
         results.sms = await this.smsService.sendQuote(
@@ -120,12 +124,7 @@ export class QuotesController {
       }
     }
 
-    // Update status to SENT
-    const updatedQuote = await this.quotesService.updateStatus(
-      id,
-      QuoteStatus.SENT,
-      tenantId,
-    );
+    const updatedQuote = await this.quotesService.sendQuote(id, tenantId);
 
     return {
       quote: updatedQuote,

@@ -1,5 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { EventsService } from '../../config/events/events.service';
+import { EVENTS, QuoteEventPayload } from '../../config/events/events.types';
+import { QuoteFollowupService } from './quote-followup.service';
 import { QuoteStatus } from '@prisma/client';
 
 interface CreateQuoteDto {
@@ -18,7 +27,13 @@ interface CreateQuoteDto {
 
 @Injectable()
 export class QuotesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(QuotesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventsService: EventsService,
+    private readonly followupService: QuoteFollowupService,
+  ) {}
 
   async findAll(tenantId: string) {
     return this.prisma.quote.findMany({
@@ -124,18 +139,52 @@ export class QuotesService {
 
     const updateData: any = { status };
 
-    // Set timestamps based on status
     if (status === QuoteStatus.SENT) {
       updateData.sentAt = new Date();
     } else if (status === QuoteStatus.ACCEPTED) {
-      updateData.acceptedAt = new Date();
+      updateData.convertedAt = new Date();
     }
 
-    return this.prisma.quote.update({
+    const quote = await this.prisma.quote.update({
       where: { id },
       data: updateData,
       include: { customer: true, items: true },
     });
+
+    if (status === QuoteStatus.ACCEPTED) {
+      this.eventsService.emit<QuoteEventPayload>(
+        EVENTS.QUOTE_ACCEPTED,
+        this.buildQuotePayload(tenantId, quote),
+      );
+      await this.followupService.cancelFollowUps(id);
+    } else if (status === QuoteStatus.REJECTED) {
+      this.eventsService.emit<QuoteEventPayload>(
+        EVENTS.QUOTE_REJECTED,
+        this.buildQuotePayload(tenantId, quote),
+      );
+      await this.followupService.cancelFollowUps(id);
+    }
+
+    return quote;
+  }
+
+  async sendQuote(id: string, tenantId: string) {
+    const quote = await this.findOne(id, tenantId);
+
+    const updated = await this.prisma.quote.update({
+      where: { id },
+      data: { status: QuoteStatus.SENT, sentAt: new Date() },
+      include: { customer: true, items: true },
+    });
+
+    this.eventsService.emit<QuoteEventPayload>(
+      EVENTS.QUOTE_SENT,
+      this.buildQuotePayload(tenantId, updated),
+    );
+
+    await this.followupService.scheduleFollowUps(tenantId, id);
+
+    return updated;
   }
 
   async delete(id: string, tenantId: string) {
@@ -148,6 +197,61 @@ export class QuotesService {
     return this.prisma.quote.delete({
       where: { id },
     });
+  }
+
+  async getPipelineStats(tenantId: string) {
+    const quotes = await this.prisma.quote.findMany({
+      where: { tenantId },
+      select: { status: true, id: true },
+    });
+
+    const counts = { DRAFT: 0, SENT: 0, ACCEPTED: 0, REJECTED: 0, EXPIRED: 0 };
+    for (const q of quotes) {
+      counts[q.status] = (counts[q.status] || 0) + 1;
+    }
+
+    const followingUp = await this.prisma.quoteFollowUp.count({
+      where: { tenantId, status: 'PENDING' },
+    });
+
+    const decided = counts.ACCEPTED + counts.REJECTED + counts.EXPIRED;
+    const conversionRate = decided > 0
+      ? Math.round((counts.ACCEPTED / decided) * 100) / 100
+      : 0;
+
+    return {
+      total: quotes.length,
+      draft: counts.DRAFT,
+      sent: counts.SENT,
+      followingUp,
+      accepted: counts.ACCEPTED,
+      rejected: counts.REJECTED,
+      expired: counts.EXPIRED,
+      conversionRate,
+    };
+  }
+
+  private buildQuotePayload(
+    tenantId: string,
+    quote: {
+      id: string;
+      quoteNumber: string;
+      amount: number;
+      validUntil: Date;
+      customer: { id: string; name: string; phone: string; email: string | null };
+    },
+  ): Omit<QuoteEventPayload, 'timestamp' | 'correlationId'> {
+    return {
+      tenantId,
+      quoteId: quote.id,
+      quoteNumber: quote.quoteNumber,
+      customerId: quote.customer.id,
+      customerName: quote.customer.name,
+      customerPhone: quote.customer.phone,
+      customerEmail: quote.customer.email || undefined,
+      amount: quote.amount,
+      validUntil: quote.validUntil,
+    };
   }
 
   private async generateQuoteNumber(tenantId: string): Promise<string> {

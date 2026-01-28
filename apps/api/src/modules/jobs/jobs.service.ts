@@ -6,30 +6,24 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { StorageService } from '../../config/storage/storage.service';
+import { EventsService } from '../../config/events/events.service';
+import { EVENTS, JobEventPayload } from '../../config/events/events.types';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobStatusDto } from './dto/update-job-status.dto';
 import { CompleteJobDto } from './dto/complete-job.dto';
 import { JobFilterDto } from './dto/job-filter.dto';
 import { JobStatus, JobPhotoType } from '@prisma/client';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
-  private readonly uploadPath = './uploads/jobs';
 
-  constructor(private readonly prisma: PrismaService) {
-    this.ensureUploadDirectory();
-  }
-
-  private async ensureUploadDirectory() {
-    try {
-      await fs.mkdir(this.uploadPath, { recursive: true });
-    } catch (error) {
-      this.logger.error('Failed to create upload directory:', error);
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+    private readonly eventsService: EventsService,
+  ) {}
 
   async getJobs(tenantId: string, filters?: JobFilterDto) {
     const where: any = { tenantId };
@@ -112,7 +106,7 @@ export class JobsService {
       await this.validateTechnician(tenantId, dto.technicianId);
     }
 
-    return this.prisma.job.create({
+    const job = await this.prisma.job.create({
       data: {
         tenantId,
         appointmentId: dto.appointmentId,
@@ -132,6 +126,13 @@ export class JobsService {
         },
       },
     });
+
+    this.eventsService.emit<JobEventPayload>(
+      EVENTS.JOB_CREATED,
+      this.buildJobPayload(tenantId, job),
+    );
+
+    return job;
   }
 
   async updateJobStatus(
@@ -161,7 +162,7 @@ export class JobsService {
   async startJob(tenantId: string, jobId: string) {
     await this.getJob(tenantId, jobId);
 
-    return this.prisma.job.update({
+    const job = await this.prisma.job.update({
       where: { id: jobId },
       data: {
         status: JobStatus.IN_PROGRESS,
@@ -179,6 +180,13 @@ export class JobsService {
         },
       },
     });
+
+    this.eventsService.emit<JobEventPayload>(
+      EVENTS.JOB_STARTED,
+      this.buildJobPayload(tenantId, job),
+    );
+
+    return job;
   }
 
   async completeJob(
@@ -188,7 +196,7 @@ export class JobsService {
   ) {
     await this.getJob(tenantId, jobId);
 
-    return this.prisma.job.update({
+    const job = await this.prisma.job.update({
       where: { id: jobId },
       data: {
         status: JobStatus.COMPLETED,
@@ -208,6 +216,13 @@ export class JobsService {
         },
       },
     });
+
+    this.eventsService.emit<JobEventPayload>(
+      EVENTS.JOB_COMPLETED,
+      this.buildJobPayload(tenantId, job),
+    );
+
+    return job;
   }
 
   async addJobNotes(tenantId: string, jobId: string, notes: string) {
@@ -266,20 +281,18 @@ export class JobsService {
   ) {
     const job = await this.getJob(tenantId, jobId);
 
-    const jobDir = path.join(this.uploadPath, jobId);
-    await fs.mkdir(jobDir, { recursive: true });
-
-    const filename = `${Date.now()}-${file.originalname}`;
-    const filepath = path.join(jobDir, filename);
-    const key = `jobs/${jobId}/${filename}`;
-
-    await fs.writeFile(filepath, file.buffer);
+    const result = await this.storageService.upload(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+      `jobs/${tenantId}`,
+    );
 
     const photo = await this.prisma.jobPhoto.create({
       data: {
         jobId: job.id,
-        url: `/uploads/${key}`,
-        key,
+        url: result.url,
+        key: result.key,
         filename: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
@@ -288,7 +301,7 @@ export class JobsService {
       },
     });
 
-    this.logger.log(`Photo uploaded for job ${jobId}: ${filename}`);
+    this.logger.log(`Photo uploaded for job ${jobId}: ${result.key}`);
 
     return photo;
   }
@@ -317,12 +330,10 @@ export class JobsService {
       throw new ForbiddenException('Access denied');
     }
 
-    const filepath = path.join(this.uploadPath, jobId, photo.filename);
-
     try {
-      await fs.unlink(filepath);
+      await this.storageService.delete(photo.key);
     } catch (error) {
-      this.logger.warn(`Failed to delete file ${filepath}:`, error);
+      this.logger.warn(`Failed to delete file ${photo.key}:`, error);
     }
 
     await this.prisma.jobPhoto.delete({
@@ -332,6 +343,31 @@ export class JobsService {
     this.logger.log(`Photo deleted: ${photoId}`);
 
     return { success: true };
+  }
+
+  private buildJobPayload(
+    tenantId: string,
+    job: {
+      id: string;
+      status: string;
+      appointment: {
+        id: string;
+        customer: { id: string; name: string; phone: string };
+      };
+      technician?: { id: string; name: string } | null;
+    },
+  ): Omit<JobEventPayload, 'timestamp' | 'correlationId'> {
+    return {
+      tenantId,
+      jobId: job.id,
+      appointmentId: job.appointment.id,
+      customerId: job.appointment.customer.id,
+      customerName: job.appointment.customer.name,
+      customerPhone: job.appointment.customer.phone,
+      technicianId: job.technician?.id,
+      technicianName: job.technician?.name,
+      status: job.status,
+    };
   }
 
   private async validateAppointment(tenantId: string, appointmentId: string) {

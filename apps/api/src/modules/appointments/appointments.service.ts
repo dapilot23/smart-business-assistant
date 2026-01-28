@@ -4,6 +4,11 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { EventsService } from '../../config/events/events.service';
+import {
+  EVENTS,
+  AppointmentEventPayload,
+} from '../../config/events/events.types';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentFilterDto } from './dto/appointment-filter.dto';
@@ -14,6 +19,7 @@ export class AppointmentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly validators: AppointmentsValidatorsService,
+    private readonly eventsService: EventsService,
   ) {}
 
   async findAll(tenantId: string, filters?: AppointmentFilterDto) {
@@ -91,7 +97,7 @@ export class AppointmentsService {
       dto.assignedTo,
     );
 
-    return this.prisma.appointment.create({
+    const appointment = await this.prisma.appointment.create({
       data: {
         tenantId,
         customerId: dto.customerId,
@@ -108,6 +114,13 @@ export class AppointmentsService {
         assignedUser: { select: { id: true, name: true, email: true } },
       },
     });
+
+    this.eventsService.emit<AppointmentEventPayload>(
+      EVENTS.APPOINTMENT_CREATED,
+      this.buildEventPayload(tenantId, appointment),
+    );
+
+    return appointment;
   }
 
   async update(tenantId: string, id: string, dto: UpdateAppointmentDto) {
@@ -141,7 +154,7 @@ export class AppointmentsService {
       );
     }
 
-    return this.prisma.appointment.update({
+    const updated = await this.prisma.appointment.update({
       where: { id },
       data: {
         customerId: dto.customerId,
@@ -158,12 +171,19 @@ export class AppointmentsService {
         assignedUser: { select: { id: true, name: true, email: true } },
       },
     });
+
+    this.eventsService.emit<AppointmentEventPayload>(
+      EVENTS.APPOINTMENT_UPDATED,
+      this.buildEventPayload(tenantId, updated),
+    );
+
+    return updated;
   }
 
   async cancel(tenantId: string, id: string) {
     await this.findById(tenantId, id);
 
-    return this.prisma.appointment.update({
+    const cancelled = await this.prisma.appointment.update({
       where: { id },
       data: { status: 'CANCELLED' },
       include: {
@@ -172,5 +192,36 @@ export class AppointmentsService {
         assignedUser: { select: { id: true, name: true, email: true } },
       },
     });
+
+    this.eventsService.emit<AppointmentEventPayload>(
+      EVENTS.APPOINTMENT_CANCELLED,
+      this.buildEventPayload(tenantId, cancelled),
+    );
+
+    return cancelled;
+  }
+
+  private buildEventPayload(
+    tenantId: string,
+    appointment: {
+      id: string;
+      customer: { id: string; name: string; phone: string; email?: string | null };
+      service?: { name: string } | null;
+      scheduledAt: Date;
+      assignedUser?: { id: string; name: string } | null;
+    },
+  ): Omit<AppointmentEventPayload, 'timestamp' | 'correlationId'> {
+    return {
+      tenantId,
+      appointmentId: appointment.id,
+      customerId: appointment.customer.id,
+      customerName: appointment.customer.name,
+      customerPhone: appointment.customer.phone,
+      customerEmail: appointment.customer.email || undefined,
+      scheduledAt: appointment.scheduledAt,
+      serviceName: appointment.service?.name,
+      assignedToId: appointment.assignedUser?.id,
+      assignedToName: appointment.assignedUser?.name,
+    };
   }
 }

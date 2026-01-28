@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
-import { SmsService } from '../sms/sms.service';
-import { EmailService } from '../email/email.service';
+import { EventsService } from '../../config/events/events.service';
+import {
+  EVENTS,
+  AppointmentEventPayload,
+} from '../../config/events/events.types';
 import { CalendarQueueService } from '../calendar/calendar-queue.service';
 import { CreatePublicBookingDto } from './dto/create-public-booking.dto';
 import { randomBytes } from 'crypto';
@@ -12,8 +15,7 @@ export class PublicBookingService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smsService: SmsService,
-    private readonly emailService: EmailService,
+    private readonly eventsService: EventsService,
     @Inject(forwardRef(() => CalendarQueueService))
     private readonly calendarQueueService: CalendarQueueService,
   ) {}
@@ -279,10 +281,20 @@ export class PublicBookingService {
       },
     });
 
-    // Send confirmations (non-blocking)
-    this.sendConfirmations(appointment, tenant, manageToken).catch((err) => {
-      this.logger.error('Failed to send confirmations:', err);
-    });
+    // Emit event for async notifications
+    this.eventsService.emit<AppointmentEventPayload>(
+      EVENTS.APPOINTMENT_CREATED,
+      {
+        tenantId,
+        appointmentId: appointment.id,
+        customerId: appointment.customer.id,
+        customerName: appointment.customer.name,
+        customerPhone: appointment.customer.phone,
+        customerEmail: appointment.customer.email || undefined,
+        scheduledAt: appointment.scheduledAt,
+        serviceName: appointment.service?.name,
+      },
+    );
 
     // Queue calendar sync (non-blocking)
     this.calendarQueueService.queueSync(appointment.id, tenantId).catch((err) => {
@@ -351,10 +363,20 @@ export class PublicBookingService {
       },
     });
 
-    // Send cancellation notifications
-    this.sendCancellationNotifications(updated).catch((err) => {
-      this.logger.error('Failed to send cancellation notifications:', err);
-    });
+    // Emit event for async notifications
+    this.eventsService.emit<AppointmentEventPayload>(
+      EVENTS.APPOINTMENT_CANCELLED,
+      {
+        tenantId: updated.tenantId,
+        appointmentId: updated.id,
+        customerId: updated.customer.id,
+        customerName: updated.customer.name,
+        customerPhone: updated.customer.phone,
+        customerEmail: updated.customer.email || undefined,
+        scheduledAt: updated.scheduledAt,
+        serviceName: updated.service?.name,
+      },
+    );
 
     // Queue calendar event deletion (non-blocking)
     this.calendarQueueService.queueDelete(appointment.id, appointment.tenantId).catch((err) => {
@@ -408,10 +430,20 @@ export class PublicBookingService {
       },
     });
 
-    // Send reschedule notifications
-    this.sendRescheduleNotifications(updated, oldScheduledAt).catch((err) => {
-      this.logger.error('Failed to send reschedule notifications:', err);
-    });
+    // Emit event for async notifications
+    this.eventsService.emit<AppointmentEventPayload>(
+      EVENTS.APPOINTMENT_UPDATED,
+      {
+        tenantId: updated.tenantId,
+        appointmentId: updated.id,
+        customerId: updated.customer.id,
+        customerName: updated.customer.name,
+        customerPhone: updated.customer.phone,
+        customerEmail: updated.customer.email || undefined,
+        scheduledAt: updated.scheduledAt,
+        serviceName: updated.service?.name,
+      },
+    );
 
     // Queue calendar update (non-blocking)
     this.calendarQueueService.queueSync(updated.id, updated.tenantId).catch((err) => {
@@ -423,108 +455,6 @@ export class PublicBookingService {
       message: 'Booking rescheduled successfully',
       newScheduledAt: newDateTime,
     };
-  }
-
-  private async sendConfirmations(
-    appointment: {
-      customer: { name: string; phone: string; email: string | null };
-      service: { name: string } | null;
-      scheduledAt: Date;
-      duration: number;
-      confirmationCode: string | null;
-    },
-    tenant: { name: string; email: string; phone: string | null },
-    manageToken: string,
-  ) {
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-
-    // Send SMS
-    try {
-      await this.smsService.sendAppointmentConfirmation(
-        {
-          id: '',
-          scheduledAt: appointment.scheduledAt,
-          duration: appointment.duration,
-          service: appointment.service ? { name: appointment.service.name } : undefined,
-        },
-        { name: appointment.customer.name, phone: appointment.customer.phone },
-      );
-      this.logger.log(`SMS confirmation sent to ${appointment.customer.phone}`);
-    } catch (error) {
-      this.logger.warn(`SMS not sent: ${error.message}`);
-    }
-
-    // Send email
-    if (appointment.customer.email) {
-      try {
-        await this.emailService.sendBookingConfirmation({
-          customerName: appointment.customer.name,
-          customerEmail: appointment.customer.email,
-          serviceName: appointment.service?.name || 'Appointment',
-          scheduledAt: appointment.scheduledAt,
-          duration: appointment.duration,
-          businessName: tenant.name,
-          businessEmail: tenant.email,
-          businessPhone: tenant.phone || undefined,
-          confirmationCode: appointment.confirmationCode || undefined,
-          cancelUrl: `${baseUrl}/booking/manage/${manageToken}?action=cancel`,
-          rescheduleUrl: `${baseUrl}/booking/manage/${manageToken}?action=reschedule`,
-        });
-        this.logger.log(`Email confirmation sent to ${appointment.customer.email}`);
-      } catch (error) {
-        this.logger.warn(`Email not sent: ${error.message}`);
-      }
-    }
-  }
-
-  private async sendCancellationNotifications(appointment: {
-    customer: { name: string; phone: string; email: string | null };
-    service: { name: string } | null;
-    scheduledAt: Date;
-    duration: number;
-    tenant: { name: string; email: string; phone: string | null };
-  }) {
-    // Send email
-    if (appointment.customer.email) {
-      await this.emailService.sendBookingCancellation({
-        customerName: appointment.customer.name,
-        customerEmail: appointment.customer.email,
-        serviceName: appointment.service?.name || 'Appointment',
-        scheduledAt: appointment.scheduledAt,
-        duration: appointment.duration,
-        businessName: appointment.tenant.name,
-        businessEmail: appointment.tenant.email,
-        businessPhone: appointment.tenant.phone || undefined,
-      });
-    }
-  }
-
-  private async sendRescheduleNotifications(
-    appointment: {
-      customer: { name: string; phone: string; email: string | null };
-      service: { name: string } | null;
-      scheduledAt: Date;
-      duration: number;
-      tenant: { name: string; email: string; phone: string | null };
-    },
-    oldScheduledAt: Date,
-  ) {
-    // Send email
-    if (appointment.customer.email) {
-      await this.emailService.sendBookingRescheduled(
-        {
-          customerName: appointment.customer.name,
-          customerEmail: appointment.customer.email,
-          serviceName: appointment.service?.name || 'Appointment',
-          scheduledAt: appointment.scheduledAt,
-          duration: appointment.duration,
-          businessName: appointment.tenant.name,
-          businessEmail: appointment.tenant.email,
-          businessPhone: appointment.tenant.phone || undefined,
-        },
-        oldScheduledAt,
-      );
-    }
   }
 
   private generateConfirmationCode(): string {
