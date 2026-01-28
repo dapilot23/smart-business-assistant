@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ApiAuthProvider } from "@/components/providers/api-auth-provider";
+import { ChatButton } from "@/components/ai-copilot";
 
 export default function DashboardLayout({
   children,
@@ -45,6 +46,12 @@ export default function DashboardLayout({
                 Quotes
               </Link>
               <Link
+                href="/dashboard/insights"
+                className="transition-colors hover:text-foreground/80"
+              >
+                Insights
+              </Link>
+              <Link
                 href="/dashboard/settings"
                 className="transition-colors hover:text-foreground/80"
               >
@@ -59,6 +66,7 @@ export default function DashboardLayout({
         </header>
 
         <main className="flex-1">{children}</main>
+        <ChatButton />
       </div>
     </ApiAuthProvider>
   );

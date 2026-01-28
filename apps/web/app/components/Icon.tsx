@@ -45,6 +45,7 @@ import {
   TrendingDown,
   Menu,
   Palette,
+  BarChart3,
 } from "lucide-react";
 
 interface IconProps {
@@ -93,7 +94,8 @@ interface IconProps {
     | "user-check"
     | "briefcase"
     | "menu"
-    | "palette";
+    | "palette"
+    | "bar-chart-3";
   className?: string;
   size?: number;
 }
@@ -145,6 +147,7 @@ export function Icon({ name, className = "", size = 20 }: IconProps) {
     briefcase: Briefcase,
     menu: Menu,
     palette: Palette,
+    "bar-chart-3": BarChart3,
   };
 
   const IconComponent = icons[name];

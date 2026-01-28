@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "../components/Icon";
 import { ApiAuthProvider } from "@/components/providers/api-auth-provider";
+import { ChatButton } from "@/components/ai-copilot";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "layout-dashboard" as const },
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/dashboard/quotes", label: "Quotes", icon: "quote" as const },
   { href: "/dashboard/sms", label: "SMS", icon: "message-square" as const },
   { href: "/dashboard/voice", label: "Voice AI", icon: "phone-call" as const },
+  { href: "/dashboard/insights", label: "Insights", icon: "bar-chart-3" as const },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" as const },
 ];
 
@@ -172,6 +174,9 @@ export default function DashboardLayout({
         <div className="flex flex-col flex-1 overflow-hidden pt-14 lg:pt-0 bg-background-subtle">
           {children}
         </div>
+
+        {/* AI Copilot Chat */}
+        <ChatButton />
       </div>
     </ApiAuthProvider>
   );
