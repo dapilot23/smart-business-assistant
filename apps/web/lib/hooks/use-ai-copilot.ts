@@ -14,6 +14,8 @@ import {
 } from '@/lib/api/ai-copilot';
 import { sanitizeMessage } from '@/lib/utils';
 
+const MAX_MESSAGES = 100; // Limit message history to prevent memory issues
+
 export function useAiCopilot() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<
@@ -47,8 +49,8 @@ export function useAiCopilot() {
     loadConversationsAbortRef.current = abortController;
 
     try {
-      setIsLoading(true);
       setError(null);
+      setIsLoading(true);
       const data = await getConversations({ signal: abortController.signal });
       if (!abortController.signal.aborted) {
         setConversations(data);
@@ -71,8 +73,8 @@ export function useAiCopilot() {
     loadConversationAbortRef.current = abortController;
 
     try {
-      setIsLoading(true);
       setError(null);
+      setIsLoading(true);
       const data = await getConversation(id, { signal: abortController.signal });
       // Only update state if this request wasn't aborted
       if (!abortController.signal.aborted) {
@@ -156,7 +158,14 @@ export function useAiCopilot() {
           createdAt: new Date().toISOString(),
         };
 
-        setMessages((prev) => [...prev, assistantMessage]);
+        setMessages((prev) => {
+          const updated = [...prev, assistantMessage];
+          // Trim old messages if exceeding limit (keep most recent)
+          if (updated.length > MAX_MESSAGES) {
+            return updated.slice(-MAX_MESSAGES);
+          }
+          return updated;
+        });
 
         if (!currentConversationId && response.conversationId) {
           setCurrentConversationId(response.conversationId);

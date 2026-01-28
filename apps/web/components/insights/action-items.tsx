@@ -10,6 +10,11 @@ interface ActionItemsProps {
 
 const STORAGE_KEY_PREFIX = 'action-items-completed-';
 const MAX_STORED_REPORTS = 50;
+const CLEANUP_HEADROOM = 10; // Keep this many slots free after cleanup
+const CLEANUP_CHECK_INTERVAL = 10; // Only check entry count every N saves
+
+// Module-level counter to avoid localStorage scan on every save
+let saveCounter = 0;
 
 interface StoredData {
   completedItems: string[];  // Store actual content, not hashes (no collision risk)
@@ -92,12 +97,13 @@ function cleanupOldEntries(): void {
       }
     }
 
-    // Remove oldest entries to get back under limit
-    if (entries.length > MAX_STORED_REPORTS) {
+    // Remove oldest entries to get back under limit with headroom
+    const targetCount = MAX_STORED_REPORTS - CLEANUP_HEADROOM;
+    if (entries.length > targetCount) {
       entries.sort((a, b) => a.timestamp - b.timestamp);
-      const toRemove = entries.slice(0, entries.length - MAX_STORED_REPORTS + 10); // Remove extra 10 for headroom
-      for (const entry of toRemove) {
-        localStorage.removeItem(entry.key);
+      const removeCount = entries.length - targetCount;
+      for (let i = 0; i < removeCount; i++) {
+        localStorage.removeItem(entries[i].key);
       }
     }
   } catch {
@@ -112,12 +118,17 @@ export function ActionItems({ items, reportId }: ActionItemsProps) {
   useEffect(() => {
     if (!reportId) return;
     try {
-      const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}${reportId}`);
+      const storageKey = `${STORAGE_KEY_PREFIX}${reportId}`;
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
         const validated = validateStoredData(parsed);
         if (validated) {
           setCompletedItems(new Set(validated.completedItems));
+          // Persist migrated v1 data to v2 format
+          if (validated.version === CURRENT_VERSION && !parsed.version) {
+            localStorage.setItem(storageKey, JSON.stringify(validated));
+          }
         }
       }
     } catch {
@@ -129,10 +140,14 @@ export function ActionItems({ items, reportId }: ActionItemsProps) {
   const persistCompleted = useCallback((newCompletedItems: Set<string>) => {
     if (!reportId) return;
 
-    // Deterministic cleanup: check count before save
-    const entryCount = countStoredEntries();
-    if (entryCount >= MAX_STORED_REPORTS) {
-      cleanupOldEntries();
+    // Periodic cleanup check to avoid scanning localStorage on every save
+    saveCounter++;
+    if (saveCounter >= CLEANUP_CHECK_INTERVAL) {
+      saveCounter = 0;
+      const entryCount = countStoredEntries();
+      if (entryCount >= MAX_STORED_REPORTS) {
+        cleanupOldEntries();
+      }
     }
 
     const data: StoredData = {
