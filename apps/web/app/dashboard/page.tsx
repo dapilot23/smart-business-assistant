@@ -14,6 +14,7 @@ import {
   type AppointmentStats as AppointmentStatsType,
   type TopService,
 } from "@/lib/api/reports";
+import { InsightsPanel } from "@/components/insights/insights-panel";
 
 // Lazy load chart components - reduces initial bundle by ~89KB (Recharts library)
 const RevenueChart = dynamic(
@@ -185,6 +186,9 @@ export default function DashboardPage() {
                 color="primary"
               />
             </div>
+
+            {/* AI Insights Panel */}
+            <InsightsPanel maxItems={5} />
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

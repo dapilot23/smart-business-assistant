@@ -46,6 +46,7 @@ model Tenant {
   autoResponderRules AutoResponderRule[]
   copilotConversations CopilotConversation[]
   weeklyReports WeeklyReport[]
+  agentInsights AgentInsight[]
 
   @@map("tenants")
 }
@@ -1799,4 +1800,124 @@ model WeeklyReport {
   @@unique([tenantId, weekStart])
   @@index([tenantId])
   @@map("weekly_reports")
+}
+
+// ============================================
+// AI Specialist Agents
+// ============================================
+
+enum AgentType {
+  REVENUE_SALES
+  CUSTOMER_SUCCESS
+  OPERATIONS
+  MARKETING
+}
+
+enum InsightPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum InsightStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+// AI-generated insights from specialist agents
+model AgentInsight {
+  id                String          @id @default(cuid())
+  tenantId          String
+  agentType         AgentType
+  entityType        String          // "quote", "customer", "appointment", "campaign"
+  entityId          String
+  insightType       String          // "follow_up_urgency", "churn_risk", "no_show_risk", etc.
+  title             String
+  description       String          @db.Text
+  confidenceScore   Float           // 0.0-1.0
+  impactScore       Float           // 0.0-1.0
+  priority          InsightPriority
+  recommendedAction String          @db.Text
+  actionParams      Json?           // Parameters for executing the action
+  actionLabel       String          // Button label e.g., "Call Now", "Send Reminder"
+  status            InsightStatus   @default(PENDING)
+  expiresAt         DateTime?
+  aiReasoning       String?         @db.Text  // AI explanation of the insight
+  approvedAt        DateTime?
+  approvedBy        String?
+  rejectedAt        DateTime?
+  rejectedBy        String?
+  rejectionReason   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, agentType])
+  @@index([tenantId, status])
+  @@index([tenantId, priority])
+  @@index([entityType, entityId])
+  @@index([expiresAt])
+  @@map("agent_insights")
+}
+
+// Track agent execution runs
+model AgentRun {
+  id                String    @id @default(cuid())
+  tenantId          String
+  agentType         AgentType
+  triggeredBy       String    // "schedule", "event", "manual"
+  triggerEvent      String?   // Event name if triggered by event
+  entitiesAnalyzed  Int       @default(0)
+  insightsGenerated Int       @default(0)
+  status            String    @default("RUNNING") // RUNNING, COMPLETED, FAILED
+  errorMessage      String?   @db.Text
+  totalInputTokens  Int       @default(0)
+  totalOutputTokens Int       @default(0)
+  costCents         Int       @default(0)
+  durationMs        Int?
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, agentType])
+  @@index([status])
+  @@index([startedAt])
+  @@map("agent_runs")
+}
+
+// Per-tenant agent configuration
+model AgentSettings {
+  id                      String          @id @default(cuid())
+  tenantId                String          @unique
+
+  // Agent enable/disable
+  revenueAgentEnabled     Boolean         @default(true)
+  customerAgentEnabled    Boolean         @default(true)
+  operationsAgentEnabled  Boolean         @default(true)
+  marketingAgentEnabled   Boolean         @default(true)
+
+  // Notification settings
+  dashboardNotifications  Boolean         @default(true)
+  pushNotifications       Boolean         @default(true)
+  pushMinPriority         InsightPriority @default(HIGH)
+  emailDigestEnabled      Boolean         @default(true)
+  emailDigestFrequency    String          @default("DAILY") // DAILY, WEEKLY
+  emailDigestRecipients   String[]        // User IDs to receive digests
+
+  // Agent schedule configuration
+  revenueAgentSchedule    String          @default("0 8 * * *")  // Daily at 8am
+  customerAgentSchedule   String          @default("0 9 * * *")  // Daily at 9am
+  operationsAgentSchedule String          @default("0 20 * * *") // Nightly at 8pm
+  marketingAgentSchedule  String          @default("0 10 * * 1") // Weekly Monday 10am
+
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  @@map("agent_settings")
 }
