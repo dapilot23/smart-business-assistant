@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AppointmentStats } from '@/lib/api/reports';
 
@@ -16,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
   pending: '#f59e0b',
 };
 
-export function AppointmentsChart({ data }: AppointmentsChartProps) {
+export const AppointmentsChart = memo(function AppointmentsChart({ data }: AppointmentsChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -77,4 +77,4 @@ export function AppointmentsChart({ data }: AppointmentsChartProps) {
       </ResponsiveContainer>
     </div>
   );
-}
+});

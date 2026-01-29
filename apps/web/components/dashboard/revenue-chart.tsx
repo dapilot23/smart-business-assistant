@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { RevenueDataPoint } from '@/lib/api/reports';
 
@@ -8,7 +8,7 @@ interface RevenueChartProps {
   data: RevenueDataPoint[];
 }
 
-export function RevenueChart({ data }: RevenueChartProps) {
+export const RevenueChart = memo(function RevenueChart({ data }: RevenueChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -73,4 +73,4 @@ export function RevenueChart({ data }: RevenueChartProps) {
       </ResponsiveContainer>
     </div>
   );
-}
+});

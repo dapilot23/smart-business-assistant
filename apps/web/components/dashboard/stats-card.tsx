@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Icon } from "@/app/components/Icon";
 
 interface StatsCardProps {
@@ -49,7 +50,7 @@ const colorStyles = {
   },
 };
 
-export function StatsCard({ icon, label, value, change, prefix = '', suffix = '', color = 'primary' }: StatsCardProps) {
+export const StatsCard = memo(function StatsCard({ icon, label, value, change, prefix = '', suffix = '', color = 'primary' }: StatsCardProps) {
   const isPositive = change !== undefined && change >= 0;
   const changeDisplay = change !== undefined
     ? `${isPositive ? '+' : ''}${change.toFixed(1)}%`
@@ -95,4 +96,4 @@ export function StatsCard({ icon, label, value, change, prefix = '', suffix = ''
       )}
     </div>
   );
-}
+});

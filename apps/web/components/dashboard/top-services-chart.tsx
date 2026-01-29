@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TopService } from '@/lib/api/reports';
 
@@ -8,7 +8,7 @@ interface TopServicesChartProps {
   data: TopService[];
 }
 
-export function TopServicesChart({ data }: TopServicesChartProps) {
+export const TopServicesChart = memo(function TopServicesChart({ data }: TopServicesChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -80,4 +80,4 @@ export function TopServicesChart({ data }: TopServicesChartProps) {
       </ResponsiveContainer>
     </div>
   );
-}
+});

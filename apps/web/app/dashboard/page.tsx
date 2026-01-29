@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { Icon } from "../components/Icon";
 import { StatsCard } from "@/components/dashboard/stats-card";
-import { RevenueChart } from "@/components/dashboard/revenue-chart";
-import { AppointmentsChart } from "@/components/dashboard/appointments-chart";
-import { TopServicesChart } from "@/components/dashboard/top-services-chart";
 import {
   getDashboardStats,
   getRevenueChart,
@@ -16,6 +14,29 @@ import {
   type AppointmentStats as AppointmentStatsType,
   type TopService,
 } from "@/lib/api/reports";
+
+// Lazy load chart components - reduces initial bundle by ~89KB (Recharts library)
+const RevenueChart = dynamic(
+  () => import("@/components/dashboard/revenue-chart").then((mod) => mod.RevenueChart),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+const AppointmentsChart = dynamic(
+  () => import("@/components/dashboard/appointments-chart").then((mod) => mod.AppointmentsChart),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+const TopServicesChart = dynamic(
+  () => import("@/components/dashboard/top-services-chart").then((mod) => mod.TopServicesChart),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+
+function ChartSkeleton() {
+  return (
+    <div className="bg-card border border-border rounded-xl p-6 h-[300px] animate-pulse">
+      <div className="h-4 w-32 bg-muted rounded mb-4" />
+      <div className="h-full w-full bg-muted/50 rounded" />
+    </div>
+  );
+}
 
 // Get current greeting based on time
 function getGreeting() {

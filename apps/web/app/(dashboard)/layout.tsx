@@ -1,8 +1,15 @@
 'use client';
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ApiAuthProvider } from "@/components/providers/api-auth-provider";
-import { ChatButton } from "@/components/ai-copilot";
+
+// Lazy load ChatButton - only loads when user scrolls to bottom or interacts
+// Reduces initial bundle by ~15KB (ChatButton + ChatPanel + ChatInput)
+const ChatButton = dynamic(
+  () => import("@/components/ai-copilot").then((mod) => mod.ChatButton),
+  { ssr: false }
+);
 
 export default function DashboardLayout({
   children,

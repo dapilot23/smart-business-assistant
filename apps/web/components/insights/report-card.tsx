@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { BarChart3, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { WeeklyReport } from '@/lib/types/weekly-report';
@@ -10,7 +11,7 @@ interface ReportCardProps {
   isLoading?: boolean;
 }
 
-export function ReportCard({ report, isLoading }: ReportCardProps) {
+export const ReportCard = memo(function ReportCard({ report, isLoading }: ReportCardProps) {
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 animate-pulse">
@@ -100,4 +101,4 @@ export function ReportCard({ report, isLoading }: ReportCardProps) {
       )}
     </div>
   );
-}
+});

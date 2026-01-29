@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import {
   DollarSign,
   Briefcase,
@@ -22,7 +23,7 @@ interface MetricCardProps {
   icon: React.ReactNode;
 }
 
-function MetricCard({ label, value, change, icon }: MetricCardProps) {
+const MetricCard = memo(function MetricCard({ label, value, change, icon }: MetricCardProps) {
   const isPositive = change !== undefined && change >= 0;
 
   return (
@@ -55,9 +56,9 @@ function MetricCard({ label, value, change, icon }: MetricCardProps) {
       )}
     </div>
   );
-}
+});
 
-export function MetricsGrid({ metrics }: MetricsGridProps) {
+export const MetricsGrid = memo(function MetricsGrid({ metrics }: MetricsGridProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -92,4 +93,4 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
       />
     </div>
   );
-}
+});
