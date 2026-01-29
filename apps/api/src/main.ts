@@ -62,6 +62,12 @@ async function bootstrap() {
         return;
       }
 
+      // If CORS_ORIGIN is '*', allow all origins
+      if (allowedOrigins.includes('*')) {
+        callback(null, true);
+        return;
+      }
+
       if (allowedOrigins.length === 0 && !isProduction) {
         // In development with no CORS_ORIGIN set, allow all
         callback(null, true);
