@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from '../../config/prisma/prisma.module';
 import { AiEngineModule } from '../ai-engine/ai-engine.module';
+import { AiActionsModule } from '../ai-actions/ai-actions.module';
 import { AgentInsightsService } from './agent-insights.service';
 import { AgentOrchestratorService } from './agent-orchestrator.service';
 import {
@@ -15,6 +16,7 @@ import { AgentEventHandler } from './handlers/agent-event.handler';
   imports: [
     PrismaModule,
     AiEngineModule,
+    forwardRef(() => AiActionsModule),
     BullModule.registerQueue({
       name: 'specialist-agents',
     }),

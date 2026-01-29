@@ -47,6 +47,8 @@ model Tenant {
   copilotConversations CopilotConversation[]
   weeklyReports WeeklyReport[]
   agentInsights AgentInsight[]
+  aiActions     AIAction[]
+  contextualSuggestions ContextualSuggestion[]
   marketingCampaigns MarketingCampaign[]
   audienceSegments   AudienceSegment[]
   referrals          Referral[]
@@ -1834,6 +1836,26 @@ enum InsightStatus {
   EXPIRED
 }
 
+enum ActionType {
+  CREATE_CAMPAIGN
+  SEND_SMS
+  SEND_EMAIL
+  SCHEDULE_APPOINTMENT
+  CREATE_QUOTE
+  APPLY_DISCOUNT
+  SCHEDULE_FOLLOW_UP
+  CREATE_SEGMENT
+}
+
+enum ActionStatus {
+  PENDING       // Awaiting user approval
+  APPROVED      // Approved, queued for execution
+  EXECUTING     // Currently running
+  COMPLETED     // Done
+  FAILED        // Error occurred
+  CANCELLED     // User cancelled
+}
+
 // AI-generated insights from specialist agents
 model AgentInsight {
   id                String          @id @default(cuid())
@@ -1862,6 +1884,7 @@ model AgentInsight {
   updatedAt         DateTime        @updatedAt
 
   tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  action            AIAction?       // Linked action if approved
 
   @@index([tenantId])
   @@index([tenantId, agentType])
@@ -1927,6 +1950,64 @@ model AgentSettings {
   updatedAt               DateTime        @updatedAt
 
   @@map("agent_settings")
+}
+
+// AI Actions - executable actions from insights, copilot, or suggestions
+model AIAction {
+  id                String        @id @default(cuid())
+  tenantId          String
+  insightId         String?       @unique  // From specialist agent insight
+  copilotSessionId  String?       // From chat copilot
+
+  actionType        ActionType
+  title             String
+  description       String        @db.Text
+  params            Json          // Action-specific parameters
+
+  // Approval & execution
+  requiresApproval  Boolean       @default(true)
+  status            ActionStatus  @default(PENDING)
+  executedAt        DateTime?
+  executedBy        String?
+  result            Json?
+  errorMessage      String?       @db.Text
+
+  // Impact estimation
+  estimatedImpact   String?       // "Reach 45 customers"
+  riskLevel         String        @default("LOW") // LOW, MEDIUM, HIGH
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  expiresAt         DateTime?
+
+  // Relations
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  insight           AgentInsight? @relation(fields: [insightId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([insightId])
+  @@index([expiresAt])
+  @@map("ai_actions")
+}
+
+// Contextual suggestions - cached per-page suggestions
+model ContextualSuggestion {
+  id          String    @id @default(cuid())
+  tenantId    String
+  context     String    // "marketing_empty", "quote_form", etc.
+  suggestions Json      // Array of suggestion objects
+  validUntil  DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, context])
+  @@index([tenantId])
+  @@index([validUntil])
+  @@map("contextual_suggestions")
 }
 
 // ============================================

@@ -1,5 +1,6 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { ActionExecutorService } from '../ai-actions/action-executor.service';
 import {
   AgentType,
   InsightPriority,
@@ -29,7 +30,11 @@ export interface InsightSummary {
 export class AgentInsightsService {
   private readonly logger = new Logger(AgentInsightsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ActionExecutorService))
+    private readonly actionExecutor: ActionExecutorService,
+  ) {}
 
   async listInsights(
     tenantId: string,
@@ -94,10 +99,23 @@ export class AgentInsightsService {
       updateData.rejectionReason = rejectionReason;
     }
 
-    return this.prisma.agentInsight.update({
+    const updated = await this.prisma.agentInsight.update({
       where: { id: insight.id },
       data: updateData,
     });
+
+    // When insight is approved, create and execute the associated action
+    if (status === InsightStatus.APPROVED && insight.actionParams) {
+      try {
+        await this.actionExecutor.createFromInsight(tenantId, insightId, userId);
+        this.logger.log(`Created action from approved insight ${insightId}`);
+      } catch (error) {
+        this.logger.error(`Failed to create action from insight ${insightId}: ${error}`);
+        // Don't throw - the insight is still approved even if action creation fails
+      }
+    }
+
+    return updated;
   }
 
   async getSummary(tenantId: string): Promise<InsightSummary> {

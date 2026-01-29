@@ -50,6 +50,7 @@ import { AiCommunicationModule } from './modules/ai-communication/ai-communicati
 import { AiCopilotModule } from './modules/ai-copilot/ai-copilot.module';
 import { SpecialistAgentsModule } from './modules/specialist-agents/specialist-agents.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { AiActionsModule } from './modules/ai-actions/ai-actions.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -107,6 +108,7 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     AiCopilotModule,
     SpecialistAgentsModule,
     MarketingModule,
+    AiActionsModule,
   ],
   controllers: [AppController],
   providers: [
