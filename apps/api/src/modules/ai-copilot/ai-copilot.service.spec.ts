@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { AiCopilotService } from './ai-copilot.service';
 import { CopilotToolsService } from './copilot-tools.service';
 import { PrismaService } from '../../config/prisma/prisma.service';
@@ -18,6 +19,9 @@ describe('AiCopilotService', () => {
   let mockToolsService: {
     getToolDefinitions: jest.Mock;
     executeTool: jest.Mock;
+  };
+  let mockConfigService: {
+    get: jest.Mock;
   };
 
   const mockTenantId = 'tenant-123';
@@ -39,6 +43,9 @@ describe('AiCopilotService', () => {
       ]),
       executeTool: jest.fn(),
     };
+    mockConfigService = {
+      get: jest.fn().mockReturnValue('false'),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,6 +53,7 @@ describe('AiCopilotService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AiEngineService, useValue: mockAiEngine },
         { provide: CopilotToolsService, useValue: mockToolsService },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
