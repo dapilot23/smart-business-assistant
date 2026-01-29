@@ -59,20 +59,17 @@ export async function getInsights(filters: InsightFilters = {}): Promise<Insight
 
   const queryString = params.toString();
   const url = getApiUrl(`/insights${queryString ? `?${queryString}` : ''}`);
-  const response = await fetchWithAuth(url);
-  return response.json();
+  return fetchWithAuth(url);
 }
 
 export async function getInsightsSummary(): Promise<InsightSummary> {
   const url = getApiUrl('/insights/summary');
-  const response = await fetchWithAuth(url);
-  return response.json();
+  return fetchWithAuth(url);
 }
 
 export async function getInsight(id: string): Promise<AgentInsight> {
   const url = getApiUrl(`/insights/${id}`);
-  const response = await fetchWithAuth(url);
-  return response.json();
+  return fetchWithAuth(url);
 }
 
 export async function updateInsightStatus(
@@ -81,11 +78,10 @@ export async function updateInsightStatus(
   rejectionReason?: string,
 ): Promise<AgentInsight> {
   const url = getApiUrl(`/insights/${id}/status`);
-  const response = await fetchWithAuth(url, {
+  return fetchWithAuth(url, {
     method: 'PATCH',
     body: JSON.stringify({ status, rejectionReason }),
   });
-  return response.json();
 }
 
 export async function deleteInsight(id: string): Promise<void> {
@@ -95,17 +91,15 @@ export async function deleteInsight(id: string): Promise<void> {
 
 export async function triggerAgent(agentType: AgentType): Promise<{ runId: string; status: string }> {
   const url = getApiUrl(`/agents/${agentType.toLowerCase()}/run`);
-  const response = await fetchWithAuth(url, {
+  return fetchWithAuth(url, {
     method: 'POST',
     body: JSON.stringify({}),
   });
-  return response.json();
 }
 
 export async function triggerAllAgents(): Promise<Record<AgentType, string>> {
   const url = getApiUrl('/agents/run-all');
-  const response = await fetchWithAuth(url, { method: 'POST' });
-  const data = await response.json();
+  const data = await fetchWithAuth(url, { method: 'POST' });
   return data.results;
 }
 

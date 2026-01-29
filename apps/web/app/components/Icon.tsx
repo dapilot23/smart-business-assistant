@@ -46,6 +46,9 @@ import {
   Menu,
   Palette,
   BarChart3,
+  Megaphone,
+  Target,
+  Gift,
 } from "lucide-react";
 
 interface IconProps {
@@ -95,7 +98,10 @@ interface IconProps {
     | "briefcase"
     | "menu"
     | "palette"
-    | "bar-chart-3";
+    | "bar-chart-3"
+    | "megaphone"
+    | "target"
+    | "gift";
   className?: string;
   size?: number;
 }
@@ -148,6 +154,9 @@ export function Icon({ name, className = "", size = 20 }: IconProps) {
     menu: Menu,
     palette: Palette,
     "bar-chart-3": BarChart3,
+    megaphone: Megaphone,
+    target: Target,
+    gift: Gift,
   };
 
   const IconComponent = icons[name];

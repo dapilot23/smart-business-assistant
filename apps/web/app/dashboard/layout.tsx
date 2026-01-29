@@ -17,6 +17,7 @@ const navItems = [
   { href: "/dashboard/quotes", label: "Quotes", icon: "quote" as const },
   { href: "/dashboard/sms", label: "SMS", icon: "message-square" as const },
   { href: "/dashboard/voice", label: "Voice AI", icon: "phone-call" as const },
+  { href: "/dashboard/marketing", label: "Marketing", icon: "megaphone" as const },
   { href: "/dashboard/insights", label: "Insights", icon: "bar-chart-3" as const },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" as const },
 ];
