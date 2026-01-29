@@ -367,6 +367,132 @@ Respond with JSON only:
 }`,
 };
 
+// === AI Specialist Agents ===
+
+const AGENT_TEMPLATES = {
+  'agent.revenue-quote-analysis': `You are a sales intelligence analyst for a service business.
+Analyze this quote and determine if follow-up action is needed.
+
+Quote Details:
+- Quote Number: {quoteNumber}
+- Amount: {quoteAmount}
+- Service: {serviceType}
+- Sent: {daysSinceSent} days ago
+- Viewed: {viewedStatus}
+- Valid Until: {validUntil}
+
+Customer Profile:
+- Name: {customerName}
+- Total Past Visits: {totalVisits}
+- Total Lifetime Spend: {totalSpent}
+- Last Interaction: {daysSinceLastInteraction} days ago
+
+Analyze the quote status and recommend the best action.
+
+Respond with JSON only:
+{
+  "conversionLikelihood": 0.0-1.0,
+  "urgencyScore": 0.0-1.0,
+  "recommendedAction": "call_immediately" | "send_followup" | "offer_discount" | "wait" | "mark_cold",
+  "suggestedDiscount": 0-20,
+  "optimalFollowUpTime": "immediate" | "today" | "tomorrow" | "this_week",
+  "reasoning": "2-3 sentence explanation"
+}`,
+
+  'agent.customer-churn-analysis': `You are a customer success analyst for a service business.
+Analyze this customer's behavior and assess churn risk.
+
+Customer Profile:
+- Name: {customerName}
+- Health Score: {healthScore}/100
+- Current Churn Risk: {churnRisk}%
+- Lifecycle Stage: {lifecycleStage}
+- Total Appointments: {totalAppointments}
+- No-Show Count: {noShowCount}
+
+Engagement Data:
+- Days Since Last Visit: {daysSinceLastVisit}
+- Total Lifetime Spend: {totalSpent}
+- Average Visit Frequency: {avgVisitFrequency} days
+
+Analyze the customer's engagement patterns and recommend retention actions.
+
+Respond with JSON only:
+{
+  "churnRiskAssessment": 0.0-1.0,
+  "churnTimeframe": "30_days" | "60_days" | "90_days" | "stable",
+  "primaryRiskFactors": ["factor1", "factor2"],
+  "recommendedAction": "personal_call" | "send_offer" | "loyalty_program" | "service_reminder" | "no_action",
+  "suggestedOffer": "description or null",
+  "reasoning": "2-3 sentence explanation"
+}`,
+
+  'agent.operations-noshow-analysis': `You are an operations analyst for a service business.
+Analyze this upcoming appointment and predict no-show risk.
+
+Appointment Details:
+- Scheduled: {scheduledDate} at {scheduledTime}
+- Service: {serviceName}
+- Duration: {duration} minutes
+- Status: {status}
+- Confirmed: {isConfirmed}
+
+Customer Risk Factors:
+- Previous No-Shows: {noShowCount}
+- Churn Risk: {churnRisk}%
+- Hours Until Appointment: {hoursUntil}
+
+Analyze the appointment and recommend preventive actions.
+
+Respond with JSON only:
+{
+  "noShowProbability": 0.0-1.0,
+  "riskLevel": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
+  "riskFactors": ["factor1", "factor2"],
+  "recommendedActions": [
+    {
+      "action": "send_reminder" | "confirm_call" | "require_deposit" | "overbook_slot",
+      "priority": "immediate" | "soon" | "optional",
+      "reasoning": "why this action"
+    }
+  ]
+}`,
+
+  'agent.marketing-segment-analysis': `You are a marketing strategist for a service business.
+Analyze the customer base and recommend marketing campaigns.
+
+Business Metrics:
+- Total Customers: {totalCustomers}
+- New This Month: {newCustomers}
+- Dormant Customers (90+ days): {dormantCount}
+- At-Risk Customers: {atRiskCount}
+- High-Value Customers: {highValueCount}
+
+NPS Data:
+- Average NPS: {avgNps}
+- Promoters (9-10): {promoterCount}
+- Detractors (0-6): {detractorCount}
+
+Current Month: {currentMonth}
+Season: {currentSeason}
+
+Recommend the highest-impact marketing campaign to run right now.
+
+Respond with JSON only:
+{
+  "recommendedCampaign": {
+    "type": "winback" | "referral" | "seasonal" | "retention" | "upsell",
+    "targetSegment": "dormant" | "at_risk" | "promoters" | "all",
+    "estimatedReach": number,
+    "expectedImpact": "low" | "medium" | "high",
+    "suggestedMessage": "campaign message idea",
+    "bestChannel": "sms" | "email" | "both"
+  },
+  "secondaryOpportunities": ["opportunity1", "opportunity2"],
+  "reasoning": "2-3 sentence explanation"
+}`,
+};
+
 // === Business Copilot (Sprint 7.8) ===
 
 const COPILOT_TEMPLATES = {
@@ -428,4 +554,5 @@ export const PROMPT_TEMPLATES: Record<string, string> = {
   ...DISPATCH_TEMPLATES,
   ...COMMS_TEMPLATES,
   ...COPILOT_TEMPLATES,
+  ...AGENT_TEMPLATES,
 };

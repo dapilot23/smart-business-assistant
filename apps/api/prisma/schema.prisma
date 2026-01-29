@@ -47,6 +47,10 @@ model Tenant {
   copilotConversations CopilotConversation[]
   weeklyReports WeeklyReport[]
   agentInsights AgentInsight[]
+  marketingCampaigns MarketingCampaign[]
+  audienceSegments   AudienceSegment[]
+  referrals          Referral[]
+  seasonalDemand     SeasonalDemand[]
 
   @@map("tenants")
 }
@@ -161,6 +165,9 @@ model Customer {
   lifecycleStage String          @default("NEW")
   waitlistEntries Waitlist[]
   retentionCampaigns RetentionCampaign[]
+  campaignRecipients CampaignRecipient[]
+  referralsMade      Referral[] @relation("ReferralsMade")
+  referralsReceived  Referral[] @relation("ReferralsReceived")
 
   @@index([tenantId])
   @@index([phone])
@@ -1920,4 +1927,284 @@ model AgentSettings {
   updatedAt               DateTime        @updatedAt
 
   @@map("agent_settings")
+}
+
+// ============================================
+// Marketing Module
+// ============================================
+
+enum CampaignType {
+  SMS_BLAST
+  EMAIL_BLAST
+  DRIP_SEQUENCE
+  REFERRAL
+  SEASONAL
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+// Marketing campaigns (SMS, email, drip sequences)
+model MarketingCampaign {
+  id                String         @id @default(cuid())
+  tenantId          String
+  name              String
+  description       String?
+  type              CampaignType
+  status            CampaignStatus @default(DRAFT)
+
+  // Audience targeting
+  audienceSegmentId String?
+  audienceQuery     Json?          // Dynamic segment rules for ad-hoc targeting
+
+  // Scheduling
+  scheduledAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+
+  // A/B Testing
+  isAbTest          Boolean        @default(false)
+  variants          Json?          // { "A": { content: "...", weight: 50 }, "B": { ... } }
+  winningVariant    String?
+
+  // Content (for simple campaigns)
+  channel           String?        // SMS, EMAIL
+  subject           String?        // For email
+  content           String?        @db.Text
+  senderName        String?
+
+  // Metrics
+  totalRecipients   Int            @default(0)
+  sentCount         Int            @default(0)
+  deliveredCount    Int            @default(0)
+  openCount         Int            @default(0)
+  clickCount        Int            @default(0)
+  replyCount        Int            @default(0)
+  unsubscribeCount  Int            @default(0)
+  bounceCount       Int            @default(0)
+  conversionCount   Int            @default(0)
+  revenue           Decimal        @default(0) @db.Decimal(10, 2)
+
+  createdBy         String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  segment           AudienceSegment? @relation(fields: [audienceSegmentId], references: [id], onDelete: SetNull)
+  steps             CampaignStep[]
+  recipients        CampaignRecipient[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, type])
+  @@index([scheduledAt])
+  @@map("marketing_campaigns")
+}
+
+// Multi-step drip campaign steps
+model CampaignStep {
+  id              String            @id @default(cuid())
+  campaignId      String
+  stepNumber      Int
+  name            String?
+
+  // Timing
+  delayDays       Int               @default(0)
+  delayHours      Int               @default(0)
+
+  // Content
+  channel         String            // SMS, EMAIL
+  subject         String?           // For email
+  content         String            @db.Text
+
+  // Conditional logic
+  conditions      Json?             // { "ifOpened": true, "ifClicked": false, "ifReplied": false }
+
+  // Metrics
+  sentCount       Int               @default(0)
+  openCount       Int               @default(0)
+  clickCount      Int               @default(0)
+  conversionCount Int               @default(0)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  campaign        MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, stepNumber])
+  @@index([campaignId])
+  @@map("campaign_steps")
+}
+
+// Track individual campaign recipients
+model CampaignRecipient {
+  id              String            @id @default(cuid())
+  campaignId      String
+  customerId      String
+  stepNumber      Int               @default(1)
+  variant         String?           // For A/B tests
+
+  // Status tracking
+  status          String            @default("PENDING") // PENDING, SENT, DELIVERED, OPENED, CLICKED, CONVERTED, FAILED, UNSUBSCRIBED
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  convertedAt     DateTime?
+  unsubscribedAt  DateTime?
+
+  // Error tracking
+  errorMessage    String?
+  bounceType      String?           // hard, soft
+
+  // Attribution
+  conversionValue Decimal?          @db.Decimal(10, 2)
+  conversionType  String?           // appointment, quote, invoice
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  campaign        MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer        Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, customerId, stepNumber])
+  @@index([campaignId])
+  @@index([customerId])
+  @@index([status])
+  @@map("campaign_recipients")
+}
+
+// Audience segments for targeting
+model AudienceSegment {
+  id              String              @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?
+
+  // Segment rules (JSON structure)
+  rules           Json                // { conditions: [...], logic: "AND" | "OR" }
+
+  // AI-generated segments
+  aiGenerated     Boolean             @default(false)
+  aiReasoning     String?
+
+  // Cached member count (updated periodically)
+  memberCount     Int                 @default(0)
+  lastCalculatedAt DateTime?
+
+  isActive        Boolean             @default(true)
+  createdBy       String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaigns       MarketingCampaign[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@map("audience_segments")
+}
+
+// Referral tracking
+model Referral {
+  id              String    @id @default(cuid())
+  tenantId        String
+  referrerId      String    // Customer who referred
+  referralCode    String    @unique
+
+  // Referred customer (null until converted)
+  referredId      String?
+  referredEmail   String?
+  referredPhone   String?
+
+  // Status
+  status          String    @default("PENDING") // PENDING, CONVERTED, REWARDED, EXPIRED
+  convertedAt     DateTime?
+  rewardedAt      DateTime?
+
+  // Rewards
+  referrerReward  String?   // e.g., "$25 credit"
+  referredReward  String?   // e.g., "10% off first service"
+  referrerRewardValue Decimal? @db.Decimal(10, 2)
+  referredRewardValue Decimal? @db.Decimal(10, 2)
+
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  referrer        Customer  @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred        Customer? @relation("ReferralsReceived", fields: [referredId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([referrerId])
+  @@index([referredId])
+  @@index([referralCode])
+  @@index([status])
+  @@map("referrals")
+}
+
+// Referral program settings per tenant
+model ReferralSettings {
+  id                    String    @id @default(cuid())
+  tenantId              String    @unique
+  isEnabled             Boolean   @default(false)
+
+  // Reward configuration
+  referrerRewardType    String    @default("CREDIT") // CREDIT, DISCOUNT_PERCENT, DISCOUNT_FLAT
+  referrerRewardValue   Decimal   @default(25) @db.Decimal(10, 2)
+  referredRewardType    String    @default("DISCOUNT_PERCENT")
+  referredRewardValue   Decimal   @default(10) @db.Decimal(10, 2)
+
+  // Limits
+  maxReferralsPerCustomer Int?    // null = unlimited
+  referralExpiryDays    Int       @default(90)
+  minPurchaseForReward  Decimal?  @db.Decimal(10, 2)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("referral_settings")
+}
+
+// Seasonal demand tracking for campaign timing
+model SeasonalDemand {
+  id              String    @id @default(cuid())
+  tenantId        String
+  year            Int
+  month           Int       // 1-12
+  week            Int?      // 1-52 (optional for weekly granularity)
+
+  // Metrics
+  appointmentCount Int      @default(0)
+  revenue         Decimal   @default(0) @db.Decimal(10, 2)
+  newCustomers    Int       @default(0)
+  avgBookingValue Decimal?  @db.Decimal(10, 2)
+
+  // Calculated indices (1.0 = average)
+  demandIndex     Float     @default(1.0)
+  revenueIndex    Float     @default(1.0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, year, month])
+  @@index([tenantId])
+  @@index([tenantId, year])
+  @@map("seasonal_demand")
 }
