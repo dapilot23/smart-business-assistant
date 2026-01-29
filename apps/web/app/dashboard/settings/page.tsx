@@ -14,6 +14,7 @@ import {
 import { BusinessHoursInput } from "@/components/settings/business-hours-input";
 import { ColorThemeSwitcher } from "@/components/settings/color-theme-switcher";
 import { TypographySwitcher } from "@/components/settings/typography-switcher";
+import { BusinessProfileSettings } from "@/components/settings/business-profile-settings";
 import { getSettings, updateSettings, type Settings, type BusinessHours } from "@/lib/api/settings";
 import { Icon } from "@/app/components/Icon";
 
@@ -30,7 +31,7 @@ const TIMEZONES = [
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'business' | 'notifications' | 'reviews' | 'appearance'>('business');
+  const [activeTab, setActiveTab] = useState<'aiProfile' | 'business' | 'notifications' | 'reviews' | 'appearance'>('aiProfile');
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -150,6 +151,17 @@ export default function SettingsPage() {
         <div className="w-64 border-r border-[var(--border)] p-4">
           <nav className="flex flex-col gap-1">
             <button
+              onClick={() => setActiveTab('aiProfile')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'aiProfile'
+                  ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+                  : 'text-[var(--foreground)] hover:bg-[var(--secondary)]'
+              }`}
+            >
+              <Icon name="bot" size={18} />
+              AI Business Profile
+            </button>
+            <button
               onClick={() => setActiveTab('business')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === 'business'
@@ -157,8 +169,8 @@ export default function SettingsPage() {
                   : 'text-[var(--foreground)] hover:bg-[var(--secondary)]'
               }`}
             >
-              <Icon name="building-2" size={18} />
-              Business Profile
+              <Icon name="clock" size={18} />
+              Hours &amp; Schedule
             </button>
             <button
               onClick={() => setActiveTab('notifications')}
@@ -198,12 +210,24 @@ export default function SettingsPage() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-8">
+          {activeTab === 'aiProfile' && (
+            <div className="max-w-3xl">
+              <div className="mb-8">
+                <h2 className="font-primary text-xl font-semibold mb-2">AI Business Profile</h2>
+                <p className="text-sm text-[var(--muted-foreground)]">
+                  Your AI-generated business profile based on the onboarding interview
+                </p>
+              </div>
+              <BusinessProfileSettings />
+            </div>
+          )}
+
           {activeTab === 'business' && (
             <div className="max-w-3xl">
               <div className="mb-8">
-                <h2 className="font-primary text-xl font-semibold mb-2">Business Profile</h2>
+                <h2 className="font-primary text-xl font-semibold mb-2">Hours &amp; Schedule</h2>
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  Configure your business information and operating hours
+                  Configure your business operating hours and timezone
                 </p>
               </div>
 

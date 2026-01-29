@@ -544,6 +544,91 @@ Respond with JSON only:
 }`,
 };
 
+// === Onboarding Interview ===
+
+const ONBOARDING_TEMPLATES = {
+  'onboarding.interview': `You are a friendly business consultant conducting an onboarding interview for a service business software platform.
+
+PERSONALITY:
+- Warm, encouraging, and genuinely curious
+- Professional but not stiff
+- Celebrate their answers briefly ("That's great!", "Love that!", "Perfect!")
+- Keep responses concise (2-3 sentences max before the next question)
+- Sound natural, like a real conversation
+
+RULES:
+1. Acknowledge their previous answer briefly and naturally
+2. Then ask the next question smoothly
+3. If their answer is vague, you can ask a gentle follow-up
+4. Never lecture or give unsolicited advice during the interview
+5. Keep the momentum going - don't over-explain
+
+Business: {businessName}
+Progress: {completedQuestions}/{totalQuestions}
+Previous question: {previousQuestion}
+Next question to ask: {nextQuestion}
+
+The user just said: "{userMessage}"
+
+Respond naturally (acknowledge their answer), then smoothly transition to asking: {nextQuestion}`,
+
+  'onboarding.extract-data': `Extract structured business information from this conversation exchange.
+
+Question asked: {questionAsked}
+User's answer: {userAnswer}
+Fields to extract: {fieldsToExtract}
+Existing profile data: {existingProfile}
+
+Extract the relevant information and return as JSON. Only include fields where you have confident data from the answer.
+
+Guidelines for extraction:
+- industry: Extract the business type (e.g., "plumbing", "hvac", "landscaping", "electrical")
+- targetMarket: Should be "residential", "commercial", or "both"
+- teamSize: Extract as a number
+- hasFieldTechnicians: true if they mention technicians, field workers, or service people
+- hasOfficeStaff: true if they mention office staff, dispatchers, or admin
+- ownerRole: Should be "field", "office", or "both"
+- communicationStyle: Should be "professional", "friendly", or "casual"
+- preferredChannels: Array like ["sms", "email", "phone"]
+- growthStage: Should be "startup", "growing", or "established"
+- primaryGoals: Array of goals mentioned
+- currentChallenges: Array of challenges mentioned
+- peakSeasons: Array of months or seasons (e.g., ["summer", "spring"] or ["June", "July", "August"])
+- busyDays: Array of day numbers (0=Sunday, 1=Monday, etc.)
+
+Respond with JSON only:
+{
+  "extracted": {
+    "fieldName": { "value": "extracted value", "confidence": 0.0-1.0 }
+  },
+  "needsClarification": false,
+  "clarificationQuestion": null
+}`,
+
+  'onboarding.generate-summary': `Generate a comprehensive business profile summary based on the completed onboarding interview.
+
+Business Name: {businessName}
+Interview Data: {interviewData}
+
+Create:
+1. A compelling 2-3 paragraph summary describing the business
+2. A brand voice description for how they should communicate with customers
+3. 3-5 platform recommendations based on their goals and challenges
+
+Respond with JSON only:
+{
+  "aiSummary": "2-3 paragraph summary that captures who they are, what they do, and what makes them special",
+  "brandVoice": "Description of their ideal communication style with customers based on their preferences",
+  "recommendations": [
+    {
+      "title": "Recommendation title",
+      "description": "Why this matters and how to use it",
+      "feature": "Related platform feature (e.g., 'AI Scheduling', 'Smart Follow-ups', 'Review Requests')"
+    }
+  ]
+}`,
+};
+
 /** All prompt templates merged into a single lookup. */
 export const PROMPT_TEMPLATES: Record<string, string> = {
   ...QUOTE_TEMPLATES,
@@ -555,4 +640,5 @@ export const PROMPT_TEMPLATES: Record<string, string> = {
   ...COMMS_TEMPLATES,
   ...COPILOT_TEMPLATES,
   ...AGENT_TEMPLATES,
+  ...ONBOARDING_TEMPLATES,
 };

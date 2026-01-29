@@ -49,6 +49,8 @@ import {
   Megaphone,
   Target,
   Gift,
+  Sparkles,
+  Inbox,
 } from "lucide-react";
 
 interface IconProps {
@@ -101,7 +103,10 @@ interface IconProps {
     | "bar-chart-3"
     | "megaphone"
     | "target"
-    | "gift";
+    | "gift"
+    | "sparkles"
+    | "inbox"
+    | "refresh-cw";
   className?: string;
   size?: number;
 }
@@ -157,6 +162,9 @@ export function Icon({ name, className = "", size = 20 }: IconProps) {
     megaphone: Megaphone,
     target: Target,
     gift: Gift,
+    sparkles: Sparkles,
+    inbox: Inbox,
+    "refresh-cw": RefreshCw,
   };
 
   const IconComponent = icons[name];

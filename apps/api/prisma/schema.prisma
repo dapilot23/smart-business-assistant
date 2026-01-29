@@ -53,6 +53,7 @@ model Tenant {
   audienceSegments   AudienceSegment[]
   referrals          Referral[]
   seasonalDemand     SeasonalDemand[]
+  businessProfile    BusinessProfile?
 
   @@map("tenants")
 }
@@ -2288,4 +2289,86 @@ model SeasonalDemand {
   @@index([tenantId])
   @@index([tenantId, year])
   @@map("seasonal_demand")
+}
+
+// ===== Business Profile & Onboarding Interview =====
+
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+// Business profile collected during AI onboarding interview
+model BusinessProfile {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique
+
+  // Business Identity
+  industry              String?              // "plumbing", "hvac", "landscaping"
+  businessDescription   String?  @db.Text    // AI-generated summary
+  targetMarket          String?              // "residential", "commercial", "both"
+  serviceArea           String?              // Geographic description
+  serviceAreaRadius     Int?                 // Miles from base
+
+  // Team & Operations
+  teamSize              Int?
+  hasFieldTechnicians   Boolean  @default(false)
+  hasOfficeStaff        Boolean  @default(false)
+  ownerRole             String?              // "field", "office", "both"
+
+  // Communication & Brand
+  communicationStyle    String?              // "professional", "friendly", "casual"
+  brandVoice            String?  @db.Text    // AI-generated brand voice
+  preferredChannels     String[]             // ["sms", "email", "phone"]
+
+  // Business Goals
+  primaryGoals          Json?                // Array of goals
+  currentChallenges     Json?                // Array of challenges
+  growthStage           String?              // "startup", "growing", "established"
+
+  // Seasonal Patterns
+  peakSeasons           Json?                // Array of peak months
+  busyDays              Int[]                // Days of week (0-6)
+
+  // Competitive Position
+  uniqueSellingPoints   Json?                // Array of differentiators
+  pricingPosition       String?              // "budget", "mid-range", "premium"
+
+  // AI-Generated
+  aiSummary             String?  @db.Text    // Full AI summary
+  aiRecommendations     Json?                // Platform recommendations
+
+  // Onboarding Progress
+  onboardingStatus      OnboardingStatus     @default(NOT_STARTED)
+  completedQuestions    Int                  @default(0)
+  totalQuestions        Int                  @default(12)
+  completedAt           DateTime?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation          OnboardingConversation?
+
+  @@index([tenantId])
+  @@map("business_profiles")
+}
+
+// Store the onboarding conversation for resume and reference
+model OnboardingConversation {
+  id                String   @id @default(cuid())
+  businessProfileId String   @unique
+  messages          Json     // Array of {role, content, timestamp, questionId}
+  currentQuestionId String?  // Track current question in flow
+  extractedData     Json?    // Structured data extracted so far
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  businessProfile   BusinessProfile @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_conversations")
 }

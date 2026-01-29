@@ -51,6 +51,8 @@ import { AiCopilotModule } from './modules/ai-copilot/ai-copilot.module';
 import { SpecialistAgentsModule } from './modules/specialist-agents/specialist-agents.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { AiActionsModule } from './modules/ai-actions/ai-actions.module';
+import { AiSuggestionsModule } from './modules/ai-suggestions/ai-suggestions.module';
+import { OnboardingInterviewModule } from './modules/onboarding-interview/onboarding-interview.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -109,6 +111,8 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     SpecialistAgentsModule,
     MarketingModule,
     AiActionsModule,
+    AiSuggestionsModule,
+    OnboardingInterviewModule,
   ],
   controllers: [AppController],
   providers: [
