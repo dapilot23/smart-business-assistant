@@ -3,8 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
 import { AiEngineService } from './ai-engine.service';
 import { AiCostTrackerService } from './ai-cost-tracker.service';
+import { AiFallbackService } from './ai-fallback.service';
 import { CacheService } from '../../config/cache/cache.service';
 import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
+
+// Mock fallback service
+const mockFallbackService = {
+  getFallback: jest.fn().mockReturnValue({ behavior: 'USE_DEFAULT', defaultData: {} }),
+  executeFallback: jest.fn().mockReturnValue({ fallback: true, behavior: 'USE_DEFAULT', data: null }),
+  hasFallback: jest.fn().mockReturnValue(true),
+};
 
 // Mock the Anthropic SDK
 const mockCreate = jest.fn();
@@ -78,6 +86,7 @@ describe('AiEngineService', () => {
         { provide: ConfigService, useValue: configService },
         { provide: AiCostTrackerService, useValue: costTracker },
         { provide: CacheService, useValue: cacheService },
+        { provide: AiFallbackService, useValue: mockFallbackService },
         { provide: CircuitBreakerService, useValue: circuitBreaker },
       ],
     }).compile();
@@ -99,6 +108,7 @@ describe('AiEngineService', () => {
           { provide: ConfigService, useValue: configService },
           { provide: AiCostTrackerService, useValue: costTracker },
           { provide: CacheService, useValue: cacheService },
+          { provide: AiFallbackService, useValue: mockFallbackService },
           {
             provide: CircuitBreakerService,
             useValue: { createBreaker: jest.fn().mockReturnValue({ fire: jest.fn() }) },
@@ -237,6 +247,7 @@ describe('AiEngineService', () => {
           { provide: ConfigService, useValue: configService },
           { provide: AiCostTrackerService, useValue: costTracker },
           { provide: CacheService, useValue: cacheService },
+          { provide: AiFallbackService, useValue: mockFallbackService },
           {
             provide: CircuitBreakerService,
             useValue: { createBreaker: jest.fn().mockReturnValue({ fire: jest.fn() }) },

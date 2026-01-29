@@ -153,6 +153,7 @@ model Customer {
   location     CustomerLocation?
   auth         CustomerAuth?
   equipment    CustomerEquipment[]
+  riskProfile  CustomerRiskProfile?
   noShowCount  Int               @default(0)
   healthScore    Int             @default(50)
   churnRisk      Float           @default(0)
@@ -750,6 +751,55 @@ model CustomerContext {
   @@index([tenantId])
   @@index([customerId])
   @@map("customer_contexts")
+}
+
+// Unified customer risk profile for AI insights
+model CustomerRiskProfile {
+  id                String    @id @default(cuid())
+  tenantId          String
+  customerId        String    @unique
+
+  // Individual risk scores (0-100 scale)
+  noShowRisk        Float     @default(0)   // Probability of no-showing (0-100)
+  paymentRisk       Float     @default(0)   // Risk of late/non-payment (0-100)
+  churnRisk         Float     @default(0)   // Probability of churning (0-100)
+
+  // Composite score
+  overallRisk       Float     @default(0)   // Weighted average (0-100)
+  riskLevel         RiskLevel @default(LOW) // LOW, MEDIUM, HIGH, CRITICAL
+
+  // Risk factors
+  noShowFactors     Json?     // { noShowCount, daysSinceLastNoShow, appointmentHistory }
+  paymentFactors    Json?     // { avgDaysLate, overdueCount, totalOwed }
+  churnFactors      Json?     // { daysSinceLastVisit, visitFrequencyTrend, engagementScore }
+
+  // AI insights
+  aiRiskSummary     String?   @db.Text  // AI-generated risk summary
+  recommendedAction String?   // Suggested next action
+  actionPriority    Int       @default(0) // Priority for outreach (0 = lowest)
+
+  // Historical tracking
+  lastCalculatedAt  DateTime  @default(now())
+  riskHistory       Json?     // Array of { date, noShowRisk, paymentRisk, churnRisk, overallRisk }
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  customer          Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([overallRisk])
+  @@index([riskLevel])
+  @@map("customer_risk_profiles")
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
 
 // Outbound campaign management

@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../config/prisma/prisma.service';
-import { AiEngineService, ToolResult } from '../ai-engine/ai-engine.service';
+import {
+  AiEngineService,
+  ToolResult,
+  StreamChunk,
+} from '../ai-engine/ai-engine.service';
 import { CopilotToolsService } from './copilot-tools.service';
 import { CopilotConversation } from '@prisma/client';
 
@@ -19,14 +23,115 @@ export interface CopilotResponse {
   data?: Record<string, unknown>;
 }
 
+export interface CopilotStreamEvent {
+  type: 'text' | 'tool_start' | 'tool_end' | 'done' | 'error';
+  content?: string;
+  toolName?: string;
+  conversationId?: string;
+  toolsUsed?: string[];
+}
+
 const COPILOT_SYSTEM_PROMPT = `You are a helpful business assistant for a home services company.
 You have access to tools that can query business data like revenue, appointments, customers, and more.
-Always use the available tools to get accurate data before answering questions.
-Be concise and focus on actionable insights.
-Format numbers as currency when appropriate (e.g., $1,234.56).
-When discussing trends, mention percentage changes.`;
+
+## CRITICAL RULES FOR ACCURATE RESPONSES
+
+1. **ALWAYS use tools first**: Before answering ANY question about business data, you MUST call the relevant tool to get current data. Never guess or make up numbers.
+
+2. **Only state facts from tool results**: Every number, date, name, or statistic you mention MUST come directly from a tool response in this conversation. Do not invent or estimate data.
+
+3. **Cite your sources**: When presenting data, briefly indicate which tool provided it (e.g., "According to today's revenue data..." or "Based on the customer lookup...").
+
+4. **Admit uncertainty**: If a tool doesn't return the data needed to answer a question, say so clearly:
+   - "I don't have data for that time period."
+   - "The customer search didn't return any results for that name."
+   - "I can only show [available data], not [requested data]."
+
+5. **No fabrication**: NEVER make up customer names, phone numbers, appointment times, revenue figures, or any other specific data. If you don't have it, say so.
+
+6. **Time-bound answers**: Always specify the time period for any data you present (e.g., "this week", "last 30 days", "today").
+
+## RESPONSE FORMAT
+
+- Be concise and focus on actionable insights
+- Format numbers as currency when appropriate (e.g., $1,234.56)
+- When discussing trends, mention percentage changes
+- If data seems incomplete or unusual, note that to the user
+
+## EXAMPLES OF CORRECT BEHAVIOR
+
+User: "What's our revenue this week?"
+CORRECT: [Call get_revenue tool first, then] "This week's revenue is $12,450 based on completed jobs."
+WRONG: "Your revenue this week is approximately $10,000-15,000." (Never estimate without tool data)
+
+User: "Who is our best customer?"
+CORRECT: [Call get_top_customers tool first, then] "Based on total spending, John Smith is your top customer with $5,200 in lifetime value."
+WRONG: "Your best customer is probably a returning client who..." (Never speculate)`;
 
 const MAX_TOOL_ITERATIONS = 5;
+
+// Patterns that indicate the response may contain fabricated data
+const HALLUCINATION_PATTERNS = [
+  /\$[\d,]+\.?\d*/, // Dollar amounts
+  /\d+%/, // Percentages
+  /\d{1,2}:\d{2}\s*(AM|PM|am|pm)?/, // Times
+  /\d+\s+(customers?|appointments?|jobs?|invoices?|quotes?)/, // Counts
+];
+
+// Keywords that suggest speculation without data
+const SPECULATION_KEYWORDS = [
+  'approximately',
+  'around',
+  'roughly',
+  'probably',
+  'likely',
+  'maybe',
+  'I think',
+  'I believe',
+  'it seems',
+  'could be',
+  'might be',
+  'estimated',
+];
+
+/**
+ * Check if a response may contain hallucinated data
+ * Returns warnings if the response contains numeric claims but no tools were used
+ */
+function checkForHallucinations(
+  response: string,
+  toolsUsed: string[],
+): { isValid: boolean; warnings: string[] } {
+  const warnings: string[] = [];
+
+  // If no tools were used but response contains specific data
+  if (toolsUsed.length === 0) {
+    const hasNumericClaims = HALLUCINATION_PATTERNS.some((pattern) =>
+      pattern.test(response),
+    );
+    if (hasNumericClaims) {
+      warnings.push(
+        'Response contains numeric data but no tools were called to retrieve it',
+      );
+    }
+  }
+
+  // Check for speculative language
+  const lowerResponse = response.toLowerCase();
+  const speculativeTerms = SPECULATION_KEYWORDS.filter((term) =>
+    lowerResponse.includes(term.toLowerCase()),
+  );
+  if (speculativeTerms.length > 0 && toolsUsed.length === 0) {
+    warnings.push(
+      `Response uses speculative language: ${speculativeTerms.join(', ')}`,
+    );
+  }
+
+  return {
+    isValid: warnings.length === 0,
+    warnings,
+  };
+}
 
 @Injectable()
 export class AiCopilotService {
@@ -123,6 +228,17 @@ export class AiCopilotService {
         'I was unable to generate a complete response. Please try rephrasing your question.';
     }
 
+    // Validate response for potential hallucinations
+    const uniqueToolsUsed = [...new Set(toolsUsed)];
+    const validation = checkForHallucinations(finalResponse, uniqueToolsUsed);
+    if (!validation.isValid) {
+      this.logger.warn('Potential hallucination detected in Copilot response', {
+        warnings: validation.warnings,
+        toolsUsed: uniqueToolsUsed,
+        responsePreview: finalResponse.slice(0, 200),
+      });
+    }
+
     await this.updateConversation(conversation.id, [
       ...this.parseMessages(conversation.messages),
       { role: 'user', content: message },
@@ -136,8 +252,124 @@ export class AiCopilotService {
     return {
       message: finalResponse,
       conversationId: conversation.id,
-      toolsUsed: [...new Set(toolsUsed)],
+      toolsUsed: uniqueToolsUsed,
       data: Object.keys(collectedData).length > 0 ? collectedData : undefined,
+    };
+  }
+
+  /**
+   * Stream chat responses for real-time UI updates.
+   * Yields events as they arrive from the AI engine.
+   */
+  async *chatStream(
+    tenantId: string,
+    userId: string,
+    message: string,
+    conversationId?: string,
+  ): AsyncGenerator<CopilotStreamEvent, void, unknown> {
+    if (!this.aiEngine.isReady()) {
+      yield {
+        type: 'error',
+        content: 'AI assistant is not configured',
+      };
+      return;
+    }
+
+    const conversation = await this.getOrCreateConversation(
+      tenantId,
+      userId,
+      conversationId,
+    );
+
+    const messages = this.buildMessagesFromHistory(conversation);
+    messages.push({ role: 'user', content: message });
+
+    const toolsUsed: string[] = [];
+    let fullResponse = '';
+    let currentToolResults: ToolResult[] | undefined;
+    let iterations = 0;
+    let needsMoreTools = true;
+
+    while (needsMoreTools && iterations < MAX_TOOL_ITERATIONS) {
+      iterations++;
+      needsMoreTools = false;
+
+      const stream = this.aiEngine.streamWithTools({
+        messages,
+        tools: this.toolsService.getToolDefinitions(),
+        toolResults: currentToolResults,
+        tenantId,
+        feature: 'copilot-stream',
+        system: COPILOT_SYSTEM_PROMPT,
+      });
+
+      const pendingToolCalls: Array<{
+        id: string;
+        name: string;
+        input: Record<string, unknown>;
+      }> = [];
+
+      for await (const chunk of stream) {
+        if (chunk.type === 'text' && chunk.content) {
+          fullResponse += chunk.content;
+          yield { type: 'text', content: chunk.content };
+        } else if (chunk.type === 'tool_use_start') {
+          yield { type: 'tool_start', toolName: chunk.toolName };
+        } else if (chunk.type === 'tool_use_end') {
+          if (chunk.toolName && chunk.toolId) {
+            toolsUsed.push(chunk.toolName);
+            pendingToolCalls.push({
+              id: chunk.toolId,
+              name: chunk.toolName,
+              input: chunk.toolInput || {},
+            });
+          }
+          yield { type: 'tool_end', toolName: chunk.toolName };
+        } else if (chunk.type === 'error') {
+          yield { type: 'error', content: chunk.content };
+          return;
+        }
+      }
+
+      // Execute any pending tool calls
+      if (pendingToolCalls.length > 0) {
+        needsMoreTools = true;
+        currentToolResults = [];
+
+        for (const toolCall of pendingToolCalls) {
+          const result = await this.toolsService.executeTool(
+            toolCall.name,
+            toolCall.input,
+            tenantId,
+          );
+          currentToolResults.push({
+            toolUseId: toolCall.id,
+            result,
+          });
+        }
+
+        messages.push({
+          role: 'assistant',
+          content: `Using tools: ${pendingToolCalls.map((t) => t.name).join(', ')}`,
+        });
+      }
+    }
+
+    // Save conversation
+    await this.updateConversation(conversation.id, [
+      ...this.parseMessages(conversation.messages),
+      { role: 'user', content: message },
+      {
+        role: 'assistant',
+        content: fullResponse || 'Unable to generate response',
+        toolCalls: toolsUsed.map((name) => ({ id: '', name, input: {} })),
+      },
+    ]);
+
+    yield {
+      type: 'done',
+      conversationId: conversation.id,
+      toolsUsed: [...new Set(toolsUsed)],
     };
   }
 

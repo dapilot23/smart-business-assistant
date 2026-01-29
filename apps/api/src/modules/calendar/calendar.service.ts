@@ -1,13 +1,37 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { google, calendar_v3 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
 
 @Injectable()
-export class CalendarService {
+export class CalendarService implements OnModuleInit {
   private readonly logger = new Logger(CalendarService.name);
+  private calendarBreaker: any | null = null;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly circuitBreakerService: CircuitBreakerService,
+  ) {}
+
+  onModuleInit() {
+    this.calendarBreaker = this.circuitBreakerService.createBreaker(
+      'google-calendar',
+      async <T>(fn: () => Promise<T>) => fn(),
+      {
+        timeout: 15000,
+        errorThresholdPercentage: 50,
+        resetTimeout: 60000,
+      },
+    );
+  }
+
+  private async callGoogleApi<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.calendarBreaker) {
+      return this.calendarBreaker.fire(fn) as Promise<T>;
+    }
+    return fn();
+  }
 
   private getOAuth2Client(): OAuth2Client {
     return new google.auth.OAuth2(
@@ -164,18 +188,22 @@ export class CalendarService {
     try {
       if (appointment.googleCalendarEventId) {
         // Update existing event
-        const response = await calendar.events.update({
-          calendarId,
-          eventId: appointment.googleCalendarEventId,
-          requestBody: eventData,
-        });
+        const response = await this.callGoogleApi(() =>
+          calendar.events.update({
+            calendarId,
+            eventId: appointment.googleCalendarEventId!,
+            requestBody: eventData,
+          }),
+        );
         return response.data.id || null;
       } else {
         // Create new event
-        const response = await calendar.events.insert({
-          calendarId,
-          requestBody: eventData,
-        });
+        const response = await this.callGoogleApi(() =>
+          calendar.events.insert({
+            calendarId,
+            requestBody: eventData,
+          }),
+        );
 
         // Store event ID
         await this.prisma.appointment.update({
@@ -186,7 +214,11 @@ export class CalendarService {
         return response.data.id || null;
       }
     } catch (error) {
-      this.logger.error(`Failed to sync appointment ${appointmentId}:`, error);
+      if (error.message?.includes('Breaker is open')) {
+        this.logger.warn(`Calendar circuit breaker open, skipping sync for ${appointmentId}`);
+      } else {
+        this.logger.error(`Failed to sync appointment ${appointmentId}:`, error);
+      }
       return null;
     }
   }
@@ -211,13 +243,19 @@ export class CalendarService {
     const calendarId = integration.calendarId || 'primary';
 
     try {
-      await calendar.events.delete({
-        calendarId,
-        eventId: appointment.googleCalendarEventId,
-      });
+      await this.callGoogleApi(() =>
+        calendar.events.delete({
+          calendarId,
+          eventId: appointment.googleCalendarEventId!,
+        }),
+      );
       return true;
     } catch (error) {
-      this.logger.error(`Failed to delete calendar event:`, error);
+      if (error.message?.includes('Breaker is open')) {
+        this.logger.warn('Calendar circuit breaker open, skipping delete');
+      } else {
+        this.logger.error(`Failed to delete calendar event:`, error);
+      }
       return false;
     }
   }
@@ -229,13 +267,20 @@ export class CalendarService {
     }
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-    const response = await calendar.calendarList.list();
 
-    return (response.data.items || []).map((cal) => ({
-      id: cal.id,
-      summary: cal.summary,
-      primary: cal.primary,
-    }));
+    try {
+      const response = await this.callGoogleApi(() => calendar.calendarList.list());
+      return (response.data.items || []).map((cal) => ({
+        id: cal.id,
+        summary: cal.summary,
+        primary: cal.primary,
+      }));
+    } catch (error) {
+      if (error.message?.includes('Breaker is open')) {
+        throw new BadRequestException('Calendar service temporarily unavailable. Please try again later.');
+      }
+      throw error;
+    }
   }
 
   private buildEventDescription(appointment: {
