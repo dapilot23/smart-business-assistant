@@ -1,4 +1,11 @@
+'use client';
+
+import { useWeeklyReports } from '@/lib/hooks/use-weekly-reports';
+import { ReportCard } from '@/components/insights/report-card';
+
 export default function DashboardPage() {
+  const { currentReport, isLoading } = useWeeklyReports();
+
   return (
     <div className="container py-6">
       <div className="mb-8">
@@ -31,10 +38,11 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="mt-8">
-        <h2 className="mb-4 text-2xl font-semibold">Recent Activity</h2>
-        <div className="rounded-lg border border-border bg-card p-6">
-          <p className="text-muted-foreground">
+      <div className="mt-8 grid gap-6 md:grid-cols-2">
+        <ReportCard report={currentReport} isLoading={isLoading} />
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h3 className="font-semibold">Recent Activity</h3>
+          <p className="mt-4 text-sm text-muted-foreground">
             No recent activity to display. Your activity will appear here.
           </p>
         </div>
