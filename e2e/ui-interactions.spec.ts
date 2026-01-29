@@ -25,8 +25,8 @@ test.describe('Dashboard UI Interactions', () => {
   });
 
   test('should display all dashboard stats cards', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify stats cards are visible
     const bodyText = await page.locator('body').textContent();
@@ -35,8 +35,8 @@ test.describe('Dashboard UI Interactions', () => {
   });
 
   test('should have functional search input', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const searchInput = page.locator('input[placeholder*="Search"]');
     if ((await searchInput.count()) > 0) {
@@ -48,8 +48,8 @@ test.describe('Dashboard UI Interactions', () => {
   test('should navigate to appointments via New Appointment button', async ({
     page,
   }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for New Appointment button
     const newAptButton = page
@@ -66,8 +66,8 @@ test.describe('Dashboard UI Interactions', () => {
   });
 
   test('should show sidebar navigation items', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Check for navigation links
     const navItems = ['Appointments', 'Jobs', 'Team', 'Settings'];
@@ -80,8 +80,8 @@ test.describe('Dashboard UI Interactions', () => {
   test('should navigate between dashboard pages via sidebar', async ({
     page,
   }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Click on Appointments link
     const appointmentsLink = page.locator('a[href*="appointments"]').first();
@@ -99,8 +99,8 @@ test.describe('Appointment Management UI Interactions', () => {
   });
 
   test('should display appointment calendar', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/appointments`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Calendar or appointment list should be visible
     const bodyText = await page.locator('body').textContent();
@@ -111,8 +111,8 @@ test.describe('Appointment Management UI Interactions', () => {
   });
 
   test('should have calendar navigation buttons', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/appointments`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for Today, Previous, Next buttons
     const todayButton = page.locator('button:has-text("Today")');
@@ -124,8 +124,8 @@ test.describe('Appointment Management UI Interactions', () => {
   test('should open appointment modal when clicking New Appointment', async ({
     page,
   }) => {
-    await page.goto(`${BASE_URL}/dashboard/appointments`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const newButton = page
       .locator(
@@ -158,8 +158,8 @@ test.describe('Appointment Management UI Interactions', () => {
       }
     });
 
-    await page.goto(`${BASE_URL}/dashboard/appointments`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to open new appointment modal
     const newButton = page
@@ -192,8 +192,8 @@ test.describe('Appointment Management UI Interactions', () => {
   });
 
   test('should switch calendar views', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/appointments`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for view toggle buttons
     const weekButton = page.locator('button:has-text("Week")');
@@ -217,16 +217,16 @@ test.describe('Team Management UI Interactions', () => {
   });
 
   test('should display team members list', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/team`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/team`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = await page.locator('body').textContent();
     expect(bodyText?.toLowerCase()).toContain('team');
   });
 
   test('should show team member roles', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/team`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/team`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = (await page.locator('body').textContent()) || '';
     // Should show role badges
@@ -239,8 +239,8 @@ test.describe('Team Management UI Interactions', () => {
   });
 
   test('should open invite member modal', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/team`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/team`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const inviteButton = page
       .locator('button:has-text("Invite"), button:has-text("Add")')
@@ -271,8 +271,8 @@ test.describe('Team Management UI Interactions', () => {
       }
     });
 
-    await page.goto(`${BASE_URL}/dashboard/team`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/team`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const inviteButton = page
       .locator('button:has-text("Invite"), button:has-text("Add")')
@@ -328,8 +328,8 @@ test.describe('Settings UI Interactions', () => {
   });
 
   test('should display settings tabs', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/settings`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = (await page.locator('body').textContent()) || '';
     const hasTabs =
@@ -340,8 +340,8 @@ test.describe('Settings UI Interactions', () => {
   });
 
   test('should switch between settings tabs', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/settings`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Click on Notifications tab
     const notifTab = page
@@ -363,8 +363,8 @@ test.describe('Settings UI Interactions', () => {
   });
 
   test('should toggle notification settings', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/settings`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Find checkbox/switch for reminders
     const reminderToggle = page
@@ -398,8 +398,8 @@ test.describe('Settings UI Interactions', () => {
       }
     });
 
-    await page.goto(`${BASE_URL}/dashboard/settings`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Find and click save button
     const saveButton = page.locator('button:has-text("Save")').first();
@@ -410,8 +410,8 @@ test.describe('Settings UI Interactions', () => {
   });
 
   test('should modify timezone dropdown', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/settings`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Find timezone select
     const timezoneSelect = page
@@ -431,16 +431,16 @@ test.describe('Jobs Management UI Interactions', () => {
   });
 
   test('should display jobs list', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/jobs`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = (await page.locator('body').textContent()) || '';
     expect(bodyText.toLowerCase()).toContain('job');
   });
 
   test('should show job status badges', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/jobs`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = (await page.locator('body').textContent()) || '';
     const hasStatus =
@@ -452,8 +452,8 @@ test.describe('Jobs Management UI Interactions', () => {
   });
 
   test('should filter jobs by status', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/jobs`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for filter buttons or dropdown
     const filterSelect = page.locator('select, [role="combobox"]').first();
@@ -479,8 +479,8 @@ test.describe('Public Booking Flow UI Interactions', () => {
   });
 
   test('should display service selection', async ({ page }) => {
-    await page.goto(`${BASE_URL}/book/test-business`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/book/test-business`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = (await page.locator('body').textContent()) || '';
     expect(
@@ -491,8 +491,8 @@ test.describe('Public Booking Flow UI Interactions', () => {
   });
 
   test('should select a service', async ({ page }) => {
-    await page.goto(`${BASE_URL}/book/test-business`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/book/test-business`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for service cards or buttons
     const serviceButton = page
@@ -505,8 +505,8 @@ test.describe('Public Booking Flow UI Interactions', () => {
   });
 
   test('should navigate through booking steps', async ({ page }) => {
-    await page.goto(`${BASE_URL}/book/test-business`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/book/test-business`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Step 1: Select service
     const serviceCard = page.locator('button:has-text("Select")').first();
@@ -535,8 +535,8 @@ test.describe('Public Booking Flow UI Interactions', () => {
   });
 
   test('should fill customer information form', async ({ page }) => {
-    await page.goto(`${BASE_URL}/book/test-business`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/book/test-business`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Navigate to customer form step
     // Select service first
@@ -591,8 +591,8 @@ test.describe('Public Booking Flow UI Interactions', () => {
       });
     });
 
-    await page.goto(`${BASE_URL}/book/test-business`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/book/test-business`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Complete all steps...
     const serviceCard = page.locator('button:has-text("Select")').first();
@@ -614,8 +614,8 @@ test.describe('Public Booking Flow UI Interactions', () => {
 
 test.describe('Calendar/Availability UI Interactions', () => {
   test('should display availability settings', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/availability`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = (await page.locator('body').textContent()) || '';
     expect(
@@ -626,8 +626,8 @@ test.describe('Calendar/Availability UI Interactions', () => {
   });
 
   test('should show day toggles for availability', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/availability`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = (await page.locator('body').textContent()) || '';
     const hasDays =
@@ -638,8 +638,8 @@ test.describe('Calendar/Availability UI Interactions', () => {
   });
 
   test('should toggle day availability', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/availability`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Find day checkbox/switch
     const dayToggle = page
@@ -652,8 +652,8 @@ test.describe('Calendar/Availability UI Interactions', () => {
   });
 
   test('should modify business hours', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/availability`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Find time input
     const timeInput = page.locator('input[type="time"]').first();
@@ -666,8 +666,8 @@ test.describe('Calendar/Availability UI Interactions', () => {
 
 test.describe('Navigation and Layout UI Interactions', () => {
   test('should have responsive sidebar', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Test mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
@@ -687,8 +687,8 @@ test.describe('Navigation and Layout UI Interactions', () => {
   });
 
   test('should navigate using breadcrumbs if available', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard/settings`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for breadcrumb navigation
     const breadcrumb = page.locator('nav[aria-label*="breadcrumb" i], .breadcrumb').first();
@@ -702,8 +702,8 @@ test.describe('Navigation and Layout UI Interactions', () => {
   });
 
   test('should show notifications bell', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const notificationBell = page
       .locator('button[aria-label*="notification" i], [data-testid*="notification"]')
@@ -719,8 +719,8 @@ test.describe('Form Validation UI Interactions', () => {
     page,
   }) => {
     await mockTeamAPI(page);
-    await page.goto(`${BASE_URL}/dashboard/team`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/team`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Open invite modal
     const inviteButton = page.locator('button:has-text("Invite")').first();
@@ -751,8 +751,8 @@ test.describe('Form Validation UI Interactions', () => {
 
   test('should validate email format', async ({ page }) => {
     await mockTeamAPI(page);
-    await page.goto(`${BASE_URL}/dashboard/team`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/team`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const inviteButton = page.locator('button:has-text("Invite")').first();
     if ((await inviteButton.count()) > 0) {
@@ -787,14 +787,14 @@ test.describe('Loading States UI Interactions', () => {
       await route.fulfill({ json: {} });
     });
 
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
 
     // Look for loading spinner or skeleton
     const loader = page.locator(
       '.animate-spin, [data-testid*="loading"], .skeleton, [class*="loading"]'
     );
     // Loading state may be brief, so we just verify page loads
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('body')).toBeVisible();
   });
 
@@ -808,8 +808,8 @@ test.describe('Loading States UI Interactions', () => {
       }
     });
 
-    await page.goto(`${BASE_URL}/dashboard/settings`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     const saveButton = page.locator('button:has-text("Save")').first();
     if ((await saveButton.count()) > 0) {
@@ -834,8 +834,8 @@ test.describe('Error Handling UI Interactions', () => {
       });
     });
 
-    await page.goto(`${BASE_URL}/dashboard`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Page should still render without crashing
     await expect(page.locator('body')).toBeVisible();
@@ -849,8 +849,8 @@ test.describe('Error Handling UI Interactions', () => {
       });
     });
 
-    await page.goto(`${BASE_URL}/dashboard/appointments`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for retry button
     const retryButton = page.locator('button:has-text("Retry"), button:has-text("Try Again")');

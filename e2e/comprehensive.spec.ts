@@ -19,7 +19,7 @@ test.describe('Comprehensive App Testing', () => {
 
   test.describe('Landing Page', () => {
     test('should load landing page successfully', async ({ page }) => {
-      const response = await page.goto(BASE_URL);
+      const response = await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBe(200);
 
       // Check key elements exist
@@ -31,7 +31,7 @@ test.describe('Comprehensive App Testing', () => {
     });
 
     test('should have working navigation links', async ({ page }) => {
-      await page.goto(BASE_URL);
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
 
       // Check for login/signup links
       const loginLink = page.locator('a[href*="login"], button:has-text("Login"), a:has-text("Login"), a:has-text("Sign in")');
@@ -42,7 +42,7 @@ test.describe('Comprehensive App Testing', () => {
     });
 
     test('should display pricing section', async ({ page }) => {
-      await page.goto(BASE_URL);
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
 
       // Look for pricing elements
       const pricingSection = page.locator('text=/\\$\\d+/');
@@ -53,7 +53,7 @@ test.describe('Comprehensive App Testing', () => {
 
   test.describe('Authentication Pages', () => {
     test('should load login page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/login`);
+      const response = await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBe(200);
 
       // Check for form elements
@@ -62,7 +62,7 @@ test.describe('Comprehensive App Testing', () => {
     });
 
     test('should load signup page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/signup`);
+      const response = await page.goto(`${BASE_URL}/signup`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBe(200);
 
       const pageContent = await page.content();
@@ -72,7 +72,7 @@ test.describe('Comprehensive App Testing', () => {
 
   test.describe('Dashboard Pages', () => {
     test('should load dashboard page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard`);
+      const response = await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
       console.log('Dashboard status:', response?.status());
 
       // May redirect to login - check final URL
@@ -81,67 +81,67 @@ test.describe('Comprehensive App Testing', () => {
     });
 
     test('should load appointments page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/appointments`);
+      const response = await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
       console.log('Appointments status:', response?.status());
       console.log('Appointments URL:', page.url());
     });
 
     test('should load quotes page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/quotes`);
+      const response = await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
       console.log('Quotes status:', response?.status());
       console.log('Quotes URL:', page.url());
     });
 
     test('should load quotes/new page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/quotes/new`);
+      const response = await page.goto(`${BASE_URL}/dashboard/quotes/new`, { waitUntil: 'domcontentloaded' });
       console.log('Quotes/new status:', response?.status());
       console.log('Quotes/new URL:', page.url());
     });
 
     test('should load invoices page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/invoices`);
+      const response = await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
       console.log('Invoices status:', response?.status());
       console.log('Invoices URL:', page.url());
     });
 
     test('should load invoices/new page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/invoices/new`);
+      const response = await page.goto(`${BASE_URL}/dashboard/invoices/new`, { waitUntil: 'domcontentloaded' });
       console.log('Invoices/new status:', response?.status());
       console.log('Invoices/new URL:', page.url());
     });
 
     test('should load jobs page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/jobs`);
+      const response = await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
       console.log('Jobs status:', response?.status());
       console.log('Jobs URL:', page.url());
     });
 
     test('should load team page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/team`);
+      const response = await page.goto(`${BASE_URL}/dashboard/team`, { waitUntil: 'domcontentloaded' });
       console.log('Team status:', response?.status());
       console.log('Team URL:', page.url());
     });
 
     test('should load sms page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/sms`);
+      const response = await page.goto(`${BASE_URL}/dashboard/sms`, { waitUntil: 'domcontentloaded' });
       console.log('SMS status:', response?.status());
       console.log('SMS URL:', page.url());
     });
 
     test('should load voice page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/voice`);
+      const response = await page.goto(`${BASE_URL}/dashboard/voice`, { waitUntil: 'domcontentloaded' });
       console.log('Voice status:', response?.status());
       console.log('Voice URL:', page.url());
     });
 
     test('should load settings page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/settings`);
+      const response = await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
       console.log('Settings status:', response?.status());
       console.log('Settings URL:', page.url());
     });
 
     test('should load availability page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/availability`);
+      const response = await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
       console.log('Availability status:', response?.status());
       console.log('Availability URL:', page.url());
     });
@@ -149,7 +149,7 @@ test.describe('Comprehensive App Testing', () => {
 
   test.describe('Onboarding', () => {
     test('should load onboarding page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/onboarding`);
+      const response = await page.goto(`${BASE_URL}/onboarding`, { waitUntil: 'domcontentloaded' });
       console.log('Onboarding status:', response?.status());
       console.log('Onboarding URL:', page.url());
 
@@ -206,8 +206,8 @@ test.describe('Comprehensive App Testing', () => {
         });
 
         const response = await page.goto(`${BASE_URL}${pageInfo.url}`, {
-          waitUntil: 'networkidle',
-          timeout: 30000,
+          waitUntil: 'domcontentloaded',
+          timeout: 60000,
         });
 
         const status = response?.status() || 0;

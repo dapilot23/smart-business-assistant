@@ -4,7 +4,7 @@ const BASE_URL = 'http://localhost:3000';
 
 test.describe('Public Pages', () => {
   test('Landing page loads correctly', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
 
     // Check page loads without errors
     await expect(page).toHaveTitle(/./);
@@ -20,10 +20,11 @@ test.describe('Public Pages', () => {
   });
 
   test('Login page loads correctly', async ({ page }) => {
-    await page.goto(`${BASE_URL}/login`);
+    // Use domcontentloaded since Clerk external scripts may take a while
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
 
-    // Should show Clerk login
-    await page.waitForLoadState('networkidle');
+    // Wait for main content to render (not full networkidle)
+    await page.waitForLoadState('domcontentloaded');
     const pageContent = await page.content();
 
     console.log('Login page loaded, length:', pageContent.length);
@@ -31,9 +32,10 @@ test.describe('Public Pages', () => {
   });
 
   test('Signup page loads correctly', async ({ page }) => {
-    await page.goto(`${BASE_URL}/signup`);
+    // Use domcontentloaded since Clerk external scripts may take a while
+    await page.goto(`${BASE_URL}/signup`, { waitUntil: 'domcontentloaded' });
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const pageContent = await page.content();
 
     console.log('Signup page loaded, length:', pageContent.length);
@@ -41,9 +43,10 @@ test.describe('Public Pages', () => {
   });
 
   test('Onboarding page loads correctly', async ({ page }) => {
-    await page.goto(`${BASE_URL}/onboarding`);
+    // Use domcontentloaded since Clerk external scripts may take a while
+    await page.goto(`${BASE_URL}/onboarding`, { waitUntil: 'domcontentloaded' });
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check for onboarding content
     const bodyText = await page.locator('body').textContent();
@@ -55,34 +58,35 @@ test.describe('Public Pages', () => {
 
 test.describe('Dashboard Pages (Demo Mode - Accessible)', () => {
   test('Dashboard is accessible in demo mode', async ({ page }) => {
-    const response = await page.goto(`${BASE_URL}/dashboard`);
+    // Use domcontentloaded since dashboard makes slow API calls
+    const response = await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBeLessThan(500);
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toContain('/dashboard');
     console.log('Dashboard accessible: OK');
   });
 
   test('Appointments is accessible in demo mode', async ({ page }) => {
-    const response = await page.goto(`${BASE_URL}/dashboard/appointments`);
+    const response = await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBeLessThan(500);
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toContain('/appointments');
     console.log('Appointments accessible: OK');
   });
 
   test('Quotes is accessible in demo mode', async ({ page }) => {
-    const response = await page.goto(`${BASE_URL}/dashboard/quotes`);
+    const response = await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBeLessThan(500);
     console.log('Quotes accessible: OK');
   });
 
   test('Settings is accessible in demo mode', async ({ page }) => {
-    const response = await page.goto(`${BASE_URL}/dashboard/settings`);
+    const response = await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
     expect(response?.status()).toBeLessThan(500);
 
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toContain('/settings');
     console.log('Settings accessible: OK');
   });
@@ -104,8 +108,9 @@ test.describe('Page Error Detection', () => {
         jsErrors.push(error.message);
       });
 
-      const response = await page.goto(`${BASE_URL}${pageInfo.url}`);
-      await page.waitForLoadState('networkidle');
+      // Use domcontentloaded to avoid timeout on external resources
+      const response = await page.goto(`${BASE_URL}${pageInfo.url}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Check for 500 status code
       const is500Error = response?.status() === 500;

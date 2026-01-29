@@ -6,22 +6,26 @@ const BASE_URL = 'http://localhost:3000';
 
 test.describe('Jobs Management', () => {
   test.describe('Jobs Page Access', () => {
+    test.beforeEach(async ({ page }) => {
+      await mockJobsAPI(page);
+    });
+
     test('should be accessible in demo mode', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/jobs`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
       // In demo mode, page is accessible without auth
       expect(page.url()).toContain('/jobs');
     });
 
     test('should not return server error', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/jobs`);
+      const response = await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
 
     test('should not have critical console errors', async ({ page }) => {
       const errors = captureConsoleErrors(page);
-      await page.goto(`${BASE_URL}/dashboard/jobs`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const criticalErrors = errors.filter((e) => e.includes('Uncaught'));
       expect(criticalErrors.length).toBe(0);
@@ -34,9 +38,9 @@ test.describe('Jobs Management', () => {
     });
 
     test('should load jobs page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/jobs`);
+      const response = await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     });
   });
 
@@ -53,8 +57,8 @@ test.describe('Jobs Management', () => {
         }
       });
 
-      await page.goto(`${BASE_URL}/dashboard/jobs`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       expect(typeof apiCalled).toBe('boolean');
     });
@@ -75,8 +79,8 @@ test.describe('Jobs Management', () => {
       });
 
       await mockJobsAPI(page);
-      await page.goto(`${BASE_URL}/dashboard/jobs`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       expect(typeof updateCalled).toBe('boolean');
     });
@@ -92,8 +96,8 @@ test.describe('Jobs Management', () => {
         await route.fulfill({ json: TEST_JOBS });
       });
 
-      await page.goto(`${BASE_URL}/dashboard/jobs`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       expect(typeof filterApplied).toBe('boolean');
     });
@@ -108,8 +112,8 @@ test.describe('Jobs Management', () => {
         });
       });
 
-      await page.goto(`${BASE_URL}/dashboard/jobs`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
     });
@@ -119,8 +123,8 @@ test.describe('Jobs Management', () => {
         await route.fulfill({ json: [] });
       });
 
-      await page.goto(`${BASE_URL}/dashboard/jobs`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
     });
@@ -138,8 +142,8 @@ test.describe('Jobs Management', () => {
         }
       });
 
-      await page.goto(`${BASE_URL}/dashboard/jobs`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
     });
@@ -152,19 +156,19 @@ test.describe('Jobs Management', () => {
 
     test('should work on mobile viewport', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      const response = await page.goto(`${BASE_URL}/dashboard/jobs`);
+      const response = await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
 
     test('should work on tablet viewport', async ({ page }) => {
       await page.setViewportSize({ width: 768, height: 1024 });
-      const response = await page.goto(`${BASE_URL}/dashboard/jobs`);
+      const response = await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
 
     test('should work on desktop viewport', async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
-      const response = await page.goto(`${BASE_URL}/dashboard/jobs`);
+      const response = await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
   });

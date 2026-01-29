@@ -316,7 +316,7 @@ export async function setupAuthenticatedPage(page: Page) {
 export async function waitForLoading(page: Page) {
   // Wait for any loading spinners to disappear
   await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 }).catch(() => {});
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**

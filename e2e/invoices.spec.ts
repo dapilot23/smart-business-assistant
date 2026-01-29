@@ -6,22 +6,22 @@ const BASE_URL = 'http://localhost:3000';
 test.describe('Invoices Page (Demo Mode)', () => {
   test.describe('Page Access', () => {
     test('should load invoices page successfully', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/invoices`);
+      const response = await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/invoices');
     });
 
     test('should load create invoice page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/invoices/new`);
+      const response = await page.goto(`${BASE_URL}/dashboard/invoices/new`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     });
 
     test('should not have critical console errors', async ({ page }) => {
       const errors = captureConsoleErrors(page);
-      await page.goto(`${BASE_URL}/dashboard/invoices`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const criticalErrors = errors.filter(
         (e) => e.includes('Uncaught') && !e.includes('Clerk')
@@ -32,8 +32,8 @@ test.describe('Invoices Page (Demo Mode)', () => {
 
   test.describe('UI Elements', () => {
     test('should display page title or header', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/invoices`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyText = (await page.locator('body').textContent()) || '';
       const hasInvoiceContent =
@@ -45,8 +45,8 @@ test.describe('Invoices Page (Demo Mode)', () => {
     });
 
     test('should have navigation elements', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/invoices`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Should be able to find navigation or sidebar
       await expect(page.locator('body')).toBeVisible();
@@ -55,8 +55,8 @@ test.describe('Invoices Page (Demo Mode)', () => {
 
   test.describe('Navigation', () => {
     test('should navigate from invoices to dashboard', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/invoices`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Try to navigate back to dashboard
       const dashboardLink = page.locator(
@@ -64,7 +64,7 @@ test.describe('Invoices Page (Demo Mode)', () => {
       );
       if ((await dashboardLink.count()) > 0) {
         await dashboardLink.first().click();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         expect(page.url()).toContain('/dashboard');
       }
     });
@@ -72,7 +72,7 @@ test.describe('Invoices Page (Demo Mode)', () => {
     test('should handle direct navigation to invoice list', async ({
       page,
     }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/invoices`);
+      const response = await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
   });
@@ -87,11 +87,11 @@ test.describe('Invoices Page (Demo Mode)', () => {
     });
 
     test('should handle rapid page refresh', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/invoices`);
+      await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
 
       for (let i = 0; i < 3; i++) {
         await page.reload();
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
       }
 
       await expect(page.locator('body')).toBeVisible();

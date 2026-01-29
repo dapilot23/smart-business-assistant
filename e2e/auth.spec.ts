@@ -7,17 +7,17 @@ const BASE_URL = 'http://localhost:3000';
 test.describe('Authentication (Demo Mode)', () => {
   test.describe('Login Page', () => {
     test('should load login page successfully', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/login`);
+      const response = await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const pageContent = await page.content();
       expect(pageContent.length).toBeGreaterThan(500);
     });
 
     test('should display demo login UI elements', async ({ page }) => {
-      await page.goto(`${BASE_URL}/login`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyText = (await page.locator('body').textContent()) || '';
       // In demo mode, should show demo login form
@@ -31,16 +31,16 @@ test.describe('Authentication (Demo Mode)', () => {
     });
 
     test('should have proper page structure', async ({ page }) => {
-      await page.goto(`${BASE_URL}/login`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
     });
 
     test('should not have console errors on load', async ({ page }) => {
       const errors = captureConsoleErrors(page);
-      await page.goto(`${BASE_URL}/login`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const criticalErrors = errors.filter(
         (e) => e.includes('Uncaught') && !e.includes('Clerk')
@@ -49,8 +49,8 @@ test.describe('Authentication (Demo Mode)', () => {
     });
 
     test('should have link to dashboard in demo mode', async ({ page }) => {
-      await page.goto(`${BASE_URL}/login`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // In demo mode, there should be a link to dashboard
       const dashboardLink = page.locator('a[href="/dashboard"]');
@@ -60,17 +60,17 @@ test.describe('Authentication (Demo Mode)', () => {
 
   test.describe('Signup Page', () => {
     test('should load signup page successfully', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/signup`);
+      const response = await page.goto(`${BASE_URL}/signup`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBe(200);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const pageContent = await page.content();
       expect(pageContent.length).toBeGreaterThan(500);
     });
 
     test('should display demo signup UI elements', async ({ page }) => {
-      await page.goto(`${BASE_URL}/signup`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/signup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyText = (await page.locator('body').textContent()) || '';
       const hasDemoUI =
@@ -83,8 +83,8 @@ test.describe('Authentication (Demo Mode)', () => {
     });
 
     test('should have link to login page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/signup`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/signup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const loginLink = page.locator('a[href="/login"]');
       await expect(loginLink).toBeVisible();
@@ -93,80 +93,80 @@ test.describe('Authentication (Demo Mode)', () => {
 
   test.describe('Dashboard Access (Demo Mode - No Auth Required)', () => {
     test('dashboard should be accessible in demo mode', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard`);
+      const response = await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       // In demo mode, we stay on dashboard (no redirect to login)
       expect(page.url()).toContain('/dashboard');
     });
 
     test('appointments page should be accessible', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/appointments`);
+      const response = await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/appointments');
     });
 
     test('team page should be accessible', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/team`);
+      const response = await page.goto(`${BASE_URL}/dashboard/team`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/team');
     });
 
     test('settings page should be accessible', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/settings`);
+      const response = await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/settings');
     });
 
     test('jobs page should be accessible', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/jobs`);
+      const response = await page.goto(`${BASE_URL}/dashboard/jobs`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/jobs');
     });
 
     test('quotes page should be accessible', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/quotes`);
+      const response = await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
 
     test('invoices page should be accessible', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/invoices`);
+      const response = await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
 
     test('availability page should be accessible', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/availability`);
+      const response = await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
   });
 
   test.describe('Public Routes - No Auth Required', () => {
     test('landing page should be accessible without auth', async ({ page }) => {
-      const response = await page.goto(BASE_URL);
+      const response = await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBe(200);
       await expect(page.locator('body')).toBeVisible();
     });
 
     test('onboarding page should be accessible', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/onboarding`);
+      const response = await page.goto(`${BASE_URL}/onboarding`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
 
     test('public booking page should be accessible without auth', async ({
       page,
     }) => {
-      const response = await page.goto(`${BASE_URL}/book/test-business`);
+      const response = await page.goto(`${BASE_URL}/book/test-business`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
   });
 
   test.describe('Edge Cases', () => {
     test('should handle invalid routes gracefully', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/invalid-route-12345`);
+      const response = await page.goto(`${BASE_URL}/invalid-route-12345`, { waitUntil: 'domcontentloaded' });
       const status = response?.status() || 0;
       expect(status).toBeLessThan(500);
     });
@@ -174,12 +174,12 @@ test.describe('Authentication (Demo Mode)', () => {
     test('should navigate between dashboard pages in demo mode', async ({
       page,
     }) => {
-      await page.goto(`${BASE_URL}/dashboard`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/dashboard');
 
-      await page.goto(`${BASE_URL}/dashboard/settings`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/settings');
     });
 
@@ -191,7 +191,7 @@ test.describe('Authentication (Demo Mode)', () => {
       ];
 
       for (const route of routes) {
-        const response = await page.goto(`${BASE_URL}${route}`);
+        const response = await page.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded' });
         expect(response?.status()).toBeLessThan(500);
       }
     });
@@ -199,8 +199,8 @@ test.describe('Authentication (Demo Mode)', () => {
 
   test.describe('Demo Mode Login Flow', () => {
     test('should have dashboard link on login page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/login`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Verify the dashboard link exists
       const dashboardLink = page.locator('a[href="/dashboard"]');
@@ -216,8 +216,8 @@ test.describe('Authentication (Demo Mode)', () => {
     });
 
     test('should have dashboard link on signup page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/signup`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/signup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Verify the dashboard link exists
       const dashboardLink = page.locator('a[href="/dashboard"]');

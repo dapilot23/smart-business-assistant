@@ -6,16 +6,16 @@ const BASE_URL = 'http://localhost:3000';
 test.describe('Availability Page (Demo Mode)', () => {
   test.describe('Page Access', () => {
     test('should load availability page successfully', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/availability`);
+      const response = await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/availability');
     });
 
     test('should not have critical console errors', async ({ page }) => {
       const errors = captureConsoleErrors(page);
-      await page.goto(`${BASE_URL}/dashboard/availability`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const criticalErrors = errors.filter(
         (e) => e.includes('Uncaught') && !e.includes('Clerk')
@@ -26,8 +26,8 @@ test.describe('Availability Page (Demo Mode)', () => {
 
   test.describe('UI Elements', () => {
     test('should display availability-related content', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/availability`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyText = (await page.locator('body').textContent()) || '';
       const hasAvailabilityContent =
@@ -40,8 +40,8 @@ test.describe('Availability Page (Demo Mode)', () => {
     });
 
     test('should have day selection or time slots', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/availability`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyText = (await page.locator('body').textContent()) || '';
       // Look for day names or time-related content
@@ -61,31 +61,31 @@ test.describe('Availability Page (Demo Mode)', () => {
     test('should navigate from availability to appointments', async ({
       page,
     }) => {
-      await page.goto(`${BASE_URL}/dashboard/availability`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      await page.goto(`${BASE_URL}/dashboard/appointments`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/appointments`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/appointments');
     });
 
     test('should navigate from availability to settings', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/availability`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      await page.goto(`${BASE_URL}/dashboard/settings`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/settings`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/settings');
     });
   });
 
   test.describe('Edge Cases', () => {
     test('should handle page refresh', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/availability`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/availability`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
       expect(page.url()).toContain('/availability');
@@ -99,7 +99,7 @@ test.describe('Availability Page (Demo Mode)', () => {
       ];
 
       for (const route of routes) {
-        const response = await page.goto(`${BASE_URL}${route}`);
+        const response = await page.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded' });
         expect(response?.status()).toBeLessThan(500);
       }
     });

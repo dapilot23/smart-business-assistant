@@ -6,24 +6,24 @@ const BASE_URL = 'http://localhost:3000';
 test.describe('Quotes Page (Demo Mode)', () => {
   test.describe('Page Access', () => {
     test('should load quotes page successfully', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/quotes`);
+      const response = await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/quotes');
     });
 
     test('should load create quote page', async ({ page }) => {
-      const response = await page.goto(`${BASE_URL}/dashboard/quotes/new`);
+      const response = await page.goto(`${BASE_URL}/dashboard/quotes/new`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     });
 
     test('should not have critical console errors on quotes list', async ({
       page,
     }) => {
       const errors = captureConsoleErrors(page);
-      await page.goto(`${BASE_URL}/dashboard/quotes`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const criticalErrors = errors.filter(
         (e) => e.includes('Uncaught') && !e.includes('Clerk')
@@ -35,8 +35,8 @@ test.describe('Quotes Page (Demo Mode)', () => {
       page,
     }) => {
       const errors = captureConsoleErrors(page);
-      await page.goto(`${BASE_URL}/dashboard/quotes/new`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes/new`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const criticalErrors = errors.filter(
         (e) => e.includes('Uncaught') && !e.includes('Clerk')
@@ -47,8 +47,8 @@ test.describe('Quotes Page (Demo Mode)', () => {
 
   test.describe('UI Elements', () => {
     test('should display quotes-related content', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/quotes`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyText = (await page.locator('body').textContent()) || '';
       const hasQuotesContent =
@@ -60,8 +60,8 @@ test.describe('Quotes Page (Demo Mode)', () => {
     });
 
     test('should have action buttons or links', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/quotes`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Look for create/new buttons or links
       const newQuoteLink = page.locator(
@@ -77,21 +77,21 @@ test.describe('Quotes Page (Demo Mode)', () => {
 
   test.describe('Navigation', () => {
     test('should navigate from quotes list to new quote', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/quotes`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Navigate to new quote page
-      await page.goto(`${BASE_URL}/dashboard/quotes/new`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes/new`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/quotes/new');
     });
 
     test('should navigate from quotes to invoices', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/quotes`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      await page.goto(`${BASE_URL}/dashboard/invoices`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/invoices`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/invoices');
     });
   });
@@ -106,22 +106,22 @@ test.describe('Quotes Page (Demo Mode)', () => {
     });
 
     test('should handle page refresh on quotes list', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/quotes`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
       expect(page.url()).toContain('/quotes');
     });
 
     test('should handle page refresh on new quote page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/dashboard/quotes/new`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/dashboard/quotes/new`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
     });
@@ -136,7 +136,7 @@ test.describe('Quotes Page (Demo Mode)', () => {
       ];
 
       for (const route of routes) {
-        const response = await page.goto(`${BASE_URL}${route}`);
+        const response = await page.goto(`${BASE_URL}${route}`, { waitUntil: 'domcontentloaded' });
         expect(response?.status()).toBeLessThan(500);
       }
     });

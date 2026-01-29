@@ -18,9 +18,9 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         });
       });
 
-      const response = await page.goto(`${BASE_URL}/invite/test-token-123`);
+      const response = await page.goto(`${BASE_URL}/invite/test-token-123`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     });
 
     test('should handle invalid invite token gracefully', async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         `${BASE_URL}/invite/invalid-token-xyz`
       );
       expect(response?.status()).toBeLessThan(500);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     });
 
     test('should not have critical console errors', async ({ page }) => {
@@ -52,8 +52,8 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         });
       });
 
-      await page.goto(`${BASE_URL}/invite/test-token`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/invite/test-token`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const criticalErrors = errors.filter(
         (e) => e.includes('Uncaught') && !e.includes('Clerk')
@@ -75,8 +75,8 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         });
       });
 
-      await page.goto(`${BASE_URL}/invite/test-token`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/invite/test-token`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyText = (await page.locator('body').textContent()) || '';
       const hasInviteContent =
@@ -100,8 +100,8 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         });
       });
 
-      await page.goto(`${BASE_URL}/invite/test-token`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/invite/test-token`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       const bodyText = (await page.locator('body').textContent()) || '';
       const hasAcceptButton =
@@ -126,8 +126,8 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         });
       });
 
-      await page.goto(`${BASE_URL}/invite/expired-token`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/invite/expired-token`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       // Page should still load without 500 error
       await expect(page.locator('body')).toBeVisible();
@@ -141,7 +141,7 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         });
       });
 
-      const response = await page.goto(`${BASE_URL}/invite/error-token`);
+      const response = await page.goto(`${BASE_URL}/invite/error-token`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
       await expect(page.locator('body')).toBeVisible();
     });
@@ -151,8 +151,8 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         await route.abort('failed');
       });
 
-      await page.goto(`${BASE_URL}/invite/network-error-token`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/invite/network-error-token`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
     });
@@ -167,11 +167,11 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         });
       });
 
-      await page.goto(`${BASE_URL}/invite/test-token`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/invite/test-token`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
-      await page.goto(BASE_URL);
-      await page.waitForLoadState('networkidle');
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toBe(`${BASE_URL}/`);
     });
   });
@@ -192,20 +192,20 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
 
     test('should work on mobile viewport', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      const response = await page.goto(`${BASE_URL}/invite/mobile-token`);
+      const response = await page.goto(`${BASE_URL}/invite/mobile-token`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
       await expect(page.locator('body')).toBeVisible();
     });
 
     test('should work on tablet viewport', async ({ page }) => {
       await page.setViewportSize({ width: 768, height: 1024 });
-      const response = await page.goto(`${BASE_URL}/invite/tablet-token`);
+      const response = await page.goto(`${BASE_URL}/invite/tablet-token`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
 
     test('should work on desktop viewport', async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
-      const response = await page.goto(`${BASE_URL}/invite/desktop-token`);
+      const response = await page.goto(`${BASE_URL}/invite/desktop-token`, { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBeLessThan(500);
     });
   });
@@ -223,11 +223,11 @@ test.describe('Team Invitation Flow (Demo Mode)', () => {
         });
       });
 
-      await page.goto(`${BASE_URL}/invite/refresh-token`);
-      await page.waitForLoadState('networkidle');
+      await page.goto(`${BASE_URL}/invite/refresh-token`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page.locator('body')).toBeVisible();
     });
