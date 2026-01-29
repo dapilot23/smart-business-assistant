@@ -99,6 +99,7 @@ export interface AiToolUseOptions {
   messages: Array<{ role: 'user' | 'assistant' | 'tool'; content: string }>;
   tools: ToolDefinition[];
   toolResults?: ToolResult[];
+  previousToolCalls?: ToolCall[]; // Tool calls from previous response (required when sending toolResults)
   tenantId: string;
   feature: string;
   maxTokens?: number;
@@ -275,6 +276,7 @@ export class AiEngineService {
       const anthropicMessages = this.buildToolUseMessages(
         opts.messages,
         opts.toolResults,
+        opts.previousToolCalls,
       );
       const anthropicTools = opts.tools.map((t) => ({
         name: t.name,
@@ -331,6 +333,7 @@ export class AiEngineService {
     const anthropicMessages = this.buildToolUseMessages(
       opts.messages,
       opts.toolResults,
+      opts.previousToolCalls,
     );
     const anthropicTools = opts.tools.map((t) => ({
       name: t.name,
@@ -339,7 +342,7 @@ export class AiEngineService {
     }));
 
     try {
-      const stream = await this.anthropic!.messages.stream({
+      const stream = this.anthropic!.messages.stream({
         model: CLAUDE_MODELS.OPUS,
         max_tokens: opts.maxTokens ?? 2048,
         messages: anthropicMessages as any,
@@ -534,12 +537,17 @@ export class AiEngineService {
   private async callClaudeApi(
     params: ClaudeApiParams,
   ): Promise<ClaudeApiResponse> {
-    return this.anthropic!.messages.create(params as any) as any;
+    const { maxTokens, ...rest } = params;
+    return this.anthropic!.messages.create({
+      ...rest,
+      max_tokens: maxTokens,
+    } as any) as any;
   }
 
   private buildToolUseMessages(
     messages: Array<{ role: 'user' | 'assistant' | 'tool'; content: string }>,
     toolResults?: ToolResult[],
+    previousToolCalls?: ToolCall[],
   ): Array<{ role: string; content: unknown }> {
     const anthropicMessages: Array<{ role: string; content: unknown }> = [];
 
@@ -549,7 +557,21 @@ export class AiEngineService {
       }
     }
 
-    if (toolResults && toolResults.length > 0) {
+    // When we have tool results, we must include the assistant message with tool_use blocks
+    // followed by a user message with tool_result blocks
+    if (toolResults && toolResults.length > 0 && previousToolCalls && previousToolCalls.length > 0) {
+      // Add assistant message with tool_use blocks
+      anthropicMessages.push({
+        role: 'assistant',
+        content: previousToolCalls.map((tc) => ({
+          type: 'tool_use',
+          id: tc.id,
+          name: tc.name,
+          input: tc.input,
+        })),
+      });
+
+      // Add user message with tool_result blocks
       anthropicMessages.push({
         role: 'user',
         content: toolResults.map((tr) => ({

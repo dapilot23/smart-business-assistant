@@ -179,6 +179,7 @@ export class AiCopilotService {
     let collectedData: Record<string, unknown> = {};
     let finalResponse: string | null = null;
     let currentToolResults: ToolResult[] | undefined;
+    let previousToolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }> | undefined;
     let iterations = 0;
 
     while (!finalResponse && iterations < MAX_TOOL_ITERATIONS) {
@@ -188,6 +189,7 @@ export class AiCopilotService {
         messages,
         tools: this.toolsService.getToolDefinitions(),
         toolResults: currentToolResults,
+        previousToolCalls,
         tenantId,
         feature: 'copilot',
         system: COPILOT_SYSTEM_PROMPT,
@@ -214,10 +216,9 @@ export class AiCopilotService {
         }
 
         currentToolResults = toolResults;
-        messages.push({
-          role: 'assistant',
-          content: `Using tools: ${result.toolCalls.map((t) => t.name).join(', ')}`,
-        });
+        previousToolCalls = result.toolCalls;
+        // Note: We don't push to messages here - the buildToolUseMessages handles
+        // constructing the proper assistant message with tool_use blocks
       } else {
         finalResponse = result.response;
       }
@@ -287,6 +288,7 @@ export class AiCopilotService {
     const toolsUsed: string[] = [];
     let fullResponse = '';
     let currentToolResults: ToolResult[] | undefined;
+    let previousToolCalls: Array<{ id: string; name: string; input: Record<string, unknown> }> | undefined;
     let iterations = 0;
     let needsMoreTools = true;
 
@@ -298,6 +300,7 @@ export class AiCopilotService {
         messages,
         tools: this.toolsService.getToolDefinitions(),
         toolResults: currentToolResults,
+        previousToolCalls,
         tenantId,
         feature: 'copilot-stream',
         system: COPILOT_SYSTEM_PROMPT,
@@ -335,6 +338,7 @@ export class AiCopilotService {
       if (pendingToolCalls.length > 0) {
         needsMoreTools = true;
         currentToolResults = [];
+        previousToolCalls = pendingToolCalls;
 
         for (const toolCall of pendingToolCalls) {
           const result = await this.toolsService.executeTool(
@@ -347,11 +351,7 @@ export class AiCopilotService {
             result,
           });
         }
-
-        messages.push({
-          role: 'assistant',
-          content: `Using tools: ${pendingToolCalls.map((t) => t.name).join(', ')}`,
-        });
+        // Note: We don't push to messages - buildToolUseMessages handles this
       }
     }
 
