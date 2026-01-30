@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 
@@ -15,7 +16,10 @@ interface ClerkUserData {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async syncClerkUser(clerkData: ClerkUserData) {
     let user = await this.prisma.user.findUnique({
@@ -29,15 +33,21 @@ export class AuthService {
 
     let tenantId = clerkData.publicMetadata?.tenantId as string;
 
-    // If no tenantId in metadata, try to find or use demo tenant for easy testing
+    // If no tenantId in metadata, only fall back to demo in non-production demo mode
     if (!tenantId) {
-      const demoTenant = await this.prisma.tenant.findUnique({
-        where: { slug: 'demo-plumbing' },
-      });
+      const isDemoMode = this.configService.get('DEMO_MODE') === 'true';
+      const isProduction = this.configService.get('NODE_ENV') === 'production';
 
-      if (demoTenant) {
-        tenantId = demoTenant.id;
-      } else {
+      if (isDemoMode && !isProduction) {
+        const demoTenant = await this.prisma.tenant.findUnique({
+          where: { slug: 'demo-plumbing' },
+        });
+        if (demoTenant) {
+          tenantId = demoTenant.id;
+        }
+      }
+
+      if (!tenantId) {
         throw new BadRequestException(
           'User must be assigned to a tenant. Set tenantId in Clerk user metadata.',
         );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { setAuthTokenGetter } from '@/lib/api/client';
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
@@ -14,10 +15,22 @@ function DemoApiAuthProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Clerk auth provider - only used when not in demo mode
+// Clerk auth provider - sets up token getter for API calls
 function ClerkApiAuthProvider({ children }: { children: React.ReactNode }) {
-  // For now, just render children - the auth will be handled by Clerk context
-  // In non-demo mode, the ClerkProvider in layout.tsx will handle auth
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    // Set the Clerk getToken function as the auth token getter
+    setAuthTokenGetter(async () => {
+      try {
+        const token = await getToken();
+        return token;
+      } catch {
+        return null;
+      }
+    });
+  }, [getToken]);
+
   return <>{children}</>;
 }
 

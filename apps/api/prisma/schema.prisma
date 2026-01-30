@@ -2307,16 +2307,31 @@ model BusinessProfile {
 
   // Business Identity
   industry              String?              // "plumbing", "hvac", "landscaping"
+  yearsInBusiness       Int?                 // Years in operation
   businessDescription   String?  @db.Text    // AI-generated summary
   targetMarket          String?              // "residential", "commercial", "both"
   serviceArea           String?              // Geographic description
   serviceAreaRadius     Int?                 // Miles from base
+
+  // Financials
+  revenueRange          String?              // "under_100k", "100k_500k", "500k_1m", "1m_5m", "5m_plus"
+  averageJobValue       Decimal? @db.Decimal(10, 2)
+  pricingModel          String?              // "flat_rate", "hourly", "mixed"
+
+  // Customers
+  repeatCustomerPercent Int?                 // 0-100 percentage
 
   // Team & Operations
   teamSize              Int?
   hasFieldTechnicians   Boolean  @default(false)
   hasOfficeStaff        Boolean  @default(false)
   ownerRole             String?              // "field", "office", "both"
+  jobsPerWeek           Int?                 // Average jobs completed per week
+  currentTools          Json?                // Array of tools/software used
+
+  // Marketing & Lead Sources
+  leadSources           Json?                // Array of lead sources
+  topLeadSource         String?              // Primary lead source
 
   // Communication & Brand
   communicationStyle    String?              // "professional", "friendly", "casual"
@@ -2327,6 +2342,7 @@ model BusinessProfile {
   primaryGoals          Json?                // Array of goals
   currentChallenges     Json?                // Array of challenges
   growthStage           String?              // "startup", "growing", "established"
+  revenueGoal           String?              // Revenue target
 
   // Seasonal Patterns
   peakSeasons           Json?                // Array of peak months
@@ -2343,7 +2359,7 @@ model BusinessProfile {
   // Onboarding Progress
   onboardingStatus      OnboardingStatus     @default(NOT_STARTED)
   completedQuestions    Int                  @default(0)
-  totalQuestions        Int                  @default(12)
+  totalQuestions        Int                  @default(16)
   completedAt           DateTime?
 
   createdAt             DateTime @default(now())

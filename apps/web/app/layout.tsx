@@ -98,23 +98,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const content = (
+  const innerContent = isDemoMode ? (
+    <ThemeProvider>{children}</ThemeProvider>
+  ) : (
+    <ClerkProvider>
+      <ThemeProvider>{children}</ThemeProvider>
+    </ClerkProvider>
+  );
+
+  return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={`${fontVariables} antialiased h-full`}>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        {innerContent}
       </body>
     </html>
   );
-
-  // In demo mode, skip Clerk entirely
-  if (isDemoMode) {
-    return content;
-  }
-
-  return <ClerkProvider>{content}</ClerkProvider>;
 }

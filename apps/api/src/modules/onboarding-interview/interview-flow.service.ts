@@ -12,130 +12,164 @@ export interface InterviewQuestion {
 }
 
 export enum QuestionCategory {
-  IDENTITY = 'identity',
-  MARKET = 'market',
-  TEAM = 'team',
-  SERVICES = 'services',
-  COMMUNICATION = 'communication',
+  BASICS = 'basics',
+  FINANCIALS = 'financials',
+  CUSTOMERS = 'customers',
+  OPERATIONS = 'operations',
+  MARKETING = 'marketing',
   GOALS = 'goals',
-  PATTERNS = 'patterns',
 }
 
 export const CATEGORY_LABELS: Record<QuestionCategory, string> = {
-  [QuestionCategory.IDENTITY]: 'Identity',
-  [QuestionCategory.MARKET]: 'Market',
-  [QuestionCategory.TEAM]: 'Team',
-  [QuestionCategory.SERVICES]: 'Services',
-  [QuestionCategory.COMMUNICATION]: 'Communication',
+  [QuestionCategory.BASICS]: 'Basics',
+  [QuestionCategory.FINANCIALS]: 'Financials',
+  [QuestionCategory.CUSTOMERS]: 'Customers',
+  [QuestionCategory.OPERATIONS]: 'Operations',
+  [QuestionCategory.MARKETING]: 'Marketing',
   [QuestionCategory.GOALS]: 'Goals',
-  [QuestionCategory.PATTERNS]: 'Patterns',
 };
 
 @Injectable()
 export class InterviewFlowService {
   private readonly questions: InterviewQuestion[] = [
-    // Identity (2 questions)
+    // BASICS (3 questions)
     {
       id: 'industry',
-      category: QuestionCategory.IDENTITY,
-      prompt: "What type of business do you run?",
+      category: QuestionCategory.BASICS,
+      prompt: "What type of business do you run? (e.g., plumbing, HVAC, landscaping, electrical, cleaning, etc.)",
       extractFields: ['industry'],
       required: true,
       order: 1,
     },
     {
-      id: 'description',
-      category: QuestionCategory.IDENTITY,
-      prompt: "Tell me what makes your business special. What do you want customers to know about you?",
-      extractFields: ['businessDescription', 'uniqueSellingPoints'],
+      id: 'years_in_business',
+      category: QuestionCategory.BASICS,
+      prompt: "How long have you been in business?",
+      extractFields: ['yearsInBusiness'],
       required: true,
       order: 2,
     },
-    // Market (2 questions)
     {
-      id: 'target_market',
-      category: QuestionCategory.MARKET,
-      prompt: "Who are your typical customers - mostly homeowners, businesses, or a mix of both?",
-      extractFields: ['targetMarket'],
+      id: 'description',
+      category: QuestionCategory.BASICS,
+      prompt: "What makes your business different from competitors? What should customers know about you?",
+      extractFields: ['businessDescription', 'uniqueSellingPoints'],
       required: true,
       order: 3,
     },
+
+    // FINANCIALS (3 questions)
     {
-      id: 'service_area',
-      category: QuestionCategory.MARKET,
-      prompt: "What area do you serve? Are you focused on a specific city or region, or do you travel further out?",
-      extractFields: ['serviceArea', 'serviceAreaRadius'],
+      id: 'revenue',
+      category: QuestionCategory.FINANCIALS,
+      prompt: "Roughly what's your annual revenue? (e.g., under $100K, $100K-$500K, $500K-$1M, $1M-$5M, $5M+). This helps me tailor advice to your business size.",
+      extractFields: ['revenueRange'],
       required: true,
       order: 4,
     },
-    // Team (2 questions)
     {
-      id: 'team_size',
-      category: QuestionCategory.TEAM,
-      prompt: "How big is your team right now? Is it just you, or do you have employees?",
-      extractFields: ['teamSize', 'hasFieldTechnicians', 'hasOfficeStaff'],
+      id: 'average_job',
+      category: QuestionCategory.FINANCIALS,
+      prompt: "What's your average job or ticket value? (e.g., $150, $500, $2000)",
+      extractFields: ['averageJobValue'],
       required: true,
       order: 5,
     },
     {
-      id: 'owner_role',
-      category: QuestionCategory.TEAM,
-      prompt: "What's your role day-to-day - are you mostly in the field doing the work, running the office, or a mix of both?",
-      extractFields: ['ownerRole'],
+      id: 'pricing_model',
+      category: QuestionCategory.FINANCIALS,
+      prompt: "How do you typically price jobs - flat rate, hourly, or a mix? Do you feel your prices are competitive, premium, or budget-friendly?",
+      extractFields: ['pricingModel', 'pricingPosition'],
       required: true,
       order: 6,
     },
-    // Services (1 question - validates existing)
+
+    // CUSTOMERS (3 questions)
     {
-      id: 'services',
-      category: QuestionCategory.SERVICES,
-      prompt: "What are the main services you offer? Feel free to list your top few.",
-      extractFields: [],
+      id: 'target_market',
+      category: QuestionCategory.CUSTOMERS,
+      prompt: "Who are your typical customers - mostly homeowners (residential), businesses (commercial), or a mix of both?",
+      extractFields: ['targetMarket'],
       required: true,
       order: 7,
     },
-    // Communication (2 questions)
     {
-      id: 'communication_style',
-      category: QuestionCategory.COMMUNICATION,
-      prompt: "How do you like to communicate with customers - more professional and formal, or friendly and casual?",
-      extractFields: ['communicationStyle'],
+      id: 'service_area',
+      category: QuestionCategory.CUSTOMERS,
+      prompt: "What area do you serve? (city, county, radius in miles)",
+      extractFields: ['serviceArea', 'serviceAreaRadius'],
       required: true,
       order: 8,
     },
     {
-      id: 'preferred_channels',
-      category: QuestionCategory.COMMUNICATION,
-      prompt: "How do your customers usually prefer to reach you - text, phone calls, or email?",
-      extractFields: ['preferredChannels'],
+      id: 'repeat_customers',
+      category: QuestionCategory.CUSTOMERS,
+      prompt: "What percentage of your work comes from repeat customers vs. new customers?",
+      extractFields: ['repeatCustomerPercent'],
       required: true,
       order: 9,
     },
-    // Goals (2 questions)
+
+    // OPERATIONS (3 questions)
     {
-      id: 'goals',
-      category: QuestionCategory.GOALS,
-      prompt: "What are your main business goals right now? Growing revenue, getting more customers, improving efficiency, or something else?",
-      extractFields: ['primaryGoals', 'growthStage'],
+      id: 'team_size',
+      category: QuestionCategory.OPERATIONS,
+      prompt: "How big is your team? (just you, 2-5, 6-10, 11-25, 25+)",
+      extractFields: ['teamSize', 'hasFieldTechnicians', 'hasOfficeStaff'],
       required: true,
       order: 10,
     },
     {
-      id: 'challenges',
-      category: QuestionCategory.GOALS,
-      prompt: "What's your biggest challenge at the moment? What keeps you up at night about the business?",
-      extractFields: ['currentChallenges'],
+      id: 'jobs_per_week',
+      category: QuestionCategory.OPERATIONS,
+      prompt: "How many jobs or appointments do you typically complete per week?",
+      extractFields: ['jobsPerWeek'],
       required: true,
       order: 11,
     },
-    // Patterns (1 question)
     {
-      id: 'seasonal',
-      category: QuestionCategory.PATTERNS,
-      prompt: "Does your business have busy seasons? When are your peak times and when are things slower?",
-      extractFields: ['peakSeasons', 'busyDays'],
+      id: 'current_tools',
+      category: QuestionCategory.OPERATIONS,
+      prompt: "What tools or software do you currently use to run your business? (scheduling, invoicing, CRM, etc. - or just pen and paper?)",
+      extractFields: ['currentTools'],
       required: true,
       order: 12,
+    },
+
+    // MARKETING (2 questions)
+    {
+      id: 'lead_sources',
+      category: QuestionCategory.MARKETING,
+      prompt: "How do most of your customers find you? (word of mouth, Google, social media, Yelp, Home Advisor, ads, etc.)",
+      extractFields: ['leadSources', 'topLeadSource'],
+      required: true,
+      order: 13,
+    },
+    {
+      id: 'communication_style',
+      category: QuestionCategory.MARKETING,
+      prompt: "How do you prefer to communicate with customers - professional and formal, or friendly and casual? Do they usually reach you by phone, text, or email?",
+      extractFields: ['communicationStyle', 'preferredChannels'],
+      required: true,
+      order: 14,
+    },
+
+    // GOALS (2 questions)
+    {
+      id: 'challenges',
+      category: QuestionCategory.GOALS,
+      prompt: "What's your biggest challenge right now? What keeps you up at night about the business?",
+      extractFields: ['currentChallenges'],
+      required: true,
+      order: 15,
+    },
+    {
+      id: 'goals',
+      category: QuestionCategory.GOALS,
+      prompt: "Where do you want your business to be in 2-3 years? Any specific goals like revenue targets, team size, or new services?",
+      extractFields: ['primaryGoals', 'growthStage', 'revenueGoal'],
+      required: true,
+      order: 16,
     },
   ];
 
@@ -217,6 +251,6 @@ export class InterviewFlowService {
   }
 
   getWelcomeMessage(businessName: string): string {
-    return `Welcome! I'm excited to learn about ${businessName || 'your business'} so I can personalize everything for you. This will only take about 5 minutes, and you can skip any questions you're not ready to answer.\n\nLet's start - ${this.getFirstQuestion().prompt}`;
+    return `Hi! I'm here to learn about ${businessName || 'your business'} so I can help you grow and run things more smoothly. This takes about 5-7 minutes.\n\nLet's start with the basics - ${this.getFirstQuestion().prompt}`;
   }
 }

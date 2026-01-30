@@ -57,6 +57,17 @@ export class OnboardingInterviewService {
     private readonly flowService: InterviewFlowService,
   ) {}
 
+  /**
+   * Gets the demo tenant ID for demo mode
+   * Returns null if demo tenant doesn't exist
+   */
+  async getDemoTenantId(): Promise<string | null> {
+    const demoTenant = await this.prisma.tenant.findUnique({
+      where: { slug: 'demo-plumbing' },
+    });
+    return demoTenant?.id || null;
+  }
+
   async getStatus(tenantId: string): Promise<{
     status: OnboardingStatus;
     completedQuestions: number;
@@ -584,22 +595,49 @@ export class OnboardingInterviewService {
   ): Partial<Prisma.BusinessProfileUpdateInput> {
     const mapping: Partial<Prisma.BusinessProfileUpdateInput> = {};
 
+    // Business Identity
     if (data.industry) mapping.industry = String(data.industry);
+    if (data.yearsInBusiness) mapping.yearsInBusiness = Number(data.yearsInBusiness);
     if (data.businessDescription) mapping.businessDescription = String(data.businessDescription);
     if (data.targetMarket) mapping.targetMarket = String(data.targetMarket);
     if (data.serviceArea) mapping.serviceArea = String(data.serviceArea);
     if (data.serviceAreaRadius) mapping.serviceAreaRadius = Number(data.serviceAreaRadius);
+
+    // Financials
+    if (data.revenueRange) mapping.revenueRange = String(data.revenueRange);
+    if (data.averageJobValue) mapping.averageJobValue = data.averageJobValue;
+    if (data.pricingModel) mapping.pricingModel = String(data.pricingModel);
+
+    // Customers
+    if (data.repeatCustomerPercent) mapping.repeatCustomerPercent = Number(data.repeatCustomerPercent);
+
+    // Team & Operations
     if (data.teamSize) mapping.teamSize = Number(data.teamSize);
     if (data.hasFieldTechnicians !== undefined) mapping.hasFieldTechnicians = Boolean(data.hasFieldTechnicians);
     if (data.hasOfficeStaff !== undefined) mapping.hasOfficeStaff = Boolean(data.hasOfficeStaff);
     if (data.ownerRole) mapping.ownerRole = String(data.ownerRole);
+    if (data.jobsPerWeek) mapping.jobsPerWeek = Number(data.jobsPerWeek);
+    if (data.currentTools) mapping.currentTools = data.currentTools;
+
+    // Marketing & Lead Sources
+    if (data.leadSources) mapping.leadSources = data.leadSources;
+    if (data.topLeadSource) mapping.topLeadSource = String(data.topLeadSource);
+
+    // Communication & Brand
     if (data.communicationStyle) mapping.communicationStyle = String(data.communicationStyle);
     if (data.preferredChannels) mapping.preferredChannels = data.preferredChannels as string[];
+
+    // Business Goals
     if (data.primaryGoals) mapping.primaryGoals = data.primaryGoals;
     if (data.currentChallenges) mapping.currentChallenges = data.currentChallenges;
     if (data.growthStage) mapping.growthStage = String(data.growthStage);
+    if (data.revenueGoal) mapping.revenueGoal = String(data.revenueGoal);
+
+    // Seasonal Patterns
     if (data.peakSeasons) mapping.peakSeasons = data.peakSeasons;
     if (data.busyDays) mapping.busyDays = data.busyDays as number[];
+
+    // Competitive Position
     if (data.uniqueSellingPoints) mapping.uniqueSellingPoints = data.uniqueSellingPoints;
     if (data.pricingPosition) mapping.pricingPosition = String(data.pricingPosition);
 
