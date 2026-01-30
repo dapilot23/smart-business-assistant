@@ -4,172 +4,195 @@ export interface InterviewQuestion {
   id: string;
   category: QuestionCategory;
   prompt: string;
+  // Fields this question directly extracts
   extractFields: string[];
+  // Fields that can be inferred from the response
+  inferFields: string[];
   required: boolean;
   order: number;
   // Conditional logic for adaptive questions
   condition?: (extractedData: Record<string, unknown>) => boolean;
 }
 
+export interface AdaptiveQuestion {
+  id: string;
+  condition: (profile: Record<string, unknown>) => boolean;
+  prompt: string;
+  extractFields: string[];
+  priority: number;
+}
+
 export enum QuestionCategory {
-  BASICS = 'basics',
-  FINANCIALS = 'financials',
-  CUSTOMERS = 'customers',
+  BUSINESS = 'business',
   OPERATIONS = 'operations',
-  MARKETING = 'marketing',
   GOALS = 'goals',
+  COMPETITION = 'competition',
 }
 
 export const CATEGORY_LABELS: Record<QuestionCategory, string> = {
-  [QuestionCategory.BASICS]: 'Basics',
-  [QuestionCategory.FINANCIALS]: 'Financials',
-  [QuestionCategory.CUSTOMERS]: 'Customers',
+  [QuestionCategory.BUSINESS]: 'Business',
   [QuestionCategory.OPERATIONS]: 'Operations',
-  [QuestionCategory.MARKETING]: 'Marketing',
   [QuestionCategory.GOALS]: 'Goals',
+  [QuestionCategory.COMPETITION]: 'Competition',
 };
 
 @Injectable()
 export class InterviewFlowService {
+  // 8 Smart Questions - designed to extract multiple fields per question
   private readonly questions: InterviewQuestion[] = [
-    // BASICS (3 questions)
+    // Question 1: Business Identity
     {
-      id: 'industry',
-      category: QuestionCategory.BASICS,
-      prompt: "What type of business do you run? (e.g., plumbing, HVAC, landscaping, electrical, cleaning, etc.)",
-      extractFields: ['industry'],
+      id: 'business_intro',
+      category: QuestionCategory.BUSINESS,
+      prompt:
+        "Tell me about your business in a sentence or two - what do you do and who do you serve?",
+      extractFields: ['industry', 'businessDescription', 'targetMarket'],
+      inferFields: ['yearsInBusiness', 'teamSize', 'growthStage'],
       required: true,
       order: 1,
     },
+
+    // Question 2: Location & Service Area
     {
-      id: 'years_in_business',
-      category: QuestionCategory.BASICS,
-      prompt: "How long have you been in business?",
-      extractFields: ['yearsInBusiness'],
+      id: 'location',
+      category: QuestionCategory.BUSINESS,
+      prompt:
+        "Where are you based and how far do you typically travel for jobs?",
+      extractFields: ['serviceArea', 'serviceAreaRadius'],
+      inferFields: ['timezone'],
       required: true,
       order: 2,
     },
+
+    // Question 3: Operations & Volume
     {
-      id: 'description',
-      category: QuestionCategory.BASICS,
-      prompt: "What makes your business different from competitors? What should customers know about you?",
-      extractFields: ['businessDescription', 'uniqueSellingPoints'],
+      id: 'operations',
+      category: QuestionCategory.OPERATIONS,
+      prompt:
+        "Walk me through a typical week - how many jobs do you handle and what kind of work fills your schedule?",
+      extractFields: ['jobsPerWeek', 'teamSize'],
+      inferFields: ['averageJobValue', 'peakSeasons', 'hasFieldTechnicians'],
       required: true,
       order: 3,
     },
 
-    // FINANCIALS (3 questions)
+    // Question 4: Customer Acquisition
     {
-      id: 'revenue',
-      category: QuestionCategory.FINANCIALS,
-      prompt: "Roughly what's your annual revenue? (e.g., under $100K, $100K-$500K, $500K-$1M, $1M-$5M, $5M+). This helps me tailor advice to your business size.",
-      extractFields: ['revenueRange'],
+      id: 'customers',
+      category: QuestionCategory.OPERATIONS,
+      prompt:
+        "How do your best customers usually find you and get in touch?",
+      extractFields: ['leadSources', 'topLeadSource', 'preferredChannels'],
+      inferFields: ['communicationStyle'],
       required: true,
       order: 4,
     },
+
+    // Question 5: Business Health
     {
-      id: 'average_job',
-      category: QuestionCategory.FINANCIALS,
-      prompt: "What's your average job or ticket value? (e.g., $150, $500, $2000)",
-      extractFields: ['averageJobValue'],
+      id: 'business_health',
+      category: QuestionCategory.GOALS,
+      prompt:
+        "What's working really well right now, and what would you change if you could?",
+      extractFields: ['primaryGoals', 'currentChallenges'],
+      inferFields: ['growthStage', 'revenueRange'],
       required: true,
       order: 5,
     },
+
+    // Question 6: Competition
     {
-      id: 'pricing_model',
-      category: QuestionCategory.FINANCIALS,
-      prompt: "How do you typically price jobs - flat rate, hourly, or a mix? Do you feel your prices are competitive, premium, or budget-friendly?",
-      extractFields: ['pricingModel', 'pricingPosition'],
+      id: 'competition',
+      category: QuestionCategory.COMPETITION,
+      prompt:
+        "Who are your main competitors and why do customers typically pick you over them?",
+      extractFields: [
+        'knownCompetitors',
+        'winReasons',
+        'uniqueSellingPoints',
+      ],
+      inferFields: ['competitiveAdvantage', 'marketPosition'],
       required: true,
       order: 6,
     },
 
-    // CUSTOMERS (3 questions)
+    // Question 7: Pricing
     {
-      id: 'target_market',
-      category: QuestionCategory.CUSTOMERS,
-      prompt: "Who are your typical customers - mostly homeowners (residential), businesses (commercial), or a mix of both?",
-      extractFields: ['targetMarket'],
+      id: 'pricing',
+      category: QuestionCategory.OPERATIONS,
+      prompt:
+        "Roughly what's your average job worth, and how do you usually price - flat rate, hourly, or depends on the job?",
+      extractFields: ['averageJobValue', 'pricingModel'],
+      inferFields: ['pricingPosition', 'revenueRange'],
       required: true,
       order: 7,
     },
+
+    // Question 8: Vision
     {
-      id: 'service_area',
-      category: QuestionCategory.CUSTOMERS,
-      prompt: "What area do you serve? (city, county, radius in miles)",
-      extractFields: ['serviceArea', 'serviceAreaRadius'],
+      id: 'vision',
+      category: QuestionCategory.GOALS,
+      prompt:
+        "Where do you want the business to be a year from now?",
+      extractFields: ['revenueGoal', 'primaryGoals'],
+      inferFields: ['growthStage'],
       required: true,
       order: 8,
     },
-    {
-      id: 'repeat_customers',
-      category: QuestionCategory.CUSTOMERS,
-      prompt: "What percentage of your work comes from repeat customers vs. new customers?",
-      extractFields: ['repeatCustomerPercent'],
-      required: true,
-      order: 9,
-    },
+  ];
 
-    // OPERATIONS (3 questions)
+  // Adaptive follow-up questions based on extracted data
+  private readonly adaptiveQuestions: AdaptiveQuestion[] = [
     {
-      id: 'team_size',
-      category: QuestionCategory.OPERATIONS,
-      prompt: "How big is your team? (just you, 2-5, 6-10, 11-25, 25+)",
-      extractFields: ['teamSize', 'hasFieldTechnicians', 'hasOfficeStaff'],
-      required: true,
-      order: 10,
+      id: 'emergency_services',
+      condition: (p) =>
+        p.industry === 'hvac' ||
+        p.industry === 'plumbing' ||
+        p.industry === 'electrical',
+      prompt:
+        "Do you handle emergency calls after hours? What's your typical response time?",
+      extractFields: ['emergencyService', 'avgResponseTime'],
+      priority: 8,
     },
     {
-      id: 'jobs_per_week',
-      category: QuestionCategory.OPERATIONS,
-      prompt: "How many jobs or appointments do you typically complete per week?",
-      extractFields: ['jobsPerWeek'],
-      required: true,
-      order: 11,
+      id: 'team_dispatch',
+      condition: (p) => typeof p.teamSize === 'number' && p.teamSize > 3,
+      prompt: 'How do you typically assign jobs to your team?',
+      extractFields: ['dispatchMethod', 'hasDispatcher'],
+      priority: 6,
+    },
+    {
+      id: 'commercial_verticals',
+      condition: (p) =>
+        p.targetMarket === 'commercial' || p.targetMarket === 'both',
+      prompt: 'What types of commercial clients do you work with most?',
+      extractFields: ['commercialVerticals'],
+      priority: 5,
     },
     {
       id: 'current_tools',
-      category: QuestionCategory.OPERATIONS,
-      prompt: "What tools or software do you currently use to run your business? (scheduling, invoicing, CRM, etc. - or just pen and paper?)",
-      extractFields: ['currentTools'],
-      required: true,
-      order: 12,
-    },
-
-    // MARKETING (2 questions)
-    {
-      id: 'lead_sources',
-      category: QuestionCategory.MARKETING,
-      prompt: "How do most of your customers find you? (word of mouth, Google, social media, Yelp, Home Advisor, ads, etc.)",
-      extractFields: ['leadSources', 'topLeadSource'],
-      required: true,
-      order: 13,
+      condition: (p) =>
+        !p.currentTools || (p.currentTools as string[]).length === 0,
+      prompt:
+        "Are you using any software to manage jobs, or is it mostly manual right now?",
+      extractFields: ['currentTools', 'techSavvy'],
+      priority: 7,
     },
     {
-      id: 'communication_style',
-      category: QuestionCategory.MARKETING,
-      prompt: "How do you prefer to communicate with customers - professional and formal, or friendly and casual? Do they usually reach you by phone, text, or email?",
-      extractFields: ['communicationStyle', 'preferredChannels'],
-      required: true,
-      order: 14,
-    },
-
-    // GOALS (2 questions)
-    {
-      id: 'challenges',
-      category: QuestionCategory.GOALS,
-      prompt: "What's your biggest challenge right now? What keeps you up at night about the business?",
-      extractFields: ['currentChallenges'],
-      required: true,
-      order: 15,
+      id: 'repeat_business',
+      condition: (p) => p.repeatCustomerPercent === undefined,
+      prompt:
+        "About what percentage of your work comes from repeat customers?",
+      extractFields: ['repeatCustomerPercent'],
+      priority: 4,
     },
     {
-      id: 'goals',
-      category: QuestionCategory.GOALS,
-      prompt: "Where do you want your business to be in 2-3 years? Any specific goals like revenue targets, team size, or new services?",
-      extractFields: ['primaryGoals', 'growthStage', 'revenueGoal'],
-      required: true,
-      order: 16,
+      id: 'seasonal_patterns',
+      condition: (p) => !p.peakSeasons,
+      prompt:
+        "Are there certain times of year that are busier or slower for you?",
+      extractFields: ['peakSeasons', 'slowSeasons'],
+      priority: 3,
     },
   ];
 
@@ -178,11 +201,11 @@ export class InterviewFlowService {
   }
 
   getQuestion(questionId: string): InterviewQuestion | undefined {
-    return this.questions.find(q => q.id === questionId);
+    return this.questions.find((q) => q.id === questionId);
   }
 
   getQuestionByOrder(order: number): InterviewQuestion | undefined {
-    return this.questions.find(q => q.order === order);
+    return this.questions.find((q) => q.order === order);
   }
 
   getFirstQuestion(): InterviewQuestion {
@@ -198,7 +221,7 @@ export class InterviewFlowService {
 
     // Find the next question in order
     const candidateQuestions = this.questions
-      .filter(q => q.order > currentQuestion.order)
+      .filter((q) => q.order > currentQuestion.order)
       .sort((a, b) => a.order - b.order);
 
     for (const question of candidateQuestions) {
@@ -210,6 +233,20 @@ export class InterviewFlowService {
     }
 
     return null; // No more questions
+  }
+
+  /**
+   * Get applicable adaptive questions based on current profile
+   * Returns up to 2 most relevant follow-up questions
+   */
+  getAdaptiveQuestions(
+    extractedData: Record<string, unknown>,
+    maxQuestions = 2,
+  ): AdaptiveQuestion[] {
+    return this.adaptiveQuestions
+      .filter((q) => q.condition(extractedData))
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, maxQuestions);
   }
 
   getAllQuestions(): InterviewQuestion[] {
@@ -232,13 +269,20 @@ export class InterviewFlowService {
 
   getCategoryProgress(
     completedQuestionIds: string[],
-  ): Array<{ category: QuestionCategory; label: string; completed: number; total: number }> {
+  ): Array<{
+    category: QuestionCategory;
+    label: string;
+    completed: number;
+    total: number;
+  }> {
     const categories = this.getCategories();
 
-    return categories.map(category => {
-      const categoryQuestions = this.questions.filter(q => q.category === category);
-      const completed = categoryQuestions.filter(q =>
-        completedQuestionIds.includes(q.id)
+    return categories.map((category) => {
+      const categoryQuestions = this.questions.filter(
+        (q) => q.category === category,
+      );
+      const completed = categoryQuestions.filter((q) =>
+        completedQuestionIds.includes(q.id),
       ).length;
 
       return {
@@ -250,7 +294,50 @@ export class InterviewFlowService {
     });
   }
 
+  /**
+   * Get all fields that should be extracted for a question
+   * Includes both direct extract fields and inferrable fields
+   */
+  getTargetFields(questionId: string): string[] {
+    const question = this.getQuestion(questionId);
+    if (!question) return [];
+    return [...question.extractFields, ...question.inferFields];
+  }
+
   getWelcomeMessage(businessName: string): string {
-    return `Hi! I'm here to learn about ${businessName || 'your business'} so I can help you grow and run things more smoothly. This takes about 5-7 minutes.\n\nLet's start with the basics - ${this.getFirstQuestion().prompt}`;
+    const name = businessName || 'your business';
+    return `Hi! I'm here to learn about ${name} so I can help you grow and work smarter. This takes about 3-4 minutes - just 8 questions.\n\nLet's dive in! ${this.getFirstQuestion().prompt}`;
+  }
+
+  /**
+   * Generate a contextual transition message hint
+   */
+  getTransitionHint(
+    currentQuestionId: string,
+    extractedData: Record<string, unknown>,
+  ): string | null {
+    const question = this.getQuestion(currentQuestionId);
+    if (!question) return null;
+
+    // Generate hints based on what we've learned
+    switch (question.id) {
+      case 'business_intro':
+        if (extractedData.industry) {
+          return `Got it - ${extractedData.industry} business!`;
+        }
+        break;
+      case 'operations':
+        if (extractedData.teamSize) {
+          return `Nice, a team of ${extractedData.teamSize}!`;
+        }
+        break;
+      case 'pricing':
+        if (extractedData.averageJobValue) {
+          return `$${extractedData.averageJobValue} average - solid!`;
+        }
+        break;
+    }
+
+    return null;
   }
 }

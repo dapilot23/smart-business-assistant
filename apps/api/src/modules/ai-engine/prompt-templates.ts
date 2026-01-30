@@ -605,6 +605,27 @@ Respond with JSON only:
   "clarificationQuestion": null
 }`,
 
+  'onboarding.extract-fields': `Extract specific business fields from the user's response.
+
+User Response: {userResponse}
+Fields to Extract: {fieldsToExtract}
+Existing Profile: {existingProfile}
+
+For each field, extract the value and provide a confidence score (0.0-1.0).
+Only include fields that can be reasonably extracted from the response.
+
+Respond with JSON only:
+{
+  "extractions": [
+    {
+      "field": "fieldName",
+      "value": "extracted value or appropriate type",
+      "confidence": 0.85,
+      "reasoning": "brief explanation of how this was extracted"
+    }
+  ]
+}`,
+
   'onboarding.generate-summary': `Generate a comprehensive business profile summary based on the completed onboarding interview.
 
 Business Name: {businessName}

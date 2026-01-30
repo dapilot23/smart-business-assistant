@@ -2291,7 +2291,7 @@ model SeasonalDemand {
   @@map("seasonal_demand")
 }
 
-// ===== Business Profile & Onboarding Interview =====
+// ===== Business DNA System: Intelligent Onboarding & Continuous Learning =====
 
 enum OnboardingStatus {
   NOT_STARTED
@@ -2300,23 +2300,45 @@ enum OnboardingStatus {
   SKIPPED
 }
 
-// Business profile collected during AI onboarding interview
+enum OnboardingMode {
+  CHAT
+  VOICE
+  PHONE_CALL
+}
+
+enum ConversationState {
+  IDLE              // Waiting for user input
+  USER_TYPING       // User composing (debounced)
+  PROCESSING        // AI generating response
+  STREAMING         // Response streaming to client
+  EXTRACTING        // Background extraction
+  ERROR             // Recoverable error
+  LOCKED            // Another session active
+}
+
+// Business profile with 3-layer intelligence system
 model BusinessProfile {
   id                    String   @id @default(cuid())
   tenantId              String   @unique
 
+  // ═══════════════════════════════════════════════════════════════
+  // LAYER 1: EXPLICIT KNOWLEDGE (from interview)
+  // ═══════════════════════════════════════════════════════════════
+
   // Business Identity
   industry              String?              // "plumbing", "hvac", "landscaping"
   yearsInBusiness       Int?                 // Years in operation
-  businessDescription   String?  @db.Text    // AI-generated summary
+  businessDescription   String?  @db.Text    // User's own words + AI enhancement
   targetMarket          String?              // "residential", "commercial", "both"
   serviceArea           String?              // Geographic description
   serviceAreaRadius     Int?                 // Miles from base
+  timezone              String?              // Detected/confirmed timezone
 
   // Financials
-  revenueRange          String?              // "under_100k", "100k_500k", "500k_1m", "1m_5m", "5m_plus"
+  revenueRange          String?              // "under_100k", "100k_500k", etc.
   averageJobValue       Decimal? @db.Decimal(10, 2)
   pricingModel          String?              // "flat_rate", "hourly", "mixed"
+  pricingPosition       String?              // "budget", "mid_range", "premium"
 
   // Customers
   repeatCustomerPercent Int?                 // 0-100 percentage
@@ -2335,32 +2357,76 @@ model BusinessProfile {
 
   // Communication & Brand
   communicationStyle    String?              // "professional", "friendly", "casual"
-  brandVoice            String?  @db.Text    // AI-generated brand voice
+  brandVoice            String?  @db.Text    // AI-generated brand voice guide
   preferredChannels     String[]             // ["sms", "email", "phone"]
 
   // Business Goals
   primaryGoals          Json?                // Array of goals
   currentChallenges     Json?                // Array of challenges
-  growthStage           String?              // "startup", "growing", "established"
+  growthStage           String?              // "startup", "growing", "established", "mature"
   revenueGoal           String?              // Revenue target
 
-  // Seasonal Patterns
+  // Seasonal Patterns (stated)
   peakSeasons           Json?                // Array of peak months
+  slowSeasons           Json?                // Array of slow months
   busyDays              Int[]                // Days of week (0-6)
 
-  // Competitive Position
+  // Competitive Intelligence
+  knownCompetitors      Json?                // [{name, strengths, weaknesses}]
+  marketPosition        String?              // "leader", "challenger", "niche", "new"
+  competitiveAdvantage  String?  @db.Text    // AI-generated analysis
+  winReasons            Json?                // Why customers choose you
+  loseReasons           Json?                // Why you lose deals
+  priceVsMarket         String?              // "below", "at", "above"
+
+  // Unique Value Proposition
   uniqueSellingPoints   Json?                // Array of differentiators
-  pricingPosition       String?              // "budget", "mid-range", "premium"
 
-  // AI-Generated
-  aiSummary             String?  @db.Text    // Full AI summary
-  aiRecommendations     Json?                // Platform recommendations
+  // ═══════════════════════════════════════════════════════════════
+  // LAYER 2: OBSERVED BEHAVIOR (automatic updates)
+  // ═══════════════════════════════════════════════════════════════
 
-  // Onboarding Progress
+  observedPeakMonths    Int[]                // Months with highest bookings
+  observedSlowMonths    Int[]                // Months with lowest bookings
+  observedAvgJobValue   Decimal? @db.Decimal(10, 2)  // Calculated from invoices
+  observedJobsPerWeek   Float?               // Rolling average
+  observedResponseTime  Int?                 // Avg minutes to respond
+  observedChannelMix    Json?                // {sms: 0.6, email: 0.3, phone: 0.1}
+  observedServiceMix    Json?                // {service_id: percentage}
+  lastBehaviorUpdate    DateTime?            // When observations last refreshed
+
+  // ═══════════════════════════════════════════════════════════════
+  // LAYER 3: INFERRED INTELLIGENCE (AI-generated)
+  // ═══════════════════════════════════════════════════════════════
+
+  aiSummary             String?  @db.Text    // Full AI-generated business summary
+  aiRecommendations     Json?                // Platform feature recommendations
+  industryBenchmarks    Json?                // How they compare to similar businesses
+  growthTrajectory      String?              // "accelerating", "stable", "declining"
+  predictedPeakMonths   Int[]                // AI-predicted busy months
+
+  // ═══════════════════════════════════════════════════════════════
+  // PROFILE QUALITY & CONFIDENCE
+  // ═══════════════════════════════════════════════════════════════
+
+  profileCompleteness   Float    @default(0)     // 0-1 how complete
+  profileConfidence     Float    @default(0)     // 0-1 overall confidence
+  fieldConfidence       Json?                     // {field: confidence} per field
+  inferredFields        String[]                  // Fields inferred vs explicitly stated
+  needsValidation       String[]                  // Low-confidence fields to confirm
+  lastValidated         DateTime?                 // Last user confirmation
+
+  // ═══════════════════════════════════════════════════════════════
+  // ONBOARDING PROGRESS
+  // ═══════════════════════════════════════════════════════════════
+
   onboardingStatus      OnboardingStatus     @default(NOT_STARTED)
+  onboardingMode        OnboardingMode       @default(CHAT)
   completedQuestions    Int                  @default(0)
-  totalQuestions        Int                  @default(16)
-  completedAt           DateTime?
+  totalQuestions        Int                  @default(8)
+  interviewStartedAt    DateTime?
+  interviewCompletedAt  DateTime?
+  quickWinsDelivered    Boolean  @default(false)
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -2370,21 +2436,69 @@ model BusinessProfile {
   conversation          OnboardingConversation?
 
   @@index([tenantId])
+  @@index([industry])
   @@map("business_profiles")
 }
 
-// Store the onboarding conversation for resume and reference
+// Store the onboarding conversation with state machine support
 model OnboardingConversation {
   id                String   @id @default(cuid())
   businessProfileId String   @unique
-  messages          Json     // Array of {role, content, timestamp, questionId}
-  currentQuestionId String?  // Track current question in flow
-  extractedData     Json?    // Structured data extracted so far
+
+  // Conversation State
+  messages          Json                  // [{role, content, timestamp, questionId, extractedFields}]
+  currentQuestionId String?
+  extractedData     Json?                 // Cumulative extracted data
+
+  // State Machine
+  state             ConversationState     @default(IDLE)
+
+  // Multi-Device Locking
+  version           Int      @default(0)  // Optimistic locking
+  lockedBy          String?               // Session ID
+  lockedAt          DateTime?
+  lastActivityAt    DateTime @default(now())
+
+  // Voice/Call Metadata
+  vapiCallId        String?               // If using phone call mode
+  voiceTranscript   Json?                 // Full voice transcript
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  // Relations
   businessProfile   BusinessProfile @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
 
   @@map("onboarding_conversations")
+}
+
+// Industry templates for benchmarking and defaults
+model IndustryTemplate {
+  id                    String   @id @default(cuid())
+  industrySlug          String   @unique  // "plumbing", "hvac", etc.
+  displayName           String              // "Plumbing & Drain"
+
+  // Typical Patterns
+  typicalPeakMonths     Int[]               // [5, 6, 7, 8]
+  typicalSlowMonths     Int[]               // [1, 2]
+  avgJobValueResidential Decimal? @db.Decimal(10, 2)
+  avgJobValueCommercial  Decimal? @db.Decimal(10, 2)
+  typicalTeamSize       Json?               // {solo: 0.4, small: 0.35, ...}
+  emergencyMix          Float?              // 0-1 portion that's emergency
+
+  // Defaults
+  suggestedServices     Json?               // Default service catalog
+  communicationNorms    String?             // Typical style for industry
+  typicalLeadSources    Json?               // Common lead sources
+
+  // Industry-Specific Questions
+  followUpQuestions     Json?               // Additional questions for this industry
+
+  // Benchmarks (aggregated, anonymized)
+  benchmarkData         Json?               // Anonymized industry benchmarks
+  benchmarkUpdatedAt    DateTime?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("industry_templates")
 }

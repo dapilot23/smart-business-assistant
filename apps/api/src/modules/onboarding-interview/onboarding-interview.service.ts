@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { AiEngineService } from '../ai-engine/ai-engine.service';
 import { InterviewFlowService, QuestionCategory } from './interview-flow.service';
+import { InferenceEngineService, InferenceResult } from './inference-engine.service';
 import { OnboardingStatus, Prisma } from '@prisma/client';
 
 export interface InterviewMessage {
@@ -49,12 +50,22 @@ export interface InterviewSummary {
   profile: Record<string, unknown>;
 }
 
+export interface StreamMessageResponse {
+  aiResponse: string;
+  progress: ProgressInfo;
+  isComplete: boolean;
+  nextQuestion?: { id: string; text: string } | null;
+  extractedData?: Record<string, unknown>;
+  inferredCount?: number;
+}
+
 @Injectable()
 export class OnboardingInterviewService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiEngine: AiEngineService,
     private readonly flowService: InterviewFlowService,
+    private readonly inferenceEngine: InferenceEngineService,
   ) {}
 
   /**
@@ -150,7 +161,7 @@ export class OnboardingInterviewService {
         data: {
           onboardingStatus: OnboardingStatus.IN_PROGRESS,
           completedQuestions: 0,
-          completedAt: null,
+          interviewCompletedAt: null,
         },
       });
       profileId = existingProfile.id;
@@ -289,7 +300,7 @@ export class OnboardingInterviewService {
       data: {
         completedQuestions: newCompletedCount,
         onboardingStatus: isComplete ? OnboardingStatus.COMPLETED : OnboardingStatus.IN_PROGRESS,
-        completedAt: isComplete ? new Date() : null,
+        interviewCompletedAt: isComplete ? new Date() : null,
         // Store extracted fields
         ...this.mapExtractedDataToProfile(updatedExtractedData),
       },
@@ -363,7 +374,7 @@ export class OnboardingInterviewService {
       data: {
         completedQuestions: newCompletedCount,
         onboardingStatus: isComplete ? OnboardingStatus.COMPLETED : OnboardingStatus.IN_PROGRESS,
-        completedAt: isComplete ? new Date() : null,
+        interviewCompletedAt: isComplete ? new Date() : null,
       },
     });
 
@@ -401,7 +412,7 @@ export class OnboardingInterviewService {
       where: { id: profile.id },
       data: {
         onboardingStatus: OnboardingStatus.COMPLETED,
-        completedAt: new Date(),
+        interviewCompletedAt: new Date(),
       },
     });
 
@@ -641,6 +652,299 @@ export class OnboardingInterviewService {
     if (data.uniqueSellingPoints) mapping.uniqueSellingPoints = data.uniqueSellingPoints;
     if (data.pricingPosition) mapping.pricingPosition = String(data.pricingPosition);
 
+    // New fields from Business DNA schema
+    if (data.knownCompetitors) mapping.knownCompetitors = data.knownCompetitors;
+    if (data.winReasons) mapping.winReasons = data.winReasons;
+    if (data.loseReasons) mapping.loseReasons = data.loseReasons;
+    if (data.competitiveAdvantage) mapping.competitiveAdvantage = String(data.competitiveAdvantage);
+    if (data.marketPosition) mapping.marketPosition = String(data.marketPosition);
+    if (data.slowSeasons) mapping.slowSeasons = data.slowSeasons;
+    if (data.timezone) mapping.timezone = String(data.timezone);
+
     return mapping;
+  }
+
+  /**
+   * Process message with streaming callbacks for real-time updates
+   */
+  async processMessageWithStream(
+    tenantId: string,
+    conversationId: string,
+    userMessage: string,
+    onTextChunk: (chunk: string) => void,
+    onExtraction: (extraction: { field: string; value: unknown; confidence: number }) => void,
+  ): Promise<StreamMessageResponse> {
+    const conversation = await this.prisma.onboardingConversation.findUnique({
+      where: { id: conversationId },
+      include: { businessProfile: { include: { tenant: true } } },
+    });
+
+    if (!conversation || conversation.businessProfile.tenantId !== tenantId) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    const profile = conversation.businessProfile;
+    const tenant = profile.tenant;
+    const messages = (conversation.messages as unknown as InterviewMessage[]) || [];
+    const extractedData = (conversation.extractedData as unknown as Record<string, unknown>) || {};
+    const currentQuestion = this.flowService.getQuestion(conversation.currentQuestionId || '');
+
+    // Add user message
+    messages.push({
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date().toISOString(),
+      questionId: currentQuestion?.id,
+    });
+
+    // Extract data using inference engine
+    let newExtractedData: Record<string, unknown> = {};
+    let inferences: InferenceResult[] = [];
+
+    if (currentQuestion) {
+      const targetFields = this.flowService.getTargetFields(currentQuestion.id);
+
+      inferences = await this.inferenceEngine.extractWithInference({
+        questionId: currentQuestion.id,
+        userResponse: userMessage,
+        targetFields,
+        existingData: extractedData,
+        industry: extractedData.industry as string | undefined,
+      });
+
+      // Emit extraction events for each field
+      for (const inference of inferences) {
+        if (inference.confidence >= 0.6) {
+          newExtractedData[inference.field] = inference.value;
+          onExtraction({
+            field: inference.field,
+            value: inference.value,
+            confidence: inference.confidence,
+          });
+        }
+      }
+    }
+
+    // Merge extracted data
+    const updatedExtractedData = { ...extractedData, ...newExtractedData };
+
+    // Get next question
+    const nextQuestion = currentQuestion
+      ? this.flowService.getNextQuestion(currentQuestion.id, updatedExtractedData)
+      : null;
+
+    const isComplete = !nextQuestion;
+    const newCompletedCount = profile.completedQuestions + 1;
+
+    // Generate AI response with streaming
+    let aiResponse = '';
+
+    if (isComplete) {
+      aiResponse = await this.generateCompletionMessage(tenant.name, updatedExtractedData);
+    } else {
+      // Stream the response
+      aiResponse = await this.generateTransitionMessageStreaming(
+        tenant.name,
+        userMessage,
+        currentQuestion?.prompt || '',
+        nextQuestion.prompt,
+        newCompletedCount,
+        this.flowService.getTotalQuestions(),
+        onTextChunk,
+      );
+    }
+
+    // Add AI response to messages
+    messages.push({
+      role: 'assistant',
+      content: aiResponse,
+      timestamp: new Date().toISOString(),
+      questionId: nextQuestion?.id,
+    });
+
+    // Update conversation
+    await this.prisma.onboardingConversation.update({
+      where: { id: conversationId },
+      data: {
+        messages: messages as unknown as Prisma.JsonArray,
+        currentQuestionId: nextQuestion?.id || null,
+        extractedData: updatedExtractedData as unknown as Prisma.JsonObject,
+      },
+    });
+
+    // Calculate profile completeness based on extracted fields
+    const profileCompleteness = this.calculateProfileCompleteness(updatedExtractedData);
+    const profileConfidence = this.calculateProfileConfidence(inferences);
+
+    // Update profile
+    await this.prisma.businessProfile.update({
+      where: { id: profile.id },
+      data: {
+        completedQuestions: newCompletedCount,
+        onboardingStatus: isComplete ? OnboardingStatus.COMPLETED : OnboardingStatus.IN_PROGRESS,
+        interviewCompletedAt: isComplete ? new Date() : null,
+        profileCompleteness,
+        profileConfidence,
+        ...this.mapExtractedDataToProfile(updatedExtractedData),
+      },
+    });
+
+    // If complete, generate summary
+    if (isComplete) {
+      await this.generateAndStoreSummary(profile.id, tenant.name, updatedExtractedData);
+    }
+
+    return {
+      aiResponse,
+      progress: this.getProgress(newCompletedCount, nextQuestion?.id || null),
+      isComplete,
+      nextQuestion: nextQuestion ? { id: nextQuestion.id, text: nextQuestion.prompt } : null,
+      extractedData: newExtractedData,
+      inferredCount: inferences.filter(i => i.source === 'inferred').length,
+    };
+  }
+
+  /**
+   * Generate transition message with streaming support
+   */
+  private async generateTransitionMessageStreaming(
+    businessName: string,
+    userAnswer: string,
+    previousQuestion: string,
+    nextQuestion: string,
+    completedCount: number,
+    totalQuestions: number,
+    onChunk: (chunk: string) => void,
+  ): Promise<string> {
+    try {
+      const response = await this.aiEngine.generateText({
+        template: 'onboarding.interview',
+        variables: {
+          businessName,
+          userMessage: userAnswer,
+          previousQuestion,
+          nextQuestion,
+          completedQuestions: completedCount.toString(),
+          totalQuestions: totalQuestions.toString(),
+        },
+        tenantId: 'system',
+        feature: 'onboarding-interview',
+      });
+
+      // Simulate streaming by chunking the response
+      const text = response.data;
+      const words = text.split(' ');
+      let result = '';
+
+      for (let i = 0; i < words.length; i++) {
+        const chunk = (i === 0 ? '' : ' ') + words[i];
+        result += chunk;
+        onChunk(chunk);
+        // Small delay for realistic streaming effect
+        await new Promise((r) => setTimeout(r, 20));
+      }
+
+      return result;
+    } catch (error) {
+      const fallback = `Got it! ${nextQuestion}`;
+      onChunk(fallback);
+      return fallback;
+    }
+  }
+
+  /**
+   * Calculate profile completeness based on filled fields
+   */
+  private calculateProfileCompleteness(data: Record<string, unknown>): number {
+    const coreFields = [
+      'industry',
+      'targetMarket',
+      'serviceArea',
+      'teamSize',
+      'jobsPerWeek',
+      'averageJobValue',
+      'pricingModel',
+      'leadSources',
+      'communicationStyle',
+      'primaryGoals',
+      'currentChallenges',
+      'uniqueSellingPoints',
+    ];
+
+    const filled = coreFields.filter(
+      (f) => data[f] !== undefined && data[f] !== null && data[f] !== '',
+    ).length;
+
+    return filled / coreFields.length;
+  }
+
+  /**
+   * Calculate overall profile confidence from inferences
+   */
+  private calculateProfileConfidence(inferences: InferenceResult[]): number {
+    if (inferences.length === 0) return 0;
+
+    const totalConfidence = inferences.reduce((sum, i) => sum + i.confidence, 0);
+    return totalConfidence / inferences.length;
+  }
+
+  /**
+   * Get industry benchmarks for the tenant's industry
+   */
+  async getIndustryBenchmarks(tenantId: string): Promise<{
+    industry: string;
+    benchmarks: Record<string, unknown>;
+    comparison: Record<string, { value: unknown; benchmark: unknown; status: string }>;
+  } | null> {
+    const profile = await this.prisma.businessProfile.findUnique({
+      where: { tenantId },
+    });
+
+    if (!profile || !profile.industry) {
+      return null;
+    }
+
+    // Get industry template
+    const template = await this.prisma.industryTemplate.findUnique({
+      where: { industrySlug: profile.industry },
+    });
+
+    if (!template) {
+      // Return basic benchmarks without template
+      return {
+        industry: profile.industry,
+        benchmarks: {},
+        comparison: {},
+      };
+    }
+
+    // Build comparison
+    const comparison: Record<string, { value: unknown; benchmark: unknown; status: string }> = {};
+
+    if (profile.averageJobValue && template.avgJobValueResidential) {
+      const value = Number(profile.averageJobValue);
+      const benchmark = Number(template.avgJobValueResidential);
+      comparison.averageJobValue = {
+        value,
+        benchmark,
+        status: value >= benchmark ? 'above' : value >= benchmark * 0.8 ? 'at' : 'below',
+      };
+    }
+
+    if (profile.teamSize && template.typicalTeamSize) {
+      const typicalSize = template.typicalTeamSize as { small?: number; medium?: number };
+      const benchmark = typicalSize.small || 3;
+      comparison.teamSize = {
+        value: profile.teamSize,
+        benchmark,
+        status: 'at', // Team size is contextual
+      };
+    }
+
+    return {
+      industry: profile.industry,
+      benchmarks: (template.benchmarkData as Record<string, unknown>) || {},
+      comparison,
+    };
   }
 }

@@ -43,6 +43,15 @@ export const EVENTS = {
   // Retention Events
   RETENTION_TRIGGERED: 'retention.triggered',
   RETENTION_COMPLETED: 'retention.completed',
+
+  // Business Profile Events (Business DNA System)
+  BUSINESS_PROFILE_CREATED: 'business_profile.created',
+  BUSINESS_PROFILE_UPDATED: 'business_profile.updated',
+  BUSINESS_PROFILE_COMPLETED: 'business_profile.completed',
+  BUSINESS_PROFILE_REVALIDATED: 'business_profile.revalidated',
+  PROFILE_OBSERVATION_UPDATED: 'business_profile.observation_updated',
+  PROFILE_DISCREPANCY_DETECTED: 'business_profile.discrepancy_detected',
+  PROFILE_CONFIDENCE_LOW: 'business_profile.confidence_low',
 } as const;
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS];
@@ -138,4 +147,36 @@ export interface RetentionEventPayload extends BaseEventPayload {
   customerName: string;
   type: string;
   step: number;
+}
+
+// Business Profile Events (Business DNA System)
+export interface BusinessProfileEventPayload extends BaseEventPayload {
+  profileId: string;
+  changedFields?: string[];
+  previousValues?: Record<string, unknown>;
+  newValues?: Record<string, unknown>;
+  confidence?: number;
+}
+
+export interface ProfileDiscrepancyPayload extends BaseEventPayload {
+  profileId: string;
+  discrepancies: Array<{
+    field: string;
+    stated: unknown;
+    observed: unknown;
+    significance: number;
+  }>;
+}
+
+export interface ProfileObservationPayload extends BaseEventPayload {
+  profileId: string;
+  observedMetrics: {
+    avgJobValue?: number;
+    jobsPerWeek?: number;
+    peakMonths?: number[];
+    slowMonths?: number[];
+    avgResponseTime?: number;
+    channelMix?: Record<string, number>;
+    serviceMix?: Record<string, number>;
+  };
 }
