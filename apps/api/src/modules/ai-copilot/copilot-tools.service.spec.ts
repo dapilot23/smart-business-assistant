@@ -1,11 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CopilotToolsService } from './copilot-tools.service';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { ActionExecutorService } from '../ai-actions/action-executor.service';
 import {
   createMockPrismaService,
   MockPrismaService,
 } from '../../test/prisma-mock';
 import { Decimal } from '@prisma/client/runtime/library';
+
+const mockActionExecutorService = {
+  executeAction: jest.fn().mockResolvedValue({ success: true }),
+};
 
 describe('CopilotToolsService', () => {
   let service: CopilotToolsService;
@@ -22,6 +27,7 @@ describe('CopilotToolsService', () => {
       providers: [
         CopilotToolsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: ActionExecutorService, useValue: mockActionExecutorService },
       ],
     }).compile();
 
@@ -36,7 +42,7 @@ describe('CopilotToolsService', () => {
     it('should return all tool definitions', () => {
       const tools = service.getToolDefinitions();
 
-      expect(tools).toHaveLength(10);
+      expect(tools).toHaveLength(15);
       expect(tools.map((t) => t.name)).toContain('get_revenue_summary');
       expect(tools.map((t) => t.name)).toContain('get_appointment_stats');
       expect(tools.map((t) => t.name)).toContain('get_customer_list');
