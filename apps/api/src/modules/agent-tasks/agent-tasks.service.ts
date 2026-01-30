@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, TaskOwnerType, TaskStatus } from '@prisma/client';
+import { AgentType, Prisma, TaskOwnerType, TaskStatus } from '@prisma/client';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { CreateAgentTaskDto } from './dto/create-agent-task.dto';
 import { UpdateAgentTaskDto } from './dto/update-agent-task.dto';
@@ -26,7 +26,13 @@ export class AgentTasksService {
   ) {
     const data = buildCreateInput(tenantId, dto, userId);
     await this.validateOwner(tenantId, data.ownerType, data.ownerUserId, data.ownerAgentType);
-    await this.validateCreator(tenantId, data.createdByType, data.createdByUserId, data.createdByAgentType);
+    const createdByType = data.createdByType ?? TaskOwnerType.HUMAN;
+    await this.validateCreator(
+      tenantId,
+      createdByType,
+      data.createdByUserId ?? null,
+      data.createdByAgentType ?? null,
+    );
     ensureBlockedReason(dto.status, dto.blockedReason, null);
 
     return this.prisma.agentTask.create({
@@ -99,7 +105,7 @@ export class AgentTasksService {
     tenantId: string,
     ownerType: TaskOwnerType,
     ownerUserId?: string | null,
-    ownerAgentType?: string | null,
+    ownerAgentType?: AgentType | null,
   ) {
     if (ownerType === TaskOwnerType.AI_AGENT) {
       if (!ownerAgentType) {
@@ -118,7 +124,7 @@ export class AgentTasksService {
     tenantId: string,
     createdByType: TaskOwnerType,
     createdByUserId?: string | null,
-    createdByAgentType?: string | null,
+    createdByAgentType?: AgentType | null,
   ) {
     if (createdByType === TaskOwnerType.AI_AGENT) {
       if (!createdByAgentType) {

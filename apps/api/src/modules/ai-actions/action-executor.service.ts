@@ -402,13 +402,13 @@ export class ActionExecutorService {
           `Hi ${invoice.customer.name}, your invoice ${invoice.invoiceNumber} ` +
           `for ${formatted} is overdue. Please submit payment at your earliest convenience.`;
 
-        const sent = await this.emailService.sendCustomEmail({
+        const emailSent = await this.emailService.sendCustomEmail({
           to: invoice.customer.email,
           subject: reminderSubject,
           text: reminderMessage,
           tenantId,
         });
-        if (!sent) {
+        if (!emailSent) {
           skipped += 1;
           continue;
         }

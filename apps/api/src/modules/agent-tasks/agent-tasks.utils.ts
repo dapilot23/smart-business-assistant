@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { Prisma, TaskOwnerType, TaskPriority, TaskStatus } from '@prisma/client';
+import { AgentType, Prisma, TaskOwnerType, TaskPriority, TaskStatus } from '@prisma/client';
 import { CreateAgentTaskDto } from './dto/create-agent-task.dto';
 import { UpdateAgentTaskDto } from './dto/update-agent-task.dto';
 
@@ -40,7 +40,7 @@ export function buildUpdateInput(
   dto: UpdateAgentTaskDto,
   ownerType: TaskOwnerType,
   ownerUserId?: string | null,
-  ownerAgentType?: string | null,
+  ownerAgentType?: AgentType | null,
 ): Prisma.AgentTaskUncheckedUpdateInput {
   const data: Prisma.AgentTaskUncheckedUpdateInput = {
     ...(dto.title && { title: dto.title }),

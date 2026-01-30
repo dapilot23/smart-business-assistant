@@ -5,7 +5,7 @@ import { AiEngineService } from '../ai-engine/ai-engine.service';
 import { CopilotToolsService } from './copilot-tools.service';
 import { AnomalySeverity } from '@prisma/client';
 
-interface AiAnomaly {
+export interface AiAnomaly {
   type: string;
   severity: string;
   description: string;
@@ -40,7 +40,7 @@ export class AnomalyDetectionService {
     }
   }
 
-  async detectForTenant(tenantId: string) {
+  async detectForTenant(tenantId: string): Promise<AiAnomaly[]> {
     const { todayStart, todayEnd, rollingStart } = this.getDateRanges();
     const [todayMetrics, rollingMetrics] = await Promise.all([
       this.getMetrics(tenantId, todayStart, todayEnd),

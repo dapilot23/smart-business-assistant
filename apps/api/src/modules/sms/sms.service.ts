@@ -4,7 +4,7 @@ import { Twilio } from 'twilio';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
 import { EventsService } from '../../config/events/events.service';
-import { EVENTS, AppointmentEventPayload } from '../../config/events/events.types';
+import { EVENTS, AppointmentEventPayload, MessageEventPayload } from '../../config/events/events.types';
 import { BroadcastStatus, ChannelType, CommunicationChannel, UserRole } from '@prisma/client';
 import { ConversationService } from '../messaging/conversation.service';
 
@@ -369,13 +369,12 @@ export class SmsService implements OnModuleInit {
     recorded: { tenantId: string; conversationId: string; messageId: string },
     skipAi: boolean,
   ) {
-    this.eventsService.emit(EVENTS.MESSAGE_RECEIVED, {
+    this.eventsService.emit<MessageEventPayload>(EVENTS.MESSAGE_RECEIVED, {
       tenantId: recorded.tenantId,
       conversationId: recorded.conversationId,
       messageId: recorded.messageId,
       channel: 'SMS',
       skipAi,
-      timestamp: new Date(),
     });
   }
 
