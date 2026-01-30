@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { ActionExecutorService } from '../ai-actions/action-executor.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { ToolDefinition } from '../ai-engine/ai-engine.service';
 
@@ -7,7 +8,10 @@ import { ToolDefinition } from '../ai-engine/ai-engine.service';
 export class CopilotToolsService {
   private readonly logger = new Logger(CopilotToolsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly actionExecutor: ActionExecutorService,
+  ) {}
 
   getToolDefinitions(): ToolDefinition[] {
     return [
@@ -120,6 +124,90 @@ export class CopilotToolsService {
           required: ['startDate', 'endDate'],
         },
       },
+      // ========================================
+      // Write Tools (Create Actions)
+      // ========================================
+      {
+        name: 'create_campaign',
+        description: 'Create a marketing campaign (SMS, email, referral, seasonal). Returns a pending action for user approval.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Campaign name' },
+            type: { type: 'string', enum: ['SMS_BLAST', 'EMAIL_BLAST', 'DRIP_SEQUENCE', 'REFERRAL', 'SEASONAL'] },
+            message: { type: 'string', description: 'Campaign message content' },
+            subject: { type: 'string', description: 'Email subject (for email campaigns)' },
+            targetSegment: { type: 'string', description: 'Target audience description' },
+            scheduledAt: { type: 'string', description: 'When to send (ISO date) or "immediately"' },
+          },
+          required: ['name', 'type', 'message'],
+        },
+      },
+      {
+        name: 'send_sms_to_customer',
+        description: 'Send an SMS message to a specific customer. Returns a pending action for user confirmation.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            customerId: { type: 'string', description: 'Customer ID to send to' },
+            customerName: { type: 'string', description: 'Customer name (for display)' },
+            message: { type: 'string', description: 'SMS message content (max 160 chars recommended)' },
+          },
+          required: ['customerId', 'message'],
+        },
+      },
+      {
+        name: 'create_segment',
+        description: 'Create a customer segment based on rules. Returns a pending action for user approval.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Segment name' },
+            description: { type: 'string', description: 'Segment description' },
+            conditions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  field: { type: 'string', enum: ['healthScore', 'churnRisk', 'lifecycleStage', 'totalSpent', 'daysSinceLastVisit'] },
+                  operator: { type: 'string', enum: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte'] },
+                  value: { type: ['string', 'number'] },
+                },
+              },
+            },
+            logic: { type: 'string', enum: ['AND', 'OR'], default: 'AND' },
+          },
+          required: ['name', 'conditions'],
+        },
+      },
+      {
+        name: 'schedule_follow_up',
+        description: 'Schedule a follow-up for a quote or customer. Returns a pending action for user confirmation.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            quoteId: { type: 'string', description: 'Quote ID to follow up on' },
+            customerId: { type: 'string', description: 'Customer ID' },
+            method: { type: 'string', enum: ['call', 'sms', 'email'], description: 'Follow-up method' },
+            scheduledFor: { type: 'string', description: 'When to follow up (ISO date)' },
+            notes: { type: 'string', description: 'Notes for the follow-up' },
+          },
+          required: ['method'],
+        },
+      },
+      {
+        name: 'apply_discount',
+        description: 'Apply a discount to an existing quote. Returns a pending action for user approval.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            quoteId: { type: 'string', description: 'Quote ID to discount' },
+            discountPercent: { type: 'number', description: 'Discount percentage (e.g., 10 for 10%)' },
+            reason: { type: 'string', description: 'Reason for discount' },
+          },
+          required: ['quoteId', 'discountPercent'],
+        },
+      },
     ];
   }
 
@@ -151,6 +239,17 @@ export class CopilotToolsService {
         return this.getRetentionMetrics(tenantId);
       case 'get_schedule_utilization':
         return this.getScheduleUtilization(params, tenantId);
+      // Write tools
+      case 'create_campaign':
+        return this.createCampaignAction(params, tenantId);
+      case 'send_sms_to_customer':
+        return this.sendSmsAction(params, tenantId);
+      case 'create_segment':
+        return this.createSegmentAction(params, tenantId);
+      case 'schedule_follow_up':
+        return this.scheduleFollowUpAction(params, tenantId);
+      case 'apply_discount':
+        return this.applyDiscountAction(params, tenantId);
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -547,6 +646,192 @@ export class CopilotToolsService {
       totalAvailable > 0 ? Math.round((totalScheduled / totalAvailable) * 100) : 0;
 
     return { overallUtilization, technicians: techResults };
+  }
+
+  // ========================================
+  // Write Tool Handlers (Create Actions)
+  // ========================================
+
+  private async createCampaignAction(
+    params: Record<string, unknown>,
+    tenantId: string,
+  ) {
+    const action = await this.actionExecutor.createAction(tenantId, {
+      actionType: 'CREATE_CAMPAIGN',
+      title: `Create campaign: ${params.name}`,
+      description: `${params.type} campaign targeting ${params.targetSegment || 'all customers'}`,
+      params: {
+        name: params.name,
+        type: params.type,
+        content: params.message,
+        subject: params.subject,
+        targetSegment: params.targetSegment,
+        scheduledAt: params.scheduledAt,
+      },
+      estimatedImpact: params.targetSegment ? `Target: ${params.targetSegment}` : 'All customers',
+      riskLevel: 'MEDIUM',
+      requiresApproval: true,
+    });
+
+    return {
+      success: true,
+      message: `Campaign action created and pending approval. Action ID: ${action.id}`,
+      actionId: action.id,
+      status: action.status,
+      requiresApproval: true,
+    };
+  }
+
+  private async sendSmsAction(
+    params: Record<string, unknown>,
+    tenantId: string,
+  ) {
+    // Get customer phone if we have customerId
+    let phone: string | undefined;
+    let customerName = params.customerName as string | undefined;
+
+    if (params.customerId) {
+      const customer = await this.prisma.customer.findFirst({
+        where: { id: params.customerId as string, tenantId },
+        select: { phone: true, name: true },
+      });
+      if (customer) {
+        phone = customer.phone || undefined;
+        customerName = customerName || customer.name;
+      }
+    }
+
+    const action = await this.actionExecutor.createAction(tenantId, {
+      actionType: 'SEND_SMS',
+      title: `Send SMS to ${customerName || 'customer'}`,
+      description: `Message: "${(params.message as string).slice(0, 50)}${(params.message as string).length > 50 ? '...' : ''}"`,
+      params: {
+        customerId: params.customerId,
+        phone,
+        message: params.message,
+      },
+      estimatedImpact: '1 message',
+      riskLevel: 'LOW',
+      requiresApproval: true,
+    });
+
+    return {
+      success: true,
+      message: `SMS action created for ${customerName}. Awaiting your confirmation.`,
+      actionId: action.id,
+      status: action.status,
+      requiresApproval: true,
+    };
+  }
+
+  private async createSegmentAction(
+    params: Record<string, unknown>,
+    tenantId: string,
+  ) {
+    const conditions = params.conditions as Array<{ field: string; operator: string; value: unknown }>;
+    const logic = (params.logic as string) || 'AND';
+
+    const action = await this.actionExecutor.createAction(tenantId, {
+      actionType: 'CREATE_SEGMENT',
+      title: `Create segment: ${params.name}`,
+      description: params.description as string || `Segment with ${conditions.length} condition(s)`,
+      params: {
+        name: params.name,
+        description: params.description,
+        rules: { conditions, logic },
+      },
+      estimatedImpact: 'New audience segment',
+      riskLevel: 'LOW',
+      requiresApproval: false, // Segments don't need approval
+    });
+
+    return {
+      success: true,
+      message: `Segment "${params.name}" is being created.`,
+      actionId: action.id,
+      status: action.status,
+      requiresApproval: false,
+    };
+  }
+
+  private async scheduleFollowUpAction(
+    params: Record<string, unknown>,
+    tenantId: string,
+  ) {
+    let title = `Schedule ${params.method} follow-up`;
+    let description = '';
+
+    if (params.quoteId) {
+      const quote = await this.prisma.quote.findFirst({
+        where: { id: params.quoteId as string, tenantId },
+        include: { customer: { select: { name: true } } },
+      });
+      if (quote) {
+        title = `Follow up on quote for ${quote.customer?.name || 'customer'}`;
+        description = `Quote #${quote.quoteNumber} - ${params.method} follow-up`;
+      }
+    }
+
+    const action = await this.actionExecutor.createAction(tenantId, {
+      actionType: 'SCHEDULE_FOLLOW_UP',
+      title,
+      description: description || params.notes as string || 'Follow-up scheduled',
+      params: {
+        quoteId: params.quoteId,
+        customerId: params.customerId,
+        method: params.method,
+        scheduledFor: params.scheduledFor,
+        notes: params.notes,
+      },
+      estimatedImpact: 'Improve conversion',
+      riskLevel: 'LOW',
+      requiresApproval: false,
+    });
+
+    return {
+      success: true,
+      message: `Follow-up scheduled via ${params.method}.`,
+      actionId: action.id,
+      status: action.status,
+      requiresApproval: false,
+    };
+  }
+
+  private async applyDiscountAction(
+    params: Record<string, unknown>,
+    tenantId: string,
+  ) {
+    const quote = await this.prisma.quote.findFirst({
+      where: { id: params.quoteId as string, tenantId },
+      include: { customer: { select: { name: true } } },
+    });
+
+    const discountPercent = params.discountPercent as number;
+    const title = quote
+      ? `Apply ${discountPercent}% discount to quote for ${quote.customer?.name}`
+      : `Apply ${discountPercent}% discount`;
+
+    const action = await this.actionExecutor.createAction(tenantId, {
+      actionType: 'APPLY_DISCOUNT',
+      title,
+      description: params.reason as string || `${discountPercent}% discount`,
+      params: {
+        quoteId: params.quoteId,
+        discountPercent,
+        reason: params.reason,
+      },
+      estimatedImpact: `${discountPercent}% off quote value`,
+      riskLevel: 'MEDIUM',
+      requiresApproval: true,
+    });
+
+    return {
+      success: true,
+      message: `Discount action created. Please approve to apply the ${discountPercent}% discount.`,
+      actionId: action.id,
+      status: action.status,
+      requiresApproval: true,
+    };
   }
 
   private groupRevenue(

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Icon } from "../../components/Icon";
+import { AiEmptyState } from "@/components/ai/ai-empty-state";
 import {
   getCampaigns,
   getReferralStats,
@@ -126,10 +128,13 @@ export default function MarketingPage() {
           <h1 className="text-lg sm:text-xl font-semibold text-foreground">Marketing</h1>
           <p className="text-sm text-muted-foreground">Manage campaigns, segments, and referral programs</p>
         </div>
-        <button className="flex items-center gap-2 h-10 px-4 bg-primary rounded-lg hover:opacity-90 transition-opacity">
+        <Link
+          href="/dashboard/marketing/new"
+          className="flex items-center gap-2 h-10 px-4 bg-primary rounded-lg hover:opacity-90 transition-opacity"
+        >
           <Icon name="plus" size={18} className="text-primary-foreground" />
           <span className="text-sm font-medium text-primary-foreground">New Campaign</span>
-        </button>
+        </Link>
       </header>
 
       {/* Content */}
@@ -176,19 +181,16 @@ export default function MarketingPage() {
             </div>
             <div className="divide-y divide-border">
               {campaigns.length === 0 ? (
-                <div className="p-8 text-center">
-                  <div className="w-12 h-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
-                    <Icon name="megaphone" size={24} className="text-muted-foreground" />
-                  </div>
-                  <h3 className="text-sm font-medium text-foreground mb-1">No campaigns yet</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Create your first marketing campaign to reach your customers
-                  </p>
-                  <button className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90">
-                    <Icon name="plus" size={16} />
-                    Create Campaign
-                  </button>
-                </div>
+                <AiEmptyState
+                  context="marketing_empty"
+                  title="No campaigns yet"
+                  description="Create your first marketing campaign to reach your customers. Let AI help you get started with smart suggestions based on your business data."
+                  icon={
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                    </svg>
+                  }
+                />
               ) : (
                 campaigns.slice(0, 5).map((campaign) => (
                   <div key={campaign.id} className="px-6 py-4 hover:bg-muted/50 transition-colors">

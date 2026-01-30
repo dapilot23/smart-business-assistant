@@ -4,9 +4,10 @@ import { AiCopilotService } from './ai-copilot.service';
 import { CopilotToolsService } from './copilot-tools.service';
 import { WeeklyReportService } from './weekly-report.service';
 import { AiEngineModule } from '../ai-engine/ai-engine.module';
+import { AiActionsModule } from '../ai-actions/ai-actions.module';
 
 @Module({
-  imports: [AiEngineModule],
+  imports: [AiEngineModule, AiActionsModule],
   controllers: [AiCopilotController],
   providers: [
     AiCopilotService,
