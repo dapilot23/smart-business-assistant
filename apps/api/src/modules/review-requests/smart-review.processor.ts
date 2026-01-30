@@ -28,47 +28,49 @@ export class SmartReviewProcessor extends WorkerHost {
   async process(job: Job<ReviewPipelineJob>): Promise<void> {
     const { reviewRequestId, tenantId } = job.data;
 
-    const request = await this.prisma.reviewRequest.findUnique({
-      where: { id: reviewRequestId },
-      include: { customer: true },
-    });
+    await this.prisma.withTenantContext(tenantId, async () => {
+      const request = await this.prisma.reviewRequest.findUnique({
+        where: { id: reviewRequestId },
+        include: { customer: true },
+      });
 
-    if (!request || request.status !== 'PENDING') {
-      this.logger.log(`Review request ${reviewRequestId} skipped (not pending)`);
-      return;
-    }
+      if (!request || request.status !== 'PENDING') {
+        this.logger.log(`Review request ${reviewRequestId} skipped (not pending)`);
+        return;
+      }
 
-    const message = this.buildReviewMessage(
-      request.customer.name,
-      job.data.platform,
-      job.data.reviewUrl,
-    );
-
-    if (request.customer.phone) {
-      await this.notifications.queueSms(
-        request.customer.phone,
-        message,
-        tenantId,
+      const message = this.buildReviewMessage(
+        request.customer.name,
+        job.data.platform,
+        job.data.reviewUrl,
       );
-    }
 
-    await this.prisma.reviewRequest.update({
-      where: { id: reviewRequestId },
-      data: { status: 'SENT', sentAt: new Date() },
+      if (request.customer.phone) {
+        await this.notifications.queueSms(
+          request.customer.phone,
+          message,
+          tenantId,
+        );
+      }
+
+      await this.prisma.reviewRequest.update({
+        where: { id: reviewRequestId },
+        data: { status: 'SENT', sentAt: new Date() },
+      });
+
+      this.events.emit<ReviewEventPayload>(EVENTS.REVIEW_REQUEST_SENT, {
+        tenantId,
+        reviewRequestId,
+        jobId: job.data.jobId,
+        customerId: job.data.customerId,
+        customerName: request.customer.name,
+        customerPhone: request.customer.phone,
+      });
+
+      this.logger.log(
+        `Review request sent: ${reviewRequestId} (${job.data.platform})`,
+      );
     });
-
-    this.events.emit<ReviewEventPayload>(EVENTS.REVIEW_REQUEST_SENT, {
-      tenantId,
-      reviewRequestId,
-      jobId: job.data.jobId,
-      customerId: job.data.customerId,
-      customerName: request.customer.name,
-      customerPhone: request.customer.phone,
-    });
-
-    this.logger.log(
-      `Review request sent: ${reviewRequestId} (${job.data.platform})`,
-    );
   }
 
   private buildReviewMessage(

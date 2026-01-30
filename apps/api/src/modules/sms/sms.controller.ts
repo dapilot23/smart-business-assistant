@@ -19,6 +19,8 @@ import { SmsService } from './sms.service';
 import { SendSmsDto, SendBulkSmsDto, TestSmsDto } from './dto/send-sms.dto';
 import { CreateBroadcastDto } from './dto/create-broadcast.dto';
 import { ClerkAuthGuard } from '../../common/guards/clerk-auth.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('sms')
 @UseGuards(ClerkAuthGuard)
@@ -30,25 +32,33 @@ export class SmsController {
 
   @Post('send')
   @HttpCode(HttpStatus.OK)
-  async sendSms(@Body() sendSmsDto: SendSmsDto) {
-    return this.smsService.sendSms(sendSmsDto.to, sendSmsDto.message);
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  async sendSms(@Req() req: any, @Body() sendSmsDto: SendSmsDto) {
+    return this.smsService.sendSms(sendSmsDto.to, sendSmsDto.message, {
+      tenantId: req.tenantId,
+    });
   }
 
   @Post('send-bulk')
   @HttpCode(HttpStatus.OK)
-  async sendBulkSms(@Body() sendBulkSmsDto: SendBulkSmsDto) {
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  async sendBulkSms(@Req() req: any, @Body() sendBulkSmsDto: SendBulkSmsDto) {
     return this.smsService.sendBulkSms(
       sendBulkSmsDto.recipients,
       sendBulkSmsDto.message,
+      req.tenantId,
     );
   }
 
   @Post('test')
   @HttpCode(HttpStatus.OK)
-  async testSms(@Body() testSmsDto: TestSmsDto) {
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
+  async testSms(@Req() req: any, @Body() testSmsDto: TestSmsDto) {
     const message = testSmsDto.message ||
       'Test message from Smart Business Assistant. SMS is working correctly!';
-    return this.smsService.sendSms(testSmsDto.to, message);
+    return this.smsService.sendSms(testSmsDto.to, message, {
+      tenantId: req.tenantId,
+    });
   }
 
   @Get('status')
@@ -70,16 +80,20 @@ export class SmsController {
     @Body() webhookData: any,
     @Headers('x-twilio-signature') twilioSignature?: string,
   ) {
-    // Security: Validate Twilio webhook signature in production
+    // Security: Validate Twilio webhook signature in production or when explicitly required
     const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const enforceValidation = this.configService.get('TWILIO_WEBHOOK_VALIDATE') === 'true';
     const authToken = this.configService.get('TWILIO_AUTH_TOKEN');
 
-    if (isProduction && authToken) {
+    if ((isProduction || enforceValidation) && authToken) {
       if (!twilioSignature) {
         throw new UnauthorizedException('Missing Twilio signature');
       }
 
-      const webhookUrl = `${this.configService.get('API_BASE_URL')}/api/v1/sms/webhook`;
+      const apiBaseUrl = this.configService.get('API_BASE_URL');
+      const webhookUrl = apiBaseUrl
+        ? `${apiBaseUrl}/api/v1/sms/webhook`
+        : `${req.protocol}://${req.get('host')}${req.originalUrl}`;
       const isValid = validateRequest(authToken, twilioSignature, webhookUrl, webhookData);
 
       if (!isValid) {
@@ -92,6 +106,7 @@ export class SmsController {
 
   @Post('broadcast')
   @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async createBroadcast(@Req() req: any, @Body() dto: CreateBroadcastDto) {
     const tenantId = req.tenantId;
     const sentBy = req.userId;

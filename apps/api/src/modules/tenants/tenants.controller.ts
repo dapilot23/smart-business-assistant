@@ -4,6 +4,9 @@ import { ClerkAuthGuard } from '../../common/guards/clerk-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { TenantsService } from './tenants.service';
 import { CreateTenantWithOwnerDto } from './dto/create-tenant-with-owner.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('tenants')
 export class TenantsController {
@@ -17,9 +20,10 @@ export class TenantsController {
 
   @Patch('me')
   @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async updateCurrentTenant(
     @CurrentUser() user: CurrentUserPayload,
-    @Body() updateData: any,
+    @Body() updateData: UpdateTenantDto,
   ) {
     return this.tenantsService.update(user.tenantId, updateData);
   }

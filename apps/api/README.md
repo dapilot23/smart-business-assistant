@@ -55,6 +55,13 @@ pnpm prisma:generate
 pnpm prisma:migrate
 ```
 
+If you are upgrading an existing local database created before the migration
+squash, reset it first:
+```bash
+pnpm prisma:reset
+pnpm prisma:seed
+```
+
 4. Start development server:
 ```bash
 pnpm dev

@@ -9,6 +9,7 @@ import {
   Headers,
   UseGuards,
   BadRequestException,
+  UnauthorizedException,
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -39,6 +40,17 @@ export class OnboardingInterviewController {
     private readonly voiceService: VoiceInterviewService,
     private readonly configService: ConfigService,
   ) {}
+
+  private validateVapiWebhook(vapiSecret?: string): void {
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const expectedSecret = this.configService.get('VAPI_WEBHOOK_SECRET');
+
+    if (isProduction && expectedSecret) {
+      if (!vapiSecret || vapiSecret !== expectedSecret) {
+        throw new UnauthorizedException('Invalid Vapi webhook secret');
+      }
+    }
+  }
 
   /**
    * Get tenant ID from request, with demo mode fallback
@@ -311,7 +323,11 @@ export class OnboardingInterviewController {
     if (!profile) {
       return { success: false, error: 'Profile not found' };
     }
-    // TODO: Implement field update
+    await this.interviewService.updateProfileField(
+      req.tenantId,
+      dto.field,
+      dto.value,
+    );
     return { success: true };
   }
 
@@ -342,7 +358,11 @@ export class OnboardingInterviewController {
 
   @Public()
   @Post('voice/webhook')
-  async handleVapiWebhook(@Body() payload: VapiWebhookPayload) {
+  async handleVapiWebhook(
+    @Body() payload: VapiWebhookPayload,
+    @Headers('x-vapi-secret') vapiSecret?: string,
+  ) {
+    this.validateVapiWebhook(vapiSecret);
     await this.voiceService.handleVapiWebhook(payload);
     return { received: true };
   }

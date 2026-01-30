@@ -16,14 +16,16 @@ export class InvoiceOverdueService {
 
   @Cron('0 9 * * *')
   async processOverdueInvoices() {
-    this.logger.log('Running daily overdue invoice check');
+    await this.prisma.withSystemContext(async () => {
+      this.logger.log('Running daily overdue invoice check');
 
-    const markedCount = await this.markOverdueInvoices();
-    const feeCount = await this.applyLateFees();
+      const markedCount = await this.markOverdueInvoices();
+      const feeCount = await this.applyLateFees();
 
-    this.logger.log(
-      `Overdue check complete: ${markedCount} marked overdue, ${feeCount} late fees applied`,
-    );
+      this.logger.log(
+        `Overdue check complete: ${markedCount} marked overdue, ${feeCount} late fees applied`,
+      );
+    });
   }
 
   private async markOverdueInvoices(): Promise<number> {

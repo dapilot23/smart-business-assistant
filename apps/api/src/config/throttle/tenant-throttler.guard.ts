@@ -1,7 +1,6 @@
 import { Injectable, ExecutionContext } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator';
 
 export const SKIP_THROTTLE_KEY = 'skipThrottle';
 
@@ -16,11 +15,6 @@ export class TenantThrottlerGuard extends ThrottlerGuard {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
     const skipThrottle = this.reflector.getAllAndOverride<boolean>(
       SKIP_THROTTLE_KEY,
       [context.getHandler(), context.getClass()],
@@ -28,7 +22,10 @@ export class TenantThrottlerGuard extends ThrottlerGuard {
 
     // Skip throttling for health endpoints
     const request = context.switchToHttp().getRequest();
-    if (request.url?.startsWith('/health')) {
+    if (
+      request.url?.startsWith('/health') ||
+      request.url?.startsWith('/api/v1/health')
+    ) {
       return true;
     }
 

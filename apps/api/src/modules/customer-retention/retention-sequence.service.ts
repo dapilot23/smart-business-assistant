@@ -55,33 +55,46 @@ export class RetentionSequenceService {
     );
   }
 
-  async cancelSequence(customerId: string): Promise<void> {
-    const pending = await this.prisma.retentionCampaign.findMany({
-      where: { customerId, status: 'PENDING' },
-    });
+  async cancelSequence(customerId: string, tenantId?: string): Promise<void> {
+    const run = async () => {
+      const where = tenantId
+        ? { customerId, tenantId, status: 'PENDING' }
+        : { customerId, status: 'PENDING' };
 
-    if (pending.length === 0) return;
+      const pending = await this.prisma.retentionCampaign.findMany({
+        where,
+      });
 
-    await this.prisma.retentionCampaign.updateMany({
-      where: { customerId, status: 'PENDING' },
-      data: { status: 'CANCELLED' },
-    });
+      if (pending.length === 0) return;
 
-    for (const campaign of pending) {
-      try {
-        const job = await this.queue.getJob(`retention-${campaign.id}`);
-        if (job) await job.remove();
-      } catch (error) {
-        this.logger.warn(
-          `Failed to remove job for campaign ${campaign.id}:`,
-          error,
-        );
+      await this.prisma.retentionCampaign.updateMany({
+        where,
+        data: { status: 'CANCELLED' },
+      });
+
+      for (const campaign of pending) {
+        try {
+          const job = await this.queue.getJob(`retention-${campaign.id}`);
+          if (job) await job.remove();
+        } catch (error) {
+          this.logger.warn(
+            `Failed to remove job for campaign ${campaign.id}:`,
+            error,
+          );
+        }
       }
+
+      this.logger.log(
+        `Cancelled ${pending.length} campaigns for customer ${customerId}`,
+      );
+    };
+
+    if (tenantId) {
+      await this.prisma.withTenantContext(tenantId, run);
+      return;
     }
 
-    this.logger.log(
-      `Cancelled ${pending.length} campaigns for customer ${customerId}`,
-    );
+    await this.prisma.withSystemContext(run);
   }
 
   async getActiveCampaigns(tenantId: string): Promise<any[]> {

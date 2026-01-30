@@ -11,14 +11,17 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "layout-dashboard" as const },
   { href: "/dashboard/appointments", label: "Appointments", icon: "calendar" as const },
   { href: "/dashboard/jobs", label: "Jobs", icon: "briefcase" as const },
+  { href: "/dashboard/dispatch", label: "Dispatch", icon: "target" as const },
   { href: "/dashboard/availability", label: "Availability", icon: "calendar-days" as const },
   { href: "/dashboard/customers", label: "Customers", icon: "users" as const },
   { href: "/dashboard/team", label: "Team", icon: "users" as const },
   { href: "/dashboard/quotes", label: "Quotes", icon: "quote" as const },
+  { href: "/dashboard/inbox", label: "Inbox", icon: "inbox" as const },
   { href: "/dashboard/sms", label: "SMS", icon: "message-square" as const },
   { href: "/dashboard/voice", label: "Voice AI", icon: "phone-call" as const },
   { href: "/dashboard/marketing", label: "Marketing", icon: "megaphone" as const },
   { href: "/dashboard/insights", label: "Insights", icon: "bar-chart-3" as const },
+  { href: "/dashboard/actions", label: "Actions", icon: "check" as const },
   { href: "/dashboard/settings", label: "Settings", icon: "settings" as const },
 ];
 

@@ -103,8 +103,12 @@ export class RetentionIntelligenceService {
 
   @Cron('0 5 * * *')
   async updateAllHealthScores(): Promise<void> {
-    const tenants = await this.prisma.tenant.findMany({ select: { id: true } });
-    for (const t of tenants) await this.processTenant(t.id);
+    const tenants = await this.prisma.withSystemContext(() =>
+      this.prisma.tenant.findMany({ select: { id: true } }),
+    );
+    for (const t of tenants) {
+      await this.prisma.withTenantContext(t.id, () => this.processTenant(t.id));
+    }
     this.logger.log('Completed daily health score update for all tenants');
   }
 

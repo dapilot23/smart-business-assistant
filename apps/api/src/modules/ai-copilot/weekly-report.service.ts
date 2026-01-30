@@ -41,13 +41,17 @@ export class WeeklyReportService {
   async generateWeeklyReports(): Promise<void> {
     this.logger.log('Starting weekly report generation for all tenants');
 
-    const tenants = await this.prisma.tenant.findMany({
-      select: { id: true },
-    });
+    const tenants = await this.prisma.withSystemContext(() =>
+      this.prisma.tenant.findMany({
+        select: { id: true },
+      }),
+    );
 
     for (const tenant of tenants) {
       try {
-        await this.generateReportForTenant(tenant.id);
+        await this.prisma.withTenantContext(tenant.id, () =>
+          this.generateReportForTenant(tenant.id),
+        );
         this.logger.log(`Generated report for tenant ${tenant.id}`);
       } catch (error) {
         this.logger.error(

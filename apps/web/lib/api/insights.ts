@@ -1,6 +1,6 @@
 import { fetchWithAuth, getApiUrl } from './client';
 
-export type AgentType = 'REVENUE_SALES' | 'CUSTOMER_SUCCESS' | 'OPERATIONS' | 'MARKETING';
+export type AgentType = 'REVENUE_SALES' | 'CUSTOMER_SUCCESS' | 'OPERATIONS' | 'MARKETING' | 'FOUNDER';
 export type InsightPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type InsightStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
@@ -109,6 +109,7 @@ export function getAgentLabel(agentType: AgentType): string {
     CUSTOMER_SUCCESS: 'Customer Success',
     OPERATIONS: 'Operations',
     MARKETING: 'Marketing',
+    FOUNDER: 'Founder',
   };
   return labels[agentType] || agentType;
 }

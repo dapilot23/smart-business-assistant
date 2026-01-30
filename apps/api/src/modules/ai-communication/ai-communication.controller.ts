@@ -14,9 +14,12 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { MessageClassificationService } from './message-classification.service';
 import { ResponseGenerationService } from './response-generation.service';
 import { ConversationSummaryService } from './conversation-summary.service';
+import { SuggestedResponseService } from './suggested-response.service';
 import {
   ClassifyMessageDto,
   GenerateResponsesDto,
+  GenerateStoredSuggestionsDto,
+  AcceptSuggestionDto,
   CreateAutoResponderRuleDto,
   UpdateAutoResponderRuleDto,
   SummarizeHandoffDto,
@@ -29,6 +32,7 @@ export class AiCommunicationController {
     private readonly classification: MessageClassificationService,
     private readonly responseGeneration: ResponseGenerationService,
     private readonly conversationSummary: ConversationSummaryService,
+    private readonly suggestedResponses: SuggestedResponseService,
   ) {}
 
   // ============================================
@@ -80,6 +84,56 @@ export class AiCommunicationController {
       tenantId,
       body?.count,
     );
+  }
+
+  @Get('suggestions/:conversationId')
+  async listSuggestions(
+    @Request() req,
+    @Param('conversationId') conversationId: string,
+  ) {
+    const tenantId = req.user?.tenantId;
+    return this.suggestedResponses.listSuggestions(tenantId, conversationId);
+  }
+
+  @Post('suggestions/:conversationId/generate')
+  async generateStoredSuggestions(
+    @Request() req,
+    @Param('conversationId') conversationId: string,
+    @Body() body?: GenerateStoredSuggestionsDto,
+  ) {
+    const tenantId = req.user?.tenantId;
+    const suggestions = await this.responseGeneration.generateResponseSuggestions(
+      conversationId,
+      tenantId,
+      body?.count,
+    );
+
+    return this.suggestedResponses.replaceSuggestions(
+      tenantId,
+      conversationId,
+      body?.messageId ?? null,
+      suggestions,
+    );
+  }
+
+  @Post('suggestions/:id/accept')
+  async acceptSuggestion(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() body?: AcceptSuggestionDto,
+  ) {
+    const tenantId = req.user?.tenantId;
+    return this.suggestedResponses.acceptSuggestion(
+      tenantId,
+      id,
+      body?.editedText,
+    );
+  }
+
+  @Post('suggestions/:id/dismiss')
+  async dismissSuggestion(@Request() req, @Param('id') id: string) {
+    const tenantId = req.user?.tenantId;
+    return this.suggestedResponses.dismissSuggestion(tenantId, id);
   }
 
   @Post('auto-respond/:messageId')

@@ -213,53 +213,55 @@ export class TeamService {
   }
 
   async acceptInvitation(token: string, clerkId: string) {
-    const invitation = await this.prisma.teamInvitation.findUnique({
-      where: { token },
-      include: { tenant: true },
-    });
+    return this.prisma.withSystemContext(async () => {
+      const invitation = await this.prisma.teamInvitation.findUnique({
+        where: { token },
+        include: { tenant: true },
+      });
 
-    if (!invitation) {
-      throw new NotFoundException('Invitation not found');
-    }
+      if (!invitation) {
+        throw new NotFoundException('Invitation not found');
+      }
 
-    if (invitation.status !== InvitationStatus.PENDING) {
-      throw new BadRequestException('Invitation is no longer valid');
-    }
+      if (invitation.status !== InvitationStatus.PENDING) {
+        throw new BadRequestException('Invitation is no longer valid');
+      }
 
-    if (invitation.expiresAt < new Date()) {
+      if (invitation.expiresAt < new Date()) {
+        await this.prisma.teamInvitation.update({
+          where: { id: invitation.id },
+          data: { status: InvitationStatus.EXPIRED },
+        });
+        throw new BadRequestException('Invitation has expired');
+      }
+
+      const user = await this.prisma.user.create({
+        data: {
+          email: invitation.email,
+          name: invitation.name || invitation.email.split('@')[0],
+          role: invitation.role,
+          status: UserStatus.ACTIVE,
+          tenantId: invitation.tenantId,
+          clerkId,
+          invitedBy: invitation.invitedBy,
+          joinedAt: new Date(),
+        },
+      });
+
       await this.prisma.teamInvitation.update({
         where: { id: invitation.id },
-        data: { status: InvitationStatus.EXPIRED },
+        data: { status: InvitationStatus.ACCEPTED },
       });
-      throw new BadRequestException('Invitation has expired');
-    }
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: invitation.email,
-        name: invitation.name || invitation.email.split('@')[0],
-        role: invitation.role,
-        status: UserStatus.ACTIVE,
-        tenantId: invitation.tenantId,
-        clerkId,
-        invitedBy: invitation.invitedBy,
-        joinedAt: new Date(),
-      },
+      this.logger.log(
+        `User ${user.email} accepted invitation and joined tenant ${invitation.tenantId}`,
+      );
+
+      return {
+        user,
+        tenant: invitation.tenant,
+      };
     });
-
-    await this.prisma.teamInvitation.update({
-      where: { id: invitation.id },
-      data: { status: InvitationStatus.ACCEPTED },
-    });
-
-    this.logger.log(
-      `User ${user.email} accepted invitation and joined tenant ${invitation.tenantId}`,
-    );
-
-    return {
-      user,
-      tenant: invitation.tenant,
-    };
   }
 
   async resendInvitation(tenantId: string, invitationId: string) {

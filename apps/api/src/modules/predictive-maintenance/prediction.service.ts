@@ -395,13 +395,17 @@ Respond in JSON format:
   async runDailyPredictions() {
     this.logger.log('Running daily maintenance predictions');
 
-    const tenants = await this.prisma.tenant.findMany({
-      select: { id: true },
-    });
+    const tenants = await this.prisma.withSystemContext(() =>
+      this.prisma.tenant.findMany({
+        select: { id: true },
+      }),
+    );
 
     for (const tenant of tenants) {
       try {
-        await this.runPredictions(tenant.id);
+        await this.prisma.withTenantContext(tenant.id, () =>
+          this.runPredictions(tenant.id),
+        );
       } catch (error) {
         this.logger.error(`Prediction failed for tenant ${tenant.id}: ${error.message}`);
       }

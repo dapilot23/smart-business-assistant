@@ -16,15 +16,19 @@ export class RetentionCronService {
 
   @Cron('0 7 * * *')
   async detectDormantCustomers(): Promise<void> {
-    const tenants = await this.prisma.tenant.findMany({
-      include: { settings: true },
-    });
+    const tenants = await this.prisma.withSystemContext(() =>
+      this.prisma.tenant.findMany({
+        include: { settings: true },
+      }),
+    );
 
     let totalProcessed = 0;
 
     for (const tenant of tenants) {
       if (tenant.settings?.retentionEnabled === false) continue;
-      const count = await this.processTenantDormancy(tenant);
+      const count = await this.prisma.withTenantContext(tenant.id, () =>
+        this.processTenantDormancy(tenant),
+      );
       totalProcessed += count;
     }
 
@@ -33,14 +37,18 @@ export class RetentionCronService {
 
   @Cron('0 8 * * *')
   async sendMaintenanceReminders(): Promise<void> {
-    const intervals = await this.prisma.serviceInterval.findMany({
-      include: { service: true, tenant: true },
-    });
+    const intervals = await this.prisma.withSystemContext(() =>
+      this.prisma.serviceInterval.findMany({
+        include: { service: true, tenant: true },
+      }),
+    );
 
     let totalSent = 0;
 
     for (const interval of intervals) {
-      const count = await this.processInterval(interval);
+      const count = await this.prisma.withTenantContext(interval.tenantId, () =>
+        this.processInterval(interval),
+      );
       totalSent += count;
     }
 

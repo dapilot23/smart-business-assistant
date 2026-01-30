@@ -2,6 +2,8 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
+import { PrismaService } from '../../config/prisma/prisma.service';
+import { CommunicationChannel } from '@prisma/client';
 
 export interface BookingEmailData {
   customerName: string;
@@ -28,6 +30,7 @@ export class EmailService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly circuitBreakerService: CircuitBreakerService,
+    private readonly prisma: PrismaService,
   ) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     this.fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL') || 'noreply@example.com';
@@ -65,6 +68,63 @@ export class EmailService implements OnModuleInit {
       throw new Error('Resend client not initialized');
     }
     return this.resend.emails.send(params);
+  }
+
+  async sendCustomEmail(params: {
+    to: string;
+    subject: string;
+    html?: string;
+    text?: string;
+    tenantId?: string;
+    includeUnsubscribe?: boolean;
+  }): Promise<boolean> {
+    if (!this.isConfigured || !this.resend) {
+      this.logger.warn('Email service not configured, skipping custom email');
+      return false;
+    }
+
+    const shouldIncludeUnsubscribe =
+      params.tenantId && params.includeUnsubscribe !== false;
+
+    if (params.tenantId && params.includeUnsubscribe !== false) {
+      const optedOut = await this.isOptedOut(params.tenantId, params.to);
+      if (optedOut) {
+        this.logger.warn(`Skipping email to opted-out address: ${params.to}`);
+        return false;
+      }
+    }
+
+    let html =
+      params.html || this.wrapPlainText(params.subject, params.text || '');
+
+    if (shouldIncludeUnsubscribe && params.tenantId) {
+      html = this.appendUnsubscribeFooter(html, params.tenantId, params.to);
+    }
+
+    try {
+      const emailParams = {
+        from: this.fromEmail,
+        to: params.to,
+        subject: params.subject,
+        html,
+      };
+
+      if (this.emailBreaker) {
+        await this.emailBreaker.fire(emailParams);
+      } else {
+        await this.sendEmailInternal(emailParams);
+      }
+
+      this.logger.log(`Custom email sent to ${params.to}`);
+      return true;
+    } catch (error) {
+      if (error.message?.includes('Breaker is open')) {
+        this.logger.warn('Email circuit breaker is open, email temporarily unavailable');
+        return false;
+      }
+      this.logger.error(`Failed to send custom email: ${error.message}`);
+      return false;
+    }
   }
 
   async sendBookingConfirmation(data: BookingEmailData): Promise<boolean> {
@@ -205,6 +265,44 @@ export class EmailService implements OnModuleInit {
         return false;
       }
       this.logger.error(`Failed to send reschedule email: ${error.message}`);
+      return false;
+    }
+  }
+
+  async sendMagicLink(email: string, link: string): Promise<boolean> {
+    if (!this.isConfigured || !this.resend) {
+      this.logger.warn('Email service not configured, skipping magic link email');
+      return false;
+    }
+
+    try {
+      const emailParams = {
+        from: this.fromEmail,
+        to: email,
+        subject: 'Your sign-in link',
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+            <p>Use the link below to sign in to your customer portal.</p>
+            <p><a href="${link}">Sign in to your account</a></p>
+            <p>This link will expire soon. If you did not request it, you can ignore this email.</p>
+          </div>
+        `,
+      };
+
+      if (this.emailBreaker) {
+        await this.emailBreaker.fire(emailParams);
+      } else {
+        await this.sendEmailInternal(emailParams);
+      }
+
+      this.logger.log(`Magic link email sent to ${email}`);
+      return true;
+    } catch (error) {
+      if (error.message?.includes('Breaker is open')) {
+        this.logger.warn('Email circuit breaker is open, email temporarily unavailable');
+        return false;
+      }
+      this.logger.error(`Failed to send magic link email: ${error.message}`);
       return false;
     }
   }
@@ -377,5 +475,72 @@ export class EmailService implements OnModuleInit {
 
   isServiceConfigured(): boolean {
     return this.isConfigured;
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  private async isOptedOut(tenantId: string, email: string): Promise<boolean> {
+    const normalized = this.normalizeEmail(email);
+    const entry = await this.prisma.communicationOptOut.findFirst({
+      where: {
+        tenantId,
+        channel: CommunicationChannel.EMAIL,
+        value: normalized,
+      },
+      select: { id: true },
+    });
+
+    return Boolean(entry);
+  }
+
+  private wrapPlainText(subject: string, text: string): string {
+    const body = text ? text.replace(/\n/g, '<br>') : '';
+    return `
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; background: #f9fafb; color: #111827; }
+          .container { max-width: 640px; margin: 0 auto; padding: 24px; }
+          .header { background: #111827; color: #f9fafb; padding: 16px 20px; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .subject { margin: 0; font-size: 18px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 class="subject">${subject}</h2>
+          </div>
+          <div class="content">
+            <p>${body}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private appendUnsubscribeFooter(
+    html: string,
+    tenantId: string,
+    email: string,
+  ): string {
+    const baseUrl =
+      this.configService.get('FRONTEND_URL') ||
+      this.configService.get('APP_URL') ||
+      'http://localhost:3000';
+    const link = `${baseUrl}/unsubscribe?tenantId=${encodeURIComponent(tenantId)}&email=${encodeURIComponent(email)}`;
+
+    return html.replace(
+      '</body>',
+      `
+        <div style="margin: 24px auto 0; max-width: 640px; text-align: center; font-size: 12px; color: #6b7280;">
+          <p>Don't want these emails? <a href="${link}" style="color: #2563eb;">Unsubscribe</a></p>
+        </div>
+      </body>
+      `,
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -293,7 +293,7 @@ async function main() {
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
 
-  const appointments = [];
+  const appointments: Prisma.PrismaPromise<unknown>[] = [];
 
   // Yesterday's appointments (completed)
   const yesterday = new Date(today);

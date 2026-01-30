@@ -14,6 +14,7 @@ import { Response } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AiCopilotService } from './ai-copilot.service';
 import { WeeklyReportService } from './weekly-report.service';
+import { AnomalyDetectionService } from './anomaly-detection.service';
 import { ChatMessageDto } from './dto/ai-copilot.dto';
 
 @Controller('ai-copilot')
@@ -22,6 +23,7 @@ export class AiCopilotController {
   constructor(
     private readonly copilotService: AiCopilotService,
     private readonly reportService: WeeklyReportService,
+    private readonly anomalyService: AnomalyDetectionService,
   ) {}
 
   // ============================================
@@ -138,5 +140,34 @@ export class AiCopilotController {
   async generateReport(@Request() req) {
     const tenantId = req.user?.tenantId;
     return this.reportService.generateReportForTenant(tenantId);
+  }
+
+  // ============================================
+  // Anomaly Detection
+  // ============================================
+
+  @Get('anomalies')
+  async listAnomalies(@Request() req, @Query('limit') limit?: string) {
+    const tenantId = req.user?.tenantId;
+    return this.anomalyService.listAnomalies(
+      tenantId,
+      limit ? parseInt(limit, 10) : undefined,
+    );
+  }
+
+  @Post('anomalies/detect')
+  async runAnomalyDetection(@Request() req) {
+    const tenantId = req.user?.tenantId;
+    return this.anomalyService.detectForTenant(tenantId);
+  }
+
+  @Post('anomalies/:id/resolve')
+  async resolveAnomaly(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() body: { status: 'RESOLVED' | 'DISMISSED' },
+  ) {
+    const tenantId = req.user?.tenantId;
+    return this.anomalyService.resolveAnomaly(tenantId, id, body.status);
   }
 }

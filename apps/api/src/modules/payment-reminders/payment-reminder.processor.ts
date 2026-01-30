@@ -25,61 +25,63 @@ export class PaymentReminderProcessor extends WorkerHost {
   async process(job: Job<PaymentReminderJob>): Promise<void> {
     const { reminderId, tenantId } = job.data;
 
-    const reminder = await this.prisma.paymentReminder.findUnique({
-      where: { id: reminderId },
-    });
+    await this.prisma.withTenantContext(tenantId, async () => {
+      const reminder = await this.prisma.paymentReminder.findUnique({
+        where: { id: reminderId },
+      });
 
-    if (!reminder || reminder.status !== 'PENDING') {
-      this.logger.log(`Reminder ${reminderId} skipped (not pending)`);
-      return;
-    }
+      if (!reminder || reminder.status !== 'PENDING') {
+        this.logger.log(`Reminder ${reminderId} skipped (not pending)`);
+        return;
+      }
 
-    const invoice = await this.prisma.invoice.findUnique({
-      where: { id: reminder.invoiceId },
-      include: { customer: true, tenant: true },
-    });
+      const invoice = await this.prisma.invoice.findUnique({
+        where: { id: reminder.invoiceId },
+        include: { customer: true, tenant: true },
+      });
 
-    if (!invoice || ['PAID', 'CANCELLED'].includes(invoice.status)) {
+      if (!invoice || ['PAID', 'CANCELLED'].includes(invoice.status)) {
+        this.logger.log(
+          `Invoice ${reminder.invoiceId} resolved, skipping reminder`,
+        );
+        await this.markCancelled(reminderId);
+        return;
+      }
+
+      const formatted = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'usd',
+      }).format(toNum(invoice.amount) - toNum(invoice.paidAmount));
+
+      const { message, subject, isEscalation } =
+        this.reminderService.getReminderMessage(
+          reminder.step,
+          invoice.customer.name,
+          invoice.invoiceNumber,
+          formatted,
+        );
+
+      await this.sendReminder(
+        reminder.channel,
+        invoice,
+        message,
+        subject,
+        tenantId,
+      );
+
+      if (isEscalation) {
+        await this.notifyBusinessOwner(tenantId, invoice);
+      }
+
+      await this.prisma.paymentReminder.update({
+        where: { id: reminderId },
+        data: { status: 'SENT', sentAt: new Date() },
+      });
+
       this.logger.log(
-        `Invoice ${reminder.invoiceId} resolved, skipping reminder`,
+        `Reminder step ${reminder.step} sent for invoice ${invoice.id}`,
       );
-      await this.markCancelled(reminderId);
-      return;
-    }
-
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'usd',
-    }).format(toNum(invoice.amount) - toNum(invoice.paidAmount));
-
-    const { message, subject, isEscalation } =
-      this.reminderService.getReminderMessage(
-        reminder.step,
-        invoice.customer.name,
-        invoice.invoiceNumber,
-        formatted,
-      );
-
-    await this.sendReminder(
-      reminder.channel,
-      invoice,
-      message,
-      subject,
-      tenantId,
-    );
-
-    if (isEscalation) {
-      await this.notifyBusinessOwner(tenantId, invoice);
-    }
-
-    await this.prisma.paymentReminder.update({
-      where: { id: reminderId },
-      data: { status: 'SENT', sentAt: new Date() },
     });
-
-    this.logger.log(
-      `Reminder step ${reminder.step} sent for invoice ${invoice.id}`,
-    );
   }
 
   private async sendReminder(

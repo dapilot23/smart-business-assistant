@@ -44,6 +44,9 @@ export const EVENTS = {
   RETENTION_TRIGGERED: 'retention.triggered',
   RETENTION_COMPLETED: 'retention.completed',
 
+  // Messaging Events
+  MESSAGE_RECEIVED: 'message.received',
+
   // Business Profile Events (Business DNA System)
   BUSINESS_PROFILE_CREATED: 'business_profile.created',
   BUSINESS_PROFILE_UPDATED: 'business_profile.updated',
@@ -147,6 +150,13 @@ export interface RetentionEventPayload extends BaseEventPayload {
   customerName: string;
   type: string;
   step: number;
+}
+
+export interface MessageEventPayload extends BaseEventPayload {
+  conversationId: string;
+  messageId: string;
+  channel: 'SMS' | 'EMAIL' | 'WHATSAPP';
+  skipAi?: boolean;
 }
 
 // Business Profile Events (Business DNA System)

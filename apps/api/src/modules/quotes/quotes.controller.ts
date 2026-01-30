@@ -9,12 +9,15 @@ import {
   Request,
   Res,
   Header,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { QuotesService } from './quotes.service';
 import { PdfService } from './pdf.service';
 import { SmsService } from '../sms/sms.service';
 import { toNum } from '../../common/utils/decimal';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('quotes')
 export class QuotesController {
@@ -24,21 +27,29 @@ export class QuotesController {
     private readonly smsService: SmsService,
   ) {}
 
+  private requireTenantId(req: any): string {
+    const tenantId = req.user?.tenantId || req.tenantId;
+    if (!tenantId) {
+      throw new UnauthorizedException('Tenant ID not found');
+    }
+    return tenantId;
+  }
+
   @Get()
   async findAll(@Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.quotesService.findAll(tenantId);
   }
 
   @Get('pipeline/stats')
   async getPipelineStats(@Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.quotesService.getPipelineStats(tenantId);
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.quotesService.findOne(id, tenantId);
   }
 
@@ -49,7 +60,7 @@ export class QuotesController {
     @Request() req,
     @Res() res: Response,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     const quote = await this.quotesService.findOne(id, tenantId);
 
     const pdfBuffer = await this.pdfService.generateQuotePdf({
@@ -79,38 +90,42 @@ export class QuotesController {
   }
 
   @Post()
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async create(@Body() createData: any, @Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.quotesService.create(createData, tenantId);
   }
 
   @Patch(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async update(
     @Param('id') id: string,
     @Body() updateData: any,
     @Request() req,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.quotesService.update(id, updateData, tenantId);
   }
 
   @Patch(':id/status')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async updateStatus(
     @Param('id') id: string,
     @Body() statusData: any,
     @Request() req,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.quotesService.updateStatus(id, statusData.status, tenantId);
   }
 
   @Post(':id/send')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async sendQuote(
     @Param('id') id: string,
     @Body() sendOptions: { method?: 'sms' | 'email' | 'both' },
     @Request() req,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     const quote = await this.quotesService.findOne(id, tenantId);
 
     const results: { sms?: any; email?: any } = {};
@@ -124,6 +139,8 @@ export class QuotesController {
           quote.quoteNumber,
           toNum(quote.amount),
           quote.validUntil,
+          undefined,
+          tenantId,
         );
       } catch (error) {
         results.sms = { success: false, error: error.message };
@@ -139,8 +156,9 @@ export class QuotesController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async delete(@Param('id') id: string, @Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.quotesService.delete(id, tenantId);
   }
 }

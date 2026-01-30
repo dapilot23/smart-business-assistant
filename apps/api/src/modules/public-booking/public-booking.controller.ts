@@ -10,6 +10,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { PublicBookingService } from './public-booking.service';
 import { CreatePublicBookingDto } from './dto/create-public-booking.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -20,6 +21,7 @@ export class PublicBookingController {
   constructor(private readonly publicBookingService: PublicBookingService) {}
 
   @Get('tenants/slug/:slug')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getTenantBySlug(@Param('slug') slug: string) {
     const tenant = await this.publicBookingService.findTenantBySlug(slug);
     if (!tenant) {
@@ -29,11 +31,13 @@ export class PublicBookingController {
   }
 
   @Get('tenants/:tenantId/services')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   async getServices(@Param('tenantId') tenantId: string) {
     return this.publicBookingService.getPublicServices(tenantId);
   }
 
   @Get('tenants/:tenantId/services/:serviceId/slots')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   async getAvailableSlots(
     @Param('tenantId') tenantId: string,
     @Param('serviceId') serviceId: string,
@@ -45,12 +49,13 @@ export class PublicBookingController {
     return this.publicBookingService.getAvailableTimeSlots(
       tenantId,
       serviceId,
-      new Date(date),
+      this.parseDateParam(date),
     );
   }
 
   @Post('tenants/:tenantId/bookings')
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async createBooking(
     @Param('tenantId') tenantId: string,
     @Body() dto: CreatePublicBookingDto,
@@ -60,6 +65,7 @@ export class PublicBookingController {
 
   // Booking management endpoints (token-based, no auth required)
   @Get('bookings/:token')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getBookingByToken(@Param('token') token: string) {
     const booking = await this.publicBookingService.getBookingByToken(token);
     return {
@@ -86,6 +92,7 @@ export class PublicBookingController {
 
   @Post('bookings/:token/cancel')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async cancelBooking(
     @Param('token') token: string,
     @Body() body: { reason?: string },
@@ -95,6 +102,7 @@ export class PublicBookingController {
 
   @Post('bookings/:token/reschedule')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async rescheduleBooking(
     @Param('token') token: string,
     @Body() body: { scheduledAt: string },
@@ -106,6 +114,7 @@ export class PublicBookingController {
   }
 
   @Get('bookings/:token/available-slots')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getAvailableSlotsForReschedule(
     @Param('token') token: string,
     @Query('date') date: string,
@@ -120,7 +129,15 @@ export class PublicBookingController {
     return this.publicBookingService.getAvailableTimeSlots(
       booking.tenantId,
       booking.service.id,
-      new Date(date),
+      this.parseDateParam(date),
     );
+  }
+
+  private parseDateParam(date: string): Date {
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException('Invalid date parameter');
+    }
+    return parsed;
   }
 }

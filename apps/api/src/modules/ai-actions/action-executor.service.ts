@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
@@ -8,6 +8,11 @@ import { CampaignsService } from '../marketing/campaigns/campaigns.service';
 import { SegmentsService } from '../marketing/segments/segments.service';
 import { SegmentRules } from '../marketing/segments/segment-rules.engine';
 import { SmsService } from '../sms/sms.service';
+import { EmailService } from '../email/email.service';
+import { AppointmentsService } from '../appointments/appointments.service';
+import { QuotesService } from '../quotes/quotes.service';
+import { QuoteFollowupService } from '../quotes/quote-followup.service';
+import { toNum } from '../../common/utils/decimal';
 
 export interface CreateActionDto {
   actionType: ActionType;
@@ -65,6 +70,10 @@ export class ActionExecutorService {
     private readonly campaignsService: CampaignsService,
     private readonly segmentsService: SegmentsService,
     private readonly smsService: SmsService,
+    private readonly emailService: EmailService,
+    private readonly appointmentsService: AppointmentsService,
+    private readonly quotesService: QuotesService,
+    private readonly quoteFollowupService: QuoteFollowupService,
     @InjectQueue('ai-actions') private readonly actionQueue: Queue,
   ) {}
 
@@ -191,60 +200,64 @@ export class ActionExecutorService {
   }
 
   async executeAction(actionId: string): Promise<ActionResult> {
-    const action = await this.prisma.aIAction.findUnique({
-      where: { id: actionId },
-    });
+    const action = await this.prisma.withSystemContext(() =>
+      this.prisma.aIAction.findUnique({
+        where: { id: actionId },
+      }),
+    );
 
     if (!action) {
       throw new NotFoundException(`Action ${actionId} not found`);
     }
 
-    if (action.status !== 'APPROVED') {
-      throw new Error(`Action ${actionId} is not approved (status: ${action.status})`);
-    }
-
-    // Mark as executing
-    await this.prisma.aIAction.update({
-      where: { id: actionId },
-      data: { status: 'EXECUTING' },
-    });
-
-    try {
-      const handler = this.handlers[action.actionType];
-      if (!handler) {
-        throw new Error(`No handler for action type: ${action.actionType}`);
+    return this.prisma.withTenantContext(action.tenantId, async () => {
+      if (action.status !== 'APPROVED') {
+        throw new Error(`Action ${actionId} is not approved (status: ${action.status})`);
       }
 
-      const params = action.params as Record<string, unknown>;
-      const result = await handler(action.tenantId, params);
-
-      // Mark as completed
+      // Mark as executing
       await this.prisma.aIAction.update({
         where: { id: actionId },
-        data: {
-          status: 'COMPLETED',
-          executedAt: new Date(),
-          result: result as object,
-        },
+        data: { status: 'EXECUTING' },
       });
 
-      this.logger.log(`Action ${actionId} completed successfully`);
-      return { success: true, data: result };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      try {
+        const handler = this.handlers[action.actionType];
+        if (!handler) {
+          throw new Error(`No handler for action type: ${action.actionType}`);
+        }
 
-      // Mark as failed
-      await this.prisma.aIAction.update({
-        where: { id: actionId },
-        data: {
-          status: 'FAILED',
-          errorMessage,
-        },
-      });
+        const params = action.params as Record<string, unknown>;
+        const result = await handler(action.tenantId, params);
 
-      this.logger.error(`Action ${actionId} failed: ${errorMessage}`);
-      return { success: false, error: errorMessage };
-    }
+        // Mark as completed
+        await this.prisma.aIAction.update({
+          where: { id: actionId },
+          data: {
+            status: 'COMPLETED',
+            executedAt: new Date(),
+            result: result as object,
+          },
+        });
+
+        this.logger.log(`Action ${actionId} completed successfully`);
+        return { success: true, data: result };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Mark as failed
+        await this.prisma.aIAction.update({
+          where: { id: actionId },
+          data: {
+            status: 'FAILED',
+            errorMessage,
+          },
+        });
+
+        this.logger.error(`Action ${actionId} failed: ${errorMessage}`);
+        return { success: false, error: errorMessage };
+      }
+    });
   }
 
   // ========================================
@@ -271,57 +284,328 @@ export class ActionExecutorService {
     tenantId: string,
     params: Record<string, unknown>,
   ): Promise<unknown> {
-    const phone = params.phone as string;
-    const message = params.message as string;
+    const actionType = params.type as string | undefined;
 
-    await this.smsService.sendSms(phone, message);
+    if (actionType === 'appointment_confirmation') {
+      const targetDate = params.targetDate as string | undefined;
+      const baseDate = targetDate ? new Date(targetDate) : new Date();
+      const start = new Date(baseDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+
+      const appointments = await this.prisma.appointment.findMany({
+        where: {
+          tenantId,
+          status: 'SCHEDULED',
+          scheduledAt: { gte: start, lt: end },
+        },
+        include: { customer: true, service: true },
+        orderBy: { scheduledAt: 'asc' },
+      });
+
+      let sent = 0;
+      let skipped = 0;
+
+      for (const appointment of appointments) {
+        if (!appointment.customer?.phone) {
+          skipped += 1;
+          continue;
+        }
+
+        const formattedDate = appointment.scheduledAt.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+        });
+        const formattedTime = appointment.scheduledAt.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+        const message =
+          `Hi ${appointment.customer.name}, just confirming your ` +
+          `${appointment.service?.name || 'appointment'} on ${formattedDate} at ${formattedTime}. ` +
+          `Reply YES to confirm.`;
+
+        const result = await this.smsService.sendSms(
+          appointment.customer.phone,
+          message,
+          { tenantId },
+        );
+        if (result?.skipped) {
+          skipped += 1;
+          continue;
+        }
+        sent += 1;
+      }
+
+      return { sent, skipped, targetDate: start.toISOString() };
+    }
+
+    let phone = params.phone as string | undefined;
+    const message = params.message as string | undefined;
+
+    if (!phone && params.customerId) {
+      const customer = await this.prisma.customer.findFirst({
+        where: { id: params.customerId as string, tenantId },
+        select: { phone: true },
+      });
+      phone = customer?.phone || undefined;
+    }
+
+    if (!phone || !message) {
+      throw new BadRequestException('Missing phone or message for SMS action');
+    }
+
+    const result = await this.smsService.sendSms(phone, message, { tenantId });
+
+    if (result?.skipped) {
+      return { sent: false, skipped: true, phone };
+    }
 
     return { sent: true, phone, messageLength: message.length };
   }
 
   private async executeSendEmail(
-    _tenantId: string,
+    tenantId: string,
     params: Record<string, unknown>,
   ): Promise<unknown> {
-    // TODO: Integrate with email service
-    this.logger.log(`Would send email to ${params.email}: ${params.subject}`);
-    return { sent: true, email: params.email };
+    const actionType = params.type as string | undefined;
+    const subject = (params.subject as string | undefined) || 'Notification';
+    const html = params.html as string | undefined;
+    const message = params.message as string | undefined;
+
+    if (actionType === 'payment_reminder') {
+      const overdueInvoices = await this.prisma.invoice.findMany({
+        where: { tenantId, status: 'OVERDUE' },
+        include: { customer: true },
+      });
+
+      let sent = 0;
+      let skipped = 0;
+
+      for (const invoice of overdueInvoices) {
+        if (!invoice.customer?.email) {
+          skipped += 1;
+          continue;
+        }
+
+        const outstanding =
+          toNum(invoice.amount) - toNum(invoice.paidAmount);
+        const formatted = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'usd',
+        }).format(outstanding);
+
+        const reminderSubject = `Payment Reminder - ${invoice.invoiceNumber}`;
+        const reminderMessage =
+          `Hi ${invoice.customer.name}, your invoice ${invoice.invoiceNumber} ` +
+          `for ${formatted} is overdue. Please submit payment at your earliest convenience.`;
+
+        const sent = await this.emailService.sendCustomEmail({
+          to: invoice.customer.email,
+          subject: reminderSubject,
+          text: reminderMessage,
+          tenantId,
+        });
+        if (!sent) {
+          skipped += 1;
+          continue;
+        }
+        sent += 1;
+      }
+
+      return { sent, skipped, type: actionType };
+    }
+
+    let email = params.email as string | undefined;
+
+    if (!email && params.customerId) {
+      const customer = await this.prisma.customer.findFirst({
+        where: { id: params.customerId as string, tenantId },
+        select: { email: true },
+      });
+      email = customer?.email || undefined;
+    }
+
+    if (!email && params.invoiceId) {
+      const invoice = await this.prisma.invoice.findFirst({
+        where: { id: params.invoiceId as string, tenantId },
+        include: { customer: true },
+      });
+      email = invoice?.customer?.email || undefined;
+    }
+
+    if (!email) {
+      throw new BadRequestException('Missing email for SEND_EMAIL action');
+    }
+
+    if (!html && !message) {
+      throw new BadRequestException('Missing email content for SEND_EMAIL action');
+    }
+
+    const sent = await this.emailService.sendCustomEmail({
+      to: email,
+      subject,
+      html,
+      text: message,
+      tenantId,
+    });
+
+    if (!sent) {
+      return { sent: false, skipped: true, email };
+    }
+
+    return { sent: true, email };
   }
 
   private async executeScheduleAppointment(
-    _tenantId: string,
+    tenantId: string,
     params: Record<string, unknown>,
   ): Promise<unknown> {
-    // TODO: Integrate with appointments service
-    this.logger.log(`Would schedule appointment: ${JSON.stringify(params)}`);
-    return { scheduled: true, ...params };
+    const customerId = params.customerId as string | undefined;
+    const scheduledAt = params.scheduledAt as string | undefined;
+
+    if (!customerId || !scheduledAt) {
+      throw new BadRequestException('Missing customerId or scheduledAt');
+    }
+
+    const appointment = await this.appointmentsService.create(tenantId, {
+      customerId,
+      serviceId: params.serviceId as string | undefined,
+      assignedTo: params.assignedTo as string | undefined,
+      scheduledAt,
+      duration: params.duration ? Number(params.duration) : undefined,
+      notes: params.notes as string | undefined,
+    });
+
+    return { scheduled: true, appointmentId: appointment.id };
   }
 
   private async executeCreateQuote(
-    _tenantId: string,
+    tenantId: string,
     params: Record<string, unknown>,
   ): Promise<unknown> {
-    // TODO: Integrate with quotes service
-    this.logger.log(`Would create quote: ${JSON.stringify(params)}`);
-    return { created: true, ...params };
+    const customerId = params.customerId as string | undefined;
+    if (!customerId) {
+      throw new BadRequestException('Missing customerId for quote');
+    }
+
+    const description = (params.description as string | undefined) || 'Service Quote';
+    const validUntil =
+      (params.validUntil as string | undefined) ||
+      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    let items = params.items as Array<Record<string, unknown>> | undefined;
+
+    if (!items || items.length === 0) {
+      const amount = Number(params.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new BadRequestException('Missing quote amount or items');
+      }
+      items = [
+        {
+          description,
+          quantity: 1,
+          unitPrice: amount,
+          total: amount,
+        },
+      ];
+    }
+
+    const normalizedItems = items.map((item) => {
+      const quantity = Number(item.quantity ?? 1);
+      const unitPrice = Number(item.unitPrice ?? item.total ?? params.amount ?? 0);
+      const total = Number(item.total ?? unitPrice * quantity);
+
+      if (
+        !Number.isFinite(quantity) ||
+        !Number.isFinite(unitPrice) ||
+        !Number.isFinite(total) ||
+        quantity <= 0 ||
+        unitPrice <= 0 ||
+        total <= 0
+      ) {
+        throw new BadRequestException('Invalid quote item values');
+      }
+
+      return {
+        description: String(item.description ?? description),
+        quantity,
+        unitPrice: this.roundCurrency(unitPrice),
+        total: this.roundCurrency(total),
+      };
+    });
+
+    const quote = await this.quotesService.create(
+      {
+        customerId,
+        description,
+        amount: normalizedItems.reduce((sum, item) => sum + item.total, 0),
+        validUntil,
+        items: normalizedItems,
+        notes: params.notes as string | undefined,
+      },
+      tenantId,
+    );
+
+    return { created: true, quoteId: quote.id };
   }
 
   private async executeApplyDiscount(
-    _tenantId: string,
+    tenantId: string,
     params: Record<string, unknown>,
   ): Promise<unknown> {
-    // TODO: Integrate with quotes service
-    this.logger.log(`Would apply ${params.discountPercent}% discount to quote ${params.quoteId}`);
-    return { applied: true, ...params };
+    const quoteId = params.quoteId as string | undefined;
+    const discountPercent = Number(params.discountPercent);
+
+    if (!quoteId) {
+      throw new BadRequestException('Missing quoteId for discount');
+    }
+    if (!Number.isFinite(discountPercent) || discountPercent <= 0 || discountPercent >= 100) {
+      throw new BadRequestException('Invalid discountPercent');
+    }
+
+    const quote = await this.quotesService.findOne(quoteId, tenantId);
+    const factor = 1 - discountPercent / 100;
+
+    const discountedItems = quote.items.map((item) => {
+      const unitPrice = this.roundCurrency(toNum(item.unitPrice) * factor);
+      const total = this.roundCurrency(unitPrice * item.quantity);
+      return {
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice,
+        total,
+      };
+    });
+
+    const updated = await this.quotesService.update(
+      quoteId,
+      { items: discountedItems },
+      tenantId,
+    );
+
+    return {
+      applied: true,
+      quoteId,
+      discountPercent,
+      newAmount: updated.amount,
+    };
   }
 
   private async executeScheduleFollowUp(
-    _tenantId: string,
+    tenantId: string,
     params: Record<string, unknown>,
   ): Promise<unknown> {
-    // TODO: Integrate with follow-up scheduling
-    this.logger.log(`Would schedule follow-up: ${JSON.stringify(params)}`);
-    return { scheduled: true, ...params };
+    const quoteId = params.quoteId as string | undefined;
+
+    if (!quoteId) {
+      return { scheduled: false, reason: 'quoteId is required for follow-up scheduling' };
+    }
+
+    await this.quoteFollowupService.scheduleFollowUps(tenantId, quoteId);
+    return { scheduled: true, quoteId };
   }
 
   private async executeCreateSegment(
@@ -334,6 +618,10 @@ export class ActionExecutorService {
       rules: params.rules as SegmentRules,
       createdBy: 'ai-action',
     });
+  }
+
+  private roundCurrency(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 
   // ========================================

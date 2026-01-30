@@ -17,6 +17,8 @@ import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { SetSkillsDto } from './dto/set-skills.dto';
 import { ClerkAuthGuard } from '../../common/guards/clerk-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('team')
 @UseGuards(ClerkAuthGuard)
@@ -33,6 +35,7 @@ export class TeamController {
   }
 
   @Get('invitations')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async getInvitations(@Req() req: any) {
     const tenantId = req.tenantId;
     return this.teamService.getInvitations(tenantId);
@@ -45,6 +48,7 @@ export class TeamController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async updateTeamMember(
     @Req() req: any,
     @Param('id') id: string,
@@ -55,12 +59,14 @@ export class TeamController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async removeTeamMember(@Req() req: any, @Param('id') id: string) {
     const tenantId = req.tenantId;
     return this.teamService.removeTeamMember(tenantId, id);
   }
 
   @Post('invite')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async inviteTeamMember(
     @Req() req: any,
     @Body() data: InviteTeamMemberDto,
@@ -71,12 +77,14 @@ export class TeamController {
   }
 
   @Delete('invitations/:id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async cancelInvitation(@Req() req: any, @Param('id') id: string) {
     const tenantId = req.tenantId;
     return this.teamService.cancelInvitation(tenantId, id);
   }
 
   @Post('invitations/:id/resend')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async resendInvitation(@Req() req: any, @Param('id') id: string) {
     const tenantId = req.tenantId;
     return this.teamService.resendInvitation(tenantId, id);
@@ -93,6 +101,7 @@ export class TeamController {
   // ============================================
 
   @Post(':id/skills')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async setSkills(
     @Req() req: any,
     @Param('id') userId: string,
@@ -110,6 +119,7 @@ export class TeamController {
   }
 
   @Delete(':id/skills/:serviceId')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async removeSkill(
     @Req() req: any,
     @Param('id') userId: string,

@@ -340,16 +340,21 @@ export class OutboundCampaignsService {
   async processScheduledCampaigns() {
     const now = new Date();
 
-    const scheduledCampaigns = await this.prisma.outboundCampaign.findMany({
-      where: {
-        status: 'SCHEDULED',
-        scheduledFor: { lte: now },
-      },
-    });
+    const scheduledCampaigns = await this.prisma.withSystemContext(() =>
+      this.prisma.outboundCampaign.findMany({
+        where: {
+          status: 'SCHEDULED',
+          scheduledFor: { lte: now },
+        },
+        select: { id: true, tenantId: true },
+      }),
+    );
 
     for (const campaign of scheduledCampaigns) {
       this.logger.log(`Auto-starting scheduled campaign: ${campaign.id}`);
-      await this.startCampaign(campaign.id);
+      await this.prisma.withTenantContext(campaign.tenantId, () =>
+        this.startCampaign(campaign.id),
+      );
     }
   }
 

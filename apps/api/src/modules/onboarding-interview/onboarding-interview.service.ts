@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { AiEngineService } from '../ai-engine/ai-engine.service';
 import { InterviewFlowService, QuestionCategory } from './interview-flow.service';
 import { InferenceEngineService, InferenceResult } from './inference-engine.service';
 import { OnboardingStatus, Prisma } from '@prisma/client';
+import { ProfileField } from './dto/onboarding-interview.dto';
 
 export interface InterviewMessage {
   role: 'assistant' | 'user';
@@ -73,10 +74,12 @@ export class OnboardingInterviewService {
    * Returns null if demo tenant doesn't exist
    */
   async getDemoTenantId(): Promise<string | null> {
-    const demoTenant = await this.prisma.tenant.findUnique({
-      where: { slug: 'demo-plumbing' },
+    return this.prisma.withSystemContext(async () => {
+      const demoTenant = await this.prisma.tenant.findUnique({
+        where: { slug: 'demo-plumbing' },
+      });
+      return demoTenant?.id || null;
     });
-    return demoTenant?.id || null;
   }
 
   async getStatus(tenantId: string): Promise<{
@@ -86,35 +89,38 @@ export class OnboardingInterviewService {
     percentComplete: number;
     canResume: boolean;
   }> {
-    const profile = await this.prisma.businessProfile.findUnique({
-      where: { tenantId },
-    });
+    return this.prisma.withTenantContext(tenantId, async () => {
+      const profile = await this.prisma.businessProfile.findUnique({
+        where: { tenantId },
+      });
 
-    if (!profile) {
+      if (!profile) {
+        return {
+          status: OnboardingStatus.NOT_STARTED,
+          completedQuestions: 0,
+          totalQuestions: this.flowService.getTotalQuestions(),
+          percentComplete: 0,
+          canResume: false,
+        };
+      }
+
       return {
-        status: OnboardingStatus.NOT_STARTED,
-        completedQuestions: 0,
-        totalQuestions: this.flowService.getTotalQuestions(),
-        percentComplete: 0,
-        canResume: false,
+        status: profile.onboardingStatus,
+        completedQuestions: profile.completedQuestions,
+        totalQuestions: profile.totalQuestions,
+        percentComplete: Math.round(
+          (profile.completedQuestions / profile.totalQuestions) * 100,
+        ),
+        canResume: profile.onboardingStatus === OnboardingStatus.IN_PROGRESS,
       };
-    }
-
-    return {
-      status: profile.onboardingStatus,
-      completedQuestions: profile.completedQuestions,
-      totalQuestions: profile.totalQuestions,
-      percentComplete: Math.round(
-        (profile.completedQuestions / profile.totalQuestions) * 100,
-      ),
-      canResume: profile.onboardingStatus === OnboardingStatus.IN_PROGRESS,
-    };
+    });
   }
 
   async startInterview(
     tenantId: string,
     resume = false,
   ): Promise<StartInterviewResponse> {
+    return this.prisma.withTenantContext(tenantId, async () => {
     // Get tenant info for personalization
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -209,6 +215,7 @@ export class OnboardingInterviewService {
       initialMessage: welcomeMessage,
       progress: this.getProgress(0, firstQuestion.id),
     };
+    });
   }
 
   async processMessage(
@@ -216,6 +223,7 @@ export class OnboardingInterviewService {
     conversationId: string,
     userMessage: string,
   ): Promise<MessageResponse> {
+    return this.prisma.withTenantContext(tenantId, async () => {
     const conversation = await this.prisma.onboardingConversation.findUnique({
       where: { id: conversationId },
       include: { businessProfile: { include: { tenant: true } } },
@@ -317,12 +325,14 @@ export class OnboardingInterviewService {
       isComplete,
       extractedData: newExtractedData,
     };
+    });
   }
 
   async skipQuestion(
     tenantId: string,
     conversationId: string,
   ): Promise<MessageResponse> {
+    return this.prisma.withTenantContext(tenantId, async () => {
     const conversation = await this.prisma.onboardingConversation.findUnique({
       where: { id: conversationId },
       include: { businessProfile: { include: { tenant: true } } },
@@ -387,12 +397,14 @@ export class OnboardingInterviewService {
       progress: this.getProgress(newCompletedCount, nextQuestion?.id || null),
       isComplete,
     };
+    });
   }
 
   async completeInterview(
     tenantId: string,
     conversationId: string,
   ): Promise<MessageResponse> {
+    return this.prisma.withTenantContext(tenantId, async () => {
     const conversation = await this.prisma.onboardingConversation.findUnique({
       where: { id: conversationId },
       include: { businessProfile: { include: { tenant: true } } },
@@ -423,45 +435,124 @@ export class OnboardingInterviewService {
       progress: this.getProgress(profile.completedQuestions, null),
       isComplete: true,
     };
+    });
   }
 
   async getSummary(tenantId: string): Promise<InterviewSummary | null> {
-    const profile = await this.prisma.businessProfile.findUnique({
-      where: { tenantId },
+    return this.prisma.withTenantContext(tenantId, async () => {
+      const profile = await this.prisma.businessProfile.findUnique({
+        where: { tenantId },
+      });
+
+      if (!profile || profile.onboardingStatus !== OnboardingStatus.COMPLETED) {
+        return null;
+      }
+
+      return {
+        aiSummary: profile.aiSummary || '',
+        brandVoice: profile.brandVoice || '',
+        recommendations: (profile.aiRecommendations as InterviewSummary['recommendations']) || [],
+        profile: {
+          industry: profile.industry,
+          targetMarket: profile.targetMarket,
+          serviceArea: profile.serviceArea,
+          teamSize: profile.teamSize,
+          communicationStyle: profile.communicationStyle,
+          growthStage: profile.growthStage,
+          primaryGoals: profile.primaryGoals,
+          currentChallenges: profile.currentChallenges,
+          peakSeasons: profile.peakSeasons,
+        },
+      };
     });
+  }
 
-    if (!profile || profile.onboardingStatus !== OnboardingStatus.COMPLETED) {
-      return null;
-    }
+  async updateProfileField(
+    tenantId: string,
+    field: ProfileField,
+    value: unknown,
+  ): Promise<void> {
+    await this.prisma.withTenantContext(tenantId, async () => {
+      const profile = await this.prisma.businessProfile.findUnique({
+        where: { tenantId },
+      });
 
-    return {
-      aiSummary: profile.aiSummary || '',
-      brandVoice: profile.brandVoice || '',
-      recommendations: (profile.aiRecommendations as InterviewSummary['recommendations']) || [],
-      profile: {
-        industry: profile.industry,
-        targetMarket: profile.targetMarket,
-        serviceArea: profile.serviceArea,
-        teamSize: profile.teamSize,
-        communicationStyle: profile.communicationStyle,
-        primaryGoals: profile.primaryGoals,
-        currentChallenges: profile.currentChallenges,
-        peakSeasons: profile.peakSeasons,
-      },
-    };
+      if (!profile) {
+        throw new NotFoundException('Profile not found');
+      }
+
+      const updateData: Prisma.BusinessProfileUpdateInput = {};
+
+      switch (field) {
+        case 'industry':
+        case 'targetMarket':
+        case 'serviceArea':
+        case 'communicationStyle':
+        case 'growthStage': {
+          if (typeof value !== 'string' || value.trim().length === 0) {
+            throw new BadRequestException(`Invalid value for ${field}`);
+          }
+          const trimmed = value.trim();
+          if (field === 'industry') updateData.industry = trimmed;
+          if (field === 'targetMarket') updateData.targetMarket = trimmed;
+          if (field === 'serviceArea') updateData.serviceArea = trimmed;
+          if (field === 'communicationStyle') updateData.communicationStyle = trimmed;
+          if (field === 'growthStage') updateData.growthStage = trimmed;
+          break;
+        }
+        case 'teamSize': {
+          if (
+            typeof value !== 'number' ||
+            !Number.isFinite(value) ||
+            !Number.isInteger(value) ||
+            value < 0
+          ) {
+            throw new BadRequestException('Invalid value for teamSize');
+          }
+          updateData.teamSize = value;
+          break;
+        }
+        case 'primaryGoals':
+        case 'currentChallenges':
+        case 'peakSeasons': {
+          if (
+            !Array.isArray(value) ||
+            value.some(
+              (item) => typeof item !== 'string' || item.trim().length === 0,
+            )
+          ) {
+            throw new BadRequestException(`Invalid value for ${field}`);
+          }
+          const normalized = value.map((item) => item.trim());
+          if (field === 'primaryGoals') updateData.primaryGoals = normalized;
+          if (field === 'currentChallenges') updateData.currentChallenges = normalized;
+          if (field === 'peakSeasons') updateData.peakSeasons = normalized;
+          break;
+        }
+        default:
+          throw new BadRequestException(`Unsupported field: ${field}`);
+      }
+
+      await this.prisma.businessProfile.update({
+        where: { tenantId },
+        data: updateData,
+      });
+    });
   }
 
   async getConversation(tenantId: string): Promise<InterviewMessage[]> {
-    const profile = await this.prisma.businessProfile.findUnique({
-      where: { tenantId },
-      include: { conversation: true },
+    return this.prisma.withTenantContext(tenantId, async () => {
+      const profile = await this.prisma.businessProfile.findUnique({
+        where: { tenantId },
+        include: { conversation: true },
+      });
+
+      if (!profile?.conversation) {
+        return [];
+      }
+
+      return (profile.conversation.messages as unknown as InterviewMessage[]) || [];
     });
-
-    if (!profile?.conversation) {
-      return [];
-    }
-
-    return (profile.conversation.messages as unknown as InterviewMessage[]) || [];
   }
 
   private getProgress(completedQuestions: number, currentQuestionId: string | null): ProgressInfo {
@@ -674,6 +765,7 @@ export class OnboardingInterviewService {
     onTextChunk: (chunk: string) => void,
     onExtraction: (extraction: { field: string; value: unknown; confidence: number }) => void,
   ): Promise<StreamMessageResponse> {
+    return this.prisma.withTenantContext(tenantId, async () => {
     const conversation = await this.prisma.onboardingConversation.findUnique({
       where: { id: conversationId },
       include: { businessProfile: { include: { tenant: true } } },
@@ -802,6 +894,7 @@ export class OnboardingInterviewService {
       extractedData: newExtractedData,
       inferredCount: inferences.filter(i => i.source === 'inferred').length,
     };
+    });
   }
 
   /**
@@ -896,55 +989,57 @@ export class OnboardingInterviewService {
     benchmarks: Record<string, unknown>;
     comparison: Record<string, { value: unknown; benchmark: unknown; status: string }>;
   } | null> {
-    const profile = await this.prisma.businessProfile.findUnique({
-      where: { tenantId },
-    });
+    return this.prisma.withTenantContext(tenantId, async () => {
+      const profile = await this.prisma.businessProfile.findUnique({
+        where: { tenantId },
+      });
 
-    if (!profile || !profile.industry) {
-      return null;
-    }
+      if (!profile || !profile.industry) {
+        return null;
+      }
 
-    // Get industry template
-    const template = await this.prisma.industryTemplate.findUnique({
-      where: { industrySlug: profile.industry },
-    });
+      // Get industry template
+      const template = await this.prisma.industryTemplate.findUnique({
+        where: { industrySlug: profile.industry },
+      });
 
-    if (!template) {
-      // Return basic benchmarks without template
+      if (!template) {
+        // Return basic benchmarks without template
+        return {
+          industry: profile.industry,
+          benchmarks: {},
+          comparison: {},
+        };
+      }
+
+      // Build comparison
+      const comparison: Record<string, { value: unknown; benchmark: unknown; status: string }> = {};
+
+      if (profile.averageJobValue && template.avgJobValueResidential) {
+        const value = Number(profile.averageJobValue);
+        const benchmark = Number(template.avgJobValueResidential);
+        comparison.averageJobValue = {
+          value,
+          benchmark,
+          status: value >= benchmark ? 'above' : value >= benchmark * 0.8 ? 'at' : 'below',
+        };
+      }
+
+      if (profile.teamSize && template.typicalTeamSize) {
+        const typicalSize = template.typicalTeamSize as { small?: number; medium?: number };
+        const benchmark = typicalSize.small || 3;
+        comparison.teamSize = {
+          value: profile.teamSize,
+          benchmark,
+          status: 'at', // Team size is contextual
+        };
+      }
+
       return {
         industry: profile.industry,
-        benchmarks: {},
-        comparison: {},
+        benchmarks: (template.benchmarkData as Record<string, unknown>) || {},
+        comparison,
       };
-    }
-
-    // Build comparison
-    const comparison: Record<string, { value: unknown; benchmark: unknown; status: string }> = {};
-
-    if (profile.averageJobValue && template.avgJobValueResidential) {
-      const value = Number(profile.averageJobValue);
-      const benchmark = Number(template.avgJobValueResidential);
-      comparison.averageJobValue = {
-        value,
-        benchmark,
-        status: value >= benchmark ? 'above' : value >= benchmark * 0.8 ? 'at' : 'below',
-      };
-    }
-
-    if (profile.teamSize && template.typicalTeamSize) {
-      const typicalSize = template.typicalTeamSize as { small?: number; medium?: number };
-      const benchmark = typicalSize.small || 3;
-      comparison.teamSize = {
-        value: profile.teamSize,
-        benchmark,
-        status: 'at', // Team size is contextual
-      };
-    }
-
-    return {
-      industry: profile.industry,
-      benchmarks: (template.benchmarkData as Record<string, unknown>) || {},
-      comparison,
-    };
+    });
   }
 }

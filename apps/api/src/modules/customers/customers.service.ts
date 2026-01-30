@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
+import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 @Injectable()
 export class CustomersService {
@@ -29,8 +31,7 @@ export class CustomersService {
     return customer;
   }
 
-  async create(data: any, tenantId: string) {
-    // TODO: Add proper DTO validation
+  async create(data: CreateCustomerDto, tenantId: string) {
     return this.prisma.customer.create({
       data: {
         ...data,
@@ -39,7 +40,7 @@ export class CustomersService {
     });
   }
 
-  async update(id: string, data: any, tenantId: string) {
+  async update(id: string, data: UpdateCustomerDto, tenantId: string) {
     const customer = await this.findOne(id, tenantId);
     return this.prisma.customer.update({
       where: { id: customer.id },

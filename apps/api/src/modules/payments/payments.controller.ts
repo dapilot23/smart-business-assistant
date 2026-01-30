@@ -7,10 +7,13 @@ import {
   Get,
   RawBodyRequest,
   Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { PaymentsService } from './payments.service';
 import { DepositPaymentService } from './deposit-payment.service';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('payments')
 export class PaymentsController {
@@ -19,21 +22,31 @@ export class PaymentsController {
     private readonly depositService: DepositPaymentService,
   ) {}
 
+  private requireTenantId(req: any): string {
+    const tenantId = req.user?.tenantId || req.tenantId;
+    if (!tenantId) {
+      throw new UnauthorizedException('Tenant ID not found');
+    }
+    return tenantId;
+  }
+
   @Post('create-intent')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async createPaymentIntent(
     @Body() data: { invoiceId: string },
     @Request() req,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.paymentsService.createPaymentIntent(data.invoiceId, tenantId);
   }
 
   @Post('create-checkout')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async createCheckoutSession(
     @Body() data: { invoiceId: string; successUrl: string; cancelUrl: string },
     @Request() req,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.paymentsService.createCheckoutSession(
       data.invoiceId,
       tenantId,

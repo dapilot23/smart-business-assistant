@@ -4,6 +4,7 @@ import { PreferenceLearningService } from './preference-learning.service';
 import { RouteOptimizationService } from './route-optimization.service';
 import { SmartDispatchService } from './smart-dispatch.service';
 import { DispatchIntelligenceService } from './dispatch-intelligence.service';
+import { DispatchSummaryService } from './dispatch-summary.service';
 import { TeamModule } from '../team/team.module';
 import { AiEngineModule } from '../ai-engine/ai-engine.module';
 
@@ -15,12 +16,14 @@ import { AiEngineModule } from '../ai-engine/ai-engine.module';
     RouteOptimizationService,
     SmartDispatchService,
     DispatchIntelligenceService,
+    DispatchSummaryService,
   ],
   exports: [
     PreferenceLearningService,
     RouteOptimizationService,
     SmartDispatchService,
     DispatchIntelligenceService,
+    DispatchSummaryService,
   ],
 })
 export class AiSchedulingModule {}

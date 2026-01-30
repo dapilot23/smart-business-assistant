@@ -1,16 +1,18 @@
+const tsJest = require.resolve('ts-jest');
+
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
-  rootDir: 'src',
-  testRegex: '.*\\.spec\\.ts$',
+  rootDir: '.',
+  testRegex: 'src/.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': ['ts-jest', { isolatedModules: true }],
+    '^.+\\.(t|j)s$': [tsJest, { isolatedModules: true }],
   },
-  collectCoverageFrom: ['**/*.(t|j)s'],
-  coverageDirectory: '../coverage',
+  collectCoverageFrom: ['src/**/*.(t|j)s'],
+  coverageDirectory: 'coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',
-    '^uuid$': '<rootDir>/test/__mocks__/uuid.js',
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^uuid$': '<rootDir>/src/test/__mocks__/uuid.js',
   },
-  setupFilesAfterEnv: ['<rootDir>/test/jest-setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/test/jest-setup.ts'],
 };

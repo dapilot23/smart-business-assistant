@@ -118,65 +118,99 @@ export class CustomerContextService {
     serviceType: string,
     amount: number,
   ): Promise<void> {
-    await this.prisma.customerContext.upsert({
-      where: { customerId },
-      create: {
-        customerId,
-        tenantId: '', // Will be set from customer lookup
-        lastServiceType: serviceType,
-        totalVisits: 1,
-        totalSpent: amount,
-        lastInteraction: new Date(),
-      },
-      update: {
-        lastServiceType: serviceType,
-        totalVisits: { increment: 1 },
-        totalSpent: { increment: amount },
-        lastInteraction: new Date(),
-      },
-    });
+    const customer = await this.prisma.withSystemContext(() =>
+      this.prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { id: true, tenantId: true, phone: true },
+      }),
+    );
+
+    if (!customer) {
+      return;
+    }
+
+    await this.prisma.withTenantContext(customer.tenantId, () =>
+      this.prisma.customerContext.upsert({
+        where: { customerId },
+        create: {
+          customerId,
+          tenantId: customer.tenantId,
+          lastServiceType: serviceType,
+          totalVisits: 1,
+          totalSpent: amount,
+          lastInteraction: new Date(),
+        },
+        update: {
+          lastServiceType: serviceType,
+          totalVisits: { increment: 1 },
+          totalSpent: { increment: amount },
+          lastInteraction: new Date(),
+        },
+      }),
+    );
 
     // Invalidate cache
-    const customer = await this.prisma.customer.findUnique({
-      where: { id: customerId },
-    });
-    if (customer) {
-      await this.cache.del(`customer_context:${customer.tenantId}:${customer.phone}`);
-    }
+    await this.cache.del(`customer_context:${customer.tenantId}:${customer.phone}`);
   }
 
   /**
    * Update customer context with AI-generated summary
    */
   async updateAiSummary(customerId: string, summary: string): Promise<void> {
-    await this.prisma.customerContext.upsert({
-      where: { customerId },
-      create: {
-        customerId,
-        tenantId: '',
-        aiSummary: summary,
-      },
-      update: {
-        aiSummary: summary,
-      },
-    });
+    const customer = await this.prisma.withSystemContext(() =>
+      this.prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { tenantId: true },
+      }),
+    );
+
+    if (!customer) {
+      return;
+    }
+
+    await this.prisma.withTenantContext(customer.tenantId, () =>
+      this.prisma.customerContext.upsert({
+        where: { customerId },
+        create: {
+          customerId,
+          tenantId: customer.tenantId,
+          aiSummary: summary,
+        },
+        update: {
+          aiSummary: summary,
+        },
+      }),
+    );
   }
 
   /**
    * Record a customer interaction (call, SMS, etc.)
    */
   async recordInteraction(customerId: string): Promise<void> {
-    await this.prisma.customerContext.upsert({
-      where: { customerId },
-      create: {
-        customerId,
-        tenantId: '',
-        lastInteraction: new Date(),
-      },
-      update: {
-        lastInteraction: new Date(),
-      },
-    });
+    const customer = await this.prisma.withSystemContext(() =>
+      this.prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { tenantId: true },
+      }),
+    );
+
+    if (!customer) {
+      return;
+    }
+
+    await this.prisma.withTenantContext(customer.tenantId, () =>
+      this.prisma.customerContext.upsert({
+        where: { customerId },
+        create: {
+          customerId,
+          tenantId: customer.tenantId,
+          lastInteraction: new Date(),
+        },
+        update: {
+          lastInteraction: new Date(),
+        },
+      }),
+    );
   }
 
   /**

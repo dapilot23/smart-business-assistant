@@ -75,21 +75,23 @@ export class SmsSchedulerService {
   }
 
   private async findUpcomingAppointments(startTime: Date, endTime: Date) {
-    return this.prisma.appointment.findMany({
-      where: {
-        scheduledAt: {
-          gte: startTime,
-          lte: endTime,
+    return this.prisma.withSystemContext(() =>
+      this.prisma.appointment.findMany({
+        where: {
+          scheduledAt: {
+            gte: startTime,
+            lte: endTime,
+          },
+          status: {
+            in: ['SCHEDULED', 'CONFIRMED'],
+          },
         },
-        status: {
-          in: ['SCHEDULED', 'CONFIRMED'],
+        include: {
+          customer: true,
+          service: true,
         },
-      },
-      include: {
-        customer: true,
-        service: true,
-      },
-    });
+      }),
+    );
   }
 
   private async sendReminders(appointments: any[], reminderType: string) {

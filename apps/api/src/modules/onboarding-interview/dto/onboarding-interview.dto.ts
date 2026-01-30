@@ -28,10 +28,25 @@ export class CompleteInterviewDto {
   conversationId: string;
 }
 
+export const ALLOWED_PROFILE_FIELDS = [
+  'industry',
+  'targetMarket',
+  'serviceArea',
+  'teamSize',
+  'communicationStyle',
+  'primaryGoals',
+  'currentChallenges',
+  'peakSeasons',
+  'growthStage',
+] as const;
+
+export type ProfileField = (typeof ALLOWED_PROFILE_FIELDS)[number];
+
 export class UpdateProfileFieldDto {
   @IsNotEmpty()
   @IsString()
-  field: string;
+  @IsIn(ALLOWED_PROFILE_FIELDS)
+  field: ProfileField;
 
   @IsNotEmpty()
   value: unknown;

@@ -420,10 +420,14 @@ export class DynamicPricingService {
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0);
 
-    const tenants = await this.prisma.tenant.findMany({ select: { id: true } });
+    const tenants = await this.prisma.withSystemContext(() =>
+      this.prisma.tenant.findMany({ select: { id: true } }),
+    );
 
     for (const tenant of tenants) {
-      await this.aggregateMetricsForTenant(tenant.id, yesterday);
+      await this.prisma.withTenantContext(tenant.id, () =>
+        this.aggregateMetricsForTenant(tenant.id, yesterday),
+      );
     }
   }
 

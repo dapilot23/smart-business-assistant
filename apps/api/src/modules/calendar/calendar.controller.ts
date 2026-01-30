@@ -38,12 +38,12 @@ export class CalendarController {
   @Public()
   async handleCallback(
     @Query('code') code: string,
-    @Query('state') tenantId: string,
+    @Query('state') state: string,
     @Res() res: Response,
   ) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     try {
-      await this.calendarService.handleCallback(code, tenantId);
+      await this.calendarService.handleCallback(code, state);
       res.redirect(`${frontendUrl}/settings/integrations?calendar=success`);
     } catch (error) {
       res.redirect(`${frontendUrl}/settings/integrations?calendar=error`);

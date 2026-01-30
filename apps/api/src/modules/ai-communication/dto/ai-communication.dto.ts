@@ -26,6 +26,24 @@ export class GenerateResponsesDto {
   count?: number;
 }
 
+export class GenerateStoredSuggestionsDto {
+  @IsString()
+  @IsOptional()
+  messageId?: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  @IsOptional()
+  count?: number;
+}
+
+export class AcceptSuggestionDto {
+  @IsString()
+  @IsOptional()
+  editedText?: string;
+}
+
 export class CreateAutoResponderRuleDto {
   @IsString()
   name: string;

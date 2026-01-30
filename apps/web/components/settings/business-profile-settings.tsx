@@ -7,8 +7,10 @@ import { Icon } from "@/app/components/Icon";
 import {
   getOnboardingStatus,
   getInterviewSummary,
+  updateProfileField,
   type OnboardingStatus,
   type InterviewSummary,
+  type ProfileField,
 } from "@/lib/api/onboarding-interview";
 
 export function BusinessProfileSettings() {
@@ -40,6 +42,18 @@ export function BusinessProfileSettings() {
 
   function handleStartInterview() {
     router.push("/onboarding");
+  }
+
+  async function handleUpdateField(field: ProfileField, value: unknown) {
+    if (!summary) return;
+    await updateProfileField(field, value);
+    setSummary({
+      ...summary,
+      profile: {
+        ...summary.profile,
+        [field]: value,
+      },
+    });
   }
 
   if (loading) {
@@ -118,14 +132,43 @@ export function BusinessProfileSettings() {
             Business Details
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            {renderProfileField(summary.profile, "industry", "Industry")}
-            {renderProfileField(summary.profile, "targetMarket", "Target Market")}
-            {renderProfileField(summary.profile, "serviceArea", "Service Area")}
-            {summary.profile.teamSize != null && (
-              <ProfileField label="Team Size" value={`${summary.profile.teamSize} people`} />
-            )}
-            {renderProfileField(summary.profile, "communicationStyle", "Communication Style")}
-            {renderProfileField(summary.profile, "growthStage", "Growth Stage")}
+            <EditableProfileField
+              label="Industry"
+              field="industry"
+              value={summary.profile.industry}
+              onSave={handleUpdateField}
+            />
+            <EditableProfileField
+              label="Target Market"
+              field="targetMarket"
+              value={summary.profile.targetMarket}
+              onSave={handleUpdateField}
+            />
+            <EditableProfileField
+              label="Service Area"
+              field="serviceArea"
+              value={summary.profile.serviceArea}
+              onSave={handleUpdateField}
+            />
+            <EditableProfileField
+              label="Team Size"
+              field="teamSize"
+              value={summary.profile.teamSize}
+              onSave={handleUpdateField}
+              type="number"
+            />
+            <EditableProfileField
+              label="Communication Style"
+              field="communicationStyle"
+              value={summary.profile.communicationStyle}
+              onSave={handleUpdateField}
+            />
+            <EditableProfileField
+              label="Growth Stage"
+              field="growthStage"
+              value={summary.profile.growthStage}
+              onSave={handleUpdateField}
+            />
           </div>
         </div>
       )}
@@ -197,12 +240,108 @@ function ProfileField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function renderProfileField(
-  profile: Record<string, unknown>,
-  key: string,
-  label: string
-): React.ReactNode {
-  const value = profile[key];
-  if (value == null || value === "") return null;
-  return <ProfileField label={label} value={String(value)} />;
+function EditableProfileField({
+  label,
+  field,
+  value,
+  type = "text",
+  onSave,
+}: {
+  label: string;
+  field: ProfileField;
+  value: unknown;
+  type?: "text" | "number";
+  onSave: (field: ProfileField, value: unknown) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string>(() =>
+    value == null ? "" : String(value)
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDraft(value == null ? "" : String(value));
+  }, [value]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const nextValue = type === "number" ? Number(draft) : draft.trim();
+      await onSave(field, nextValue);
+      setEditing(false);
+    } catch (err) {
+      console.error("Failed to update profile field:", err);
+      setError("Update failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing) {
+    if (value == null || value === "") {
+      return (
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {label}
+          </span>
+          <button
+            className="text-sm text-primary hover:underline"
+            onClick={() => setEditing(true)}
+          >
+            Add {label}
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-1">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          {label}
+        </span>
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-foreground capitalize">{String(value)}</p>
+          <button
+            className="text-xs text-primary hover:underline"
+            onClick={() => setEditing(true)}
+          >
+            Edit
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        {label}
+      </span>
+      <input
+        type={type}
+        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setDraft(value == null ? "" : String(value));
+            setEditing(false);
+            setError(null);
+          }}
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
 }

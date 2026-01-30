@@ -22,14 +22,16 @@ export class CampaignProcessor extends WorkerHost {
     this.logger.log(`Processing campaign ${campaignId} action: ${action}`);
 
     try {
-      switch (action) {
-        case 'send':
-          return await this.sendCampaign(campaignId, tenantId);
-        case 'send_step':
-          return await this.sendStep(campaignId, tenantId, job.data.stepNumber ?? 1);
-        default:
-          throw new Error(`Unknown action: ${action}`);
-      }
+      return await this.prisma.withTenantContext(tenantId, async () => {
+        switch (action) {
+          case 'send':
+            return await this.sendCampaign(campaignId, tenantId);
+          case 'send_step':
+            return await this.sendStep(campaignId, tenantId, job.data.stepNumber ?? 1);
+          default:
+            throw new Error(`Unknown action: ${action}`);
+        }
+      });
     } catch (error) {
       this.logger.error(`Campaign ${campaignId} failed`, error);
       throw error;
@@ -92,7 +94,9 @@ export class CampaignProcessor extends WorkerHost {
 
         // Send based on channel
         if (campaign.channel === 'SMS' && recipient.phone) {
-          await this.smsService.sendSms(recipient.phone, campaign.content ?? '');
+          await this.smsService.sendSms(recipient.phone, campaign.content ?? '', {
+            tenantId: campaign.tenantId,
+          });
           sentCount++;
         } else if (campaign.channel === 'EMAIL' && recipient.email) {
           // Email sending would be handled by EmailService when expanded
@@ -166,7 +170,9 @@ export class CampaignProcessor extends WorkerHost {
 
       try {
         if (step.channel === 'SMS' && recipient.phone) {
-          await this.smsService.sendSms(recipient.phone, step.content);
+          await this.smsService.sendSms(recipient.phone, step.content, {
+            tenantId,
+          });
           sentCount++;
         } else if (step.channel === 'EMAIL' && recipient.email) {
           // Email sending would be handled by EmailService when expanded

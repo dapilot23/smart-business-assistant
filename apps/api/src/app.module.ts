@@ -52,10 +52,13 @@ import { SpecialistAgentsModule } from './modules/specialist-agents/specialist-a
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { AiActionsModule } from './modules/ai-actions/ai-actions.module';
 import { AiSuggestionsModule } from './modules/ai-suggestions/ai-suggestions.module';
+import { AgentTasksModule } from './modules/agent-tasks/agent-tasks.module';
+import { CeoAgentModule } from './modules/ceo-agent/ceo-agent.module';
 import { OnboardingInterviewModule } from './modules/onboarding-interview/onboarding-interview.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -112,6 +115,8 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     MarketingModule,
     AiActionsModule,
     AiSuggestionsModule,
+    AgentTasksModule,
+    CeoAgentModule,
     OnboardingInterviewModule,
   ],
   controllers: [AppController],
@@ -120,6 +125,10 @@ import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
     {
       provide: APP_GUARD,
       useClass: ClerkAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
     {
       provide: APP_INTERCEPTOR,

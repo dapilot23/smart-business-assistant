@@ -141,6 +141,7 @@ export class AgentInsightsService {
       [AgentType.CUSTOMER_SUCCESS]: 0,
       [AgentType.OPERATIONS]: 0,
       [AgentType.MARKETING]: 0,
+      [AgentType.FOUNDER]: 0,
     };
 
     const byStatus = {

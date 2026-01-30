@@ -2,6 +2,8 @@ import { Controller, Get, Patch, Body, Req, UseGuards } from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { ClerkAuthGuard } from '../../common/guards/clerk-auth.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('settings')
 @UseGuards(ClerkAuthGuard)
@@ -15,6 +17,7 @@ export class SettingsController {
   }
 
   @Patch()
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async updateSettings(@Req() req: any, @Body() dto: UpdateSettingsDto) {
     const tenantId = req.tenantId;
     return this.settingsService.updateSettings(tenantId, dto);

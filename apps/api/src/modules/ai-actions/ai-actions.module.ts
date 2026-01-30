@@ -6,6 +6,9 @@ import { ActionExecutorService } from './action-executor.service';
 import { ActionProcessor } from './action.processor';
 import { MarketingModule } from '../marketing/marketing.module';
 import { SmsModule } from '../sms/sms.module';
+import { EmailModule } from '../email/email.module';
+import { AppointmentsModule } from '../appointments/appointments.module';
+import { QuotesModule } from '../quotes/quotes.module';
 
 @Module({
   imports: [
@@ -15,6 +18,9 @@ import { SmsModule } from '../sms/sms.module';
     }),
     MarketingModule,
     SmsModule,
+    EmailModule,
+    AppointmentsModule,
+    QuotesModule,
   ],
   controllers: [AiActionsController],
   providers: [ActionExecutorService, ActionProcessor],

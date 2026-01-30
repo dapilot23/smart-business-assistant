@@ -4,9 +4,10 @@ import { SmsService } from './sms.service';
 import { SmsSchedulerService } from './sms-scheduler.service';
 import { PrismaModule } from '../../config/prisma/prisma.module';
 import { EventsModule } from '../../config/events/events.module';
+import { MessagingModule } from '../messaging/messaging.module';
 
 @Module({
-  imports: [PrismaModule, EventsModule],
+  imports: [PrismaModule, EventsModule, MessagingModule],
   controllers: [SmsController],
   providers: [SmsService, SmsSchedulerService],
   exports: [SmsService],

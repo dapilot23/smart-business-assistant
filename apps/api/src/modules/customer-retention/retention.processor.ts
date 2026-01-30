@@ -20,62 +20,64 @@ export class RetentionProcessor extends WorkerHost {
   }
 
   async process(job: Job<RetentionJob>): Promise<void> {
-    const { campaignId, customerId, type, step } = job.data;
+    const { campaignId, customerId, type, step, tenantId } = job.data;
 
-    this.logger.log(`Processing retention campaign ${campaignId} for customer ${customerId}, step ${step}`);
+    await this.prisma.withTenantContext(tenantId, async () => {
+      this.logger.log(`Processing retention campaign ${campaignId} for customer ${customerId}, step ${step}`);
 
-    // 1. Look up campaign record
-    const campaign = await this.prisma.retentionCampaign.findUnique({
-      where: { id: campaignId },
-    });
+      // 1. Look up campaign record
+      const campaign = await this.prisma.retentionCampaign.findUnique({
+        where: { id: campaignId },
+      });
 
-    if (!campaign || campaign.status !== 'PENDING') {
-      this.logger.warn(`Campaign ${campaignId} not found or not PENDING, skipping`);
-      return;
-    }
+      if (!campaign || campaign.status !== 'PENDING') {
+        this.logger.warn(`Campaign ${campaignId} not found or not PENDING, skipping`);
+        return;
+      }
 
-    // 2. Look up customer
-    const customer = await this.prisma.customer.findUnique({
-      where: { id: customerId },
-      include: { tenant: true },
-    });
+      // 2. Look up customer
+      const customer = await this.prisma.customer.findUnique({
+        where: { id: customerId },
+        include: { tenant: true },
+      });
 
-    if (!customer) {
-      this.logger.error(`Customer ${customerId} not found, marking campaign as FAILED`);
+      if (!customer) {
+        this.logger.error(`Customer ${customerId} not found, marking campaign as FAILED`);
+        await this.prisma.retentionCampaign.update({
+          where: { id: campaignId },
+          data: { status: 'FAILED' },
+        });
+        return;
+      }
+
+      // 3. Build message
+      const { message, subject } = this.buildMessage(step, customer.name, type);
+
+      // 4. Send notification
+      await this.sendNotification(campaign.channel, customer, message, subject, customer.tenantId);
+
+      // 5. Update campaign status
       await this.prisma.retentionCampaign.update({
         where: { id: campaignId },
-        data: { status: 'FAILED' },
+        data: {
+          status: 'SENT',
+          sentAt: new Date(),
+          message,
+        },
       });
-      return;
-    }
 
-    // 3. Build message
-    const { message, subject } = this.buildMessage(step, customer.name, type);
+      // 6. Emit event
+      this.eventsService.emit<RetentionEventPayload>(EVENTS.RETENTION_TRIGGERED, {
+        tenantId: customer.tenantId,
+        campaignId: campaign.id,
+        customerId: customer.id,
+        customerName: customer.name,
+        type,
+        step,
+      });
 
-    // 4. Send notification
-    await this.sendNotification(campaign.channel, customer, message, subject, customer.tenantId);
-
-    // 5. Update campaign status
-    await this.prisma.retentionCampaign.update({
-      where: { id: campaignId },
-      data: {
-        status: 'SENT',
-        sentAt: new Date(),
-        message,
-      },
+      this.logger.log(`Successfully processed retention campaign ${campaignId}`);
     });
-
-    // 6. Emit event
-    this.eventsService.emit<RetentionEventPayload>(EVENTS.RETENTION_TRIGGERED, {
-      tenantId: customer.tenantId,
-      campaignId: campaign.id,
-      customerId: customer.id,
-      customerName: customer.name,
-      type,
-      step,
-    });
-
-    this.logger.log(`Successfully processed retention campaign ${campaignId}`);
   }
 
   private buildMessage(step: number, customerName: string, type: string): { message: string; subject: string } {

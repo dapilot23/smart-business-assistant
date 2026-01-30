@@ -9,12 +9,16 @@ import {
 import { fetchWithAuth, getApiUrl } from './client';
 
 export async function getAppointments(params?: {
+  startDate?: string;
+  endDate?: string;
   start_date?: string;
   end_date?: string;
 }): Promise<Appointment[]> {
   const queryParams = new URLSearchParams();
-  if (params?.start_date) queryParams.set('start_date', params.start_date);
-  if (params?.end_date) queryParams.set('end_date', params.end_date);
+  const startDate = params?.startDate ?? params?.start_date;
+  const endDate = params?.endDate ?? params?.end_date;
+  if (startDate) queryParams.set('startDate', startDate);
+  if (endDate) queryParams.set('endDate', endDate);
 
   const url = getApiUrl(`/appointments${queryParams.toString() ? `?${queryParams}` : ''}`);
   return fetchWithAuth(url);
@@ -38,6 +42,16 @@ export async function updateAppointment(
   return fetchWithAuth(getApiUrl(`/appointments/${id}`), {
     method: 'PATCH',
     body: JSON.stringify(data),
+  });
+}
+
+export async function assignAppointment(
+  id: string,
+  technicianId: string | null
+): Promise<Appointment> {
+  return fetchWithAuth(getApiUrl(`/appointments/${id}`), {
+    method: 'PATCH',
+    body: JSON.stringify({ assignedTo: technicianId }),
   });
 }
 

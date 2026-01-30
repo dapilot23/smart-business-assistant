@@ -27,60 +27,62 @@ export class OutboundCampaignsProcessor extends WorkerHost {
     this.logger.log(`Processing outbound call ${callId} for campaign ${campaignId}`);
 
     try {
-      // Check if campaign is still active
-      const campaign = await this.prisma.outboundCampaign.findUnique({
-        where: { id: campaignId },
-      });
-
-      if (!campaign || campaign.status === 'CANCELLED' || campaign.status === 'PAUSED') {
-        this.logger.log(`Campaign ${campaignId} is not active, skipping call ${callId}`);
-        await this.campaignsService.updateCallResult(callId, {
-          status: 'FAILED',
-          outcome: 'campaign_cancelled',
-          notes: `Campaign status: ${campaign?.status || 'not found'}`,
+      await this.prisma.withTenantContext(tenantId, async () => {
+        // Check if campaign is still active
+        const campaign = await this.prisma.outboundCampaign.findUnique({
+          where: { id: campaignId },
         });
-        return;
-      }
 
-      // Update call status to in progress
-      await this.prisma.outboundCall.update({
-        where: { id: callId },
-        data: { status: 'IN_PROGRESS', lastAttemptAt: new Date() },
-      });
+        if (!campaign || campaign.status === 'CANCELLED' || campaign.status === 'PAUSED') {
+          this.logger.log(`Campaign ${campaignId} is not active, skipping call ${callId}`);
+          await this.campaignsService.updateCallResult(callId, {
+            status: 'FAILED',
+            outcome: 'campaign_cancelled',
+            notes: `Campaign status: ${campaign?.status || 'not found'}`,
+          });
+          return;
+        }
 
-      // Get customer info for personalization
-      const customer = await this.prisma.customer.findUnique({
-        where: { id: customerId },
-      });
+        // Update call status to in progress
+        await this.prisma.outboundCall.update({
+          where: { id: callId },
+          data: { status: 'IN_PROGRESS', lastAttemptAt: new Date() },
+        });
 
-      // Prepare call metadata
-      const metadata = {
-        tenantId,
-        customerId,
-        campaignId,
-        callId,
-        campaignType: campaign.type,
-        customerName: customer?.name,
-      };
+        // Get customer info for personalization
+        const customer = await this.prisma.customer.findUnique({
+          where: { id: customerId },
+        });
 
-      // Make the outbound call via Vapi
-      const vapiCall = await this.voiceService.makeOutboundCall(
-        {
-          phoneNumber: customerPhone,
-          metadata,
-        },
-        tenantId,
-      );
+        // Prepare call metadata
+        const metadata = {
+          tenantId,
+          customerId,
+          campaignId,
+          callId,
+          campaignType: campaign.type,
+          customerName: customer?.name,
+        };
 
-      const vapiCallId = (vapiCall as any)?.id;
+        // Make the outbound call via Vapi
+        const vapiCall = await this.voiceService.makeOutboundCall(
+          {
+            phoneNumber: customerPhone,
+            metadata,
+          },
+          tenantId,
+        );
 
-      this.logger.log(`Outbound call initiated: ${vapiCallId} for customer ${customerId}`);
+        const vapiCallId = (vapiCall as any)?.id;
 
-      // Update call with Vapi call ID
-      await this.campaignsService.updateCallResult(callId, {
-        status: 'COMPLETED',
-        vapiCallId,
-        outcome: 'call_initiated',
+        this.logger.log(`Outbound call initiated: ${vapiCallId} for customer ${customerId}`);
+
+        // Update call with Vapi call ID
+        await this.campaignsService.updateCallResult(callId, {
+          status: 'COMPLETED',
+          vapiCallId,
+          outcome: 'call_initiated',
+        });
       });
     } catch (error) {
       this.logger.error(`Failed to process outbound call ${callId}: ${error.message}`);

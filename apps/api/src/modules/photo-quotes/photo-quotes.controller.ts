@@ -11,16 +11,21 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { PhotoQuotesService, CreatePhotoQuoteDto } from './photo-quotes.service';
 import { PhotoQuoteStatus } from '@prisma/client';
+import { PrismaService } from '../../config/prisma/prisma.service';
 
 @Controller('photo-quotes')
 export class PhotoQuotesController {
-  constructor(private readonly photoQuotesService: PhotoQuotesService) {}
+  constructor(
+    private readonly photoQuotesService: PhotoQuotesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Upload a photo for quote analysis (authenticated)
@@ -82,10 +87,20 @@ export class PhotoQuotesController {
       throw new BadRequestException('Phone or email is required');
     }
 
-    // Look up tenant by slug
-    // Note: Would need to inject PrismaService and lookup tenant
-    // For now, using slug as tenantId placeholder
-    return this.photoQuotesService.createPhotoQuoteRequest(tenantSlug, file, dto);
+    const tenant = await this.prisma.withSystemContext(() =>
+      this.prisma.tenant.findUnique({
+        where: { slug: tenantSlug },
+        select: { id: true },
+      }),
+    );
+
+    if (!tenant) {
+      throw new NotFoundException('Business not found');
+    }
+
+    return this.prisma.withTenantContext(tenant.id, () =>
+      this.photoQuotesService.createPhotoQuoteRequest(tenant.id, file, dto),
+    );
   }
 
   /**
@@ -120,7 +135,9 @@ export class PhotoQuotesController {
   @Public()
   @Get('view/:id')
   async viewPhotoQuote(@Param('id') id: string) {
-    return this.photoQuotesService.getPhotoQuote(id);
+    return this.prisma.withSystemContext(() =>
+      this.photoQuotesService.getPhotoQuote(id),
+    );
   }
 
   /**
@@ -132,7 +149,9 @@ export class PhotoQuotesController {
     @Param('id') id: string,
     @Body() body: { accepted: boolean; notes?: string },
   ) {
-    return this.photoQuotesService.respondToQuote(id, body.accepted, body.notes);
+    return this.prisma.withSystemContext(() =>
+      this.photoQuotesService.respondToQuote(id, body.accepted, body.notes),
+    );
   }
 
   /**

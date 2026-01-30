@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { AgentOrchestratorService } from '../agent-orchestrator.service';
 import { AgentType } from '@prisma/client';
+import { PrismaService } from '../../../config/prisma/prisma.service';
 
 export interface AgentJobData {
   tenantId: string;
@@ -15,7 +16,10 @@ export interface AgentJobData {
 export class AgentProcessor extends WorkerHost {
   private readonly logger = new Logger(AgentProcessor.name);
 
-  constructor(private readonly orchestrator: AgentOrchestratorService) {
+  constructor(
+    private readonly orchestrator: AgentOrchestratorService,
+    private readonly prisma: PrismaService,
+  ) {
     super();
   }
 
@@ -27,11 +31,13 @@ export class AgentProcessor extends WorkerHost {
     );
 
     try {
-      const runId = await this.orchestrator.runAgent(
-        tenantId,
-        agentType,
-        triggeredBy,
-        triggerEvent,
+      const runId = await this.prisma.withTenantContext(tenantId, () =>
+        this.orchestrator.runAgent(
+          tenantId,
+          agentType,
+          triggeredBy,
+          triggerEvent,
+        ),
       );
       this.logger.log(`Agent ${agentType} completed with run ID: ${runId}`);
       return runId;

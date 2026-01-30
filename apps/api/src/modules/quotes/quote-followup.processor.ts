@@ -25,56 +25,58 @@ export class QuoteFollowupProcessor extends WorkerHost {
   async process(job: Job<QuoteFollowUpJob>): Promise<void> {
     const { followUpId, tenantId } = job.data;
 
-    const followUp = await this.prisma.quoteFollowUp.findUnique({
-      where: { id: followUpId },
-    });
+    await this.prisma.withTenantContext(tenantId, async () => {
+      const followUp = await this.prisma.quoteFollowUp.findUnique({
+        where: { id: followUpId },
+      });
 
-    if (!followUp || followUp.status !== 'PENDING') {
-      this.logger.log(`Follow-up ${followUpId} skipped (not pending)`);
-      return;
-    }
+      if (!followUp || followUp.status !== 'PENDING') {
+        this.logger.log(`Follow-up ${followUpId} skipped (not pending)`);
+        return;
+      }
 
-    const quote = await this.prisma.quote.findUnique({
-      where: { id: followUp.quoteId },
-      include: { customer: true },
-    });
+      const quote = await this.prisma.quote.findUnique({
+        where: { id: followUp.quoteId },
+        include: { customer: true },
+      });
 
-    if (!quote || ['ACCEPTED', 'REJECTED', 'EXPIRED'].includes(quote.status)) {
-      this.logger.log(
-        `Quote ${followUp.quoteId} no longer active, skipping follow-up`,
+      if (!quote || ['ACCEPTED', 'REJECTED', 'EXPIRED'].includes(quote.status)) {
+        this.logger.log(
+          `Quote ${followUp.quoteId} no longer active, skipping follow-up`,
+        );
+        await this.markCancelled(followUpId);
+        return;
+      }
+
+      const formatted = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'usd',
+      }).format(toNum(quote.amount));
+
+      const { message, subject } = this.followupService.getFollowUpMessage(
+        followUp.step,
+        quote.customer.name,
+        quote.description,
+        formatted,
       );
-      await this.markCancelled(followUpId);
-      return;
-    }
 
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'usd',
-    }).format(toNum(quote.amount));
+      await this.sendFollowUp(
+        followUp.channel,
+        quote,
+        message,
+        subject,
+        tenantId,
+      );
 
-    const { message, subject } = this.followupService.getFollowUpMessage(
-      followUp.step,
-      quote.customer.name,
-      quote.description,
-      formatted,
-    );
+      await this.prisma.quoteFollowUp.update({
+        where: { id: followUpId },
+        data: { status: 'SENT', sentAt: new Date() },
+      });
 
-    await this.sendFollowUp(
-      followUp.channel,
-      quote,
-      message,
-      subject,
-      tenantId,
-    );
-
-    await this.prisma.quoteFollowUp.update({
-      where: { id: followUpId },
-      data: { status: 'SENT', sentAt: new Date() },
+      this.logger.log(
+        `Follow-up step ${followUp.step} sent for quote ${quote.id}`,
+      );
     });
-
-    this.logger.log(
-      `Follow-up step ${followUp.step} sent for quote ${quote.id}`,
-    );
   }
 
   private async sendFollowUp(

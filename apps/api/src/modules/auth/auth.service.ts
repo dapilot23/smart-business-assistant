@@ -22,58 +22,60 @@ export class AuthService {
   ) {}
 
   async syncClerkUser(clerkData: ClerkUserData) {
-    let user = await this.prisma.user.findUnique({
-      where: { clerkId: clerkData.clerkId },
-      include: { tenant: true },
-    });
+    return this.prisma.withSystemContext(async () => {
+      let user = await this.prisma.user.findUnique({
+        where: { clerkId: clerkData.clerkId },
+        include: { tenant: true },
+      });
 
-    if (user) {
-      return user;
-    }
+      if (user) {
+        return user;
+      }
 
-    let tenantId = clerkData.publicMetadata?.tenantId as string;
+      let tenantId = clerkData.publicMetadata?.tenantId as string;
 
-    // If no tenantId in metadata, only fall back to demo in non-production demo mode
-    if (!tenantId) {
-      const isDemoMode = this.configService.get('DEMO_MODE') === 'true';
-      const isProduction = this.configService.get('NODE_ENV') === 'production';
+      // If no tenantId in metadata, only fall back to demo in non-production demo mode
+      if (!tenantId) {
+        const isDemoMode = this.configService.get('DEMO_MODE') === 'true';
+        const isProduction = this.configService.get('NODE_ENV') === 'production';
 
-      if (isDemoMode && !isProduction) {
-        const demoTenant = await this.prisma.tenant.findUnique({
-          where: { slug: 'demo-plumbing' },
-        });
-        if (demoTenant) {
-          tenantId = demoTenant.id;
+        if (isDemoMode && !isProduction) {
+          const demoTenant = await this.prisma.tenant.findUnique({
+            where: { slug: 'demo-plumbing' },
+          });
+          if (demoTenant) {
+            tenantId = demoTenant.id;
+          }
+        }
+
+        if (!tenantId) {
+          throw new BadRequestException(
+            'User must be assigned to a tenant. Set tenantId in Clerk user metadata.',
+          );
         }
       }
 
-      if (!tenantId) {
-        throw new BadRequestException(
-          'User must be assigned to a tenant. Set tenantId in Clerk user metadata.',
-        );
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+      });
+
+      if (!tenant) {
+        throw new BadRequestException('Tenant not found');
       }
-    }
 
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
+      user = await this.prisma.user.create({
+        data: {
+          clerkId: clerkData.clerkId,
+          email: clerkData.email,
+          name: clerkData.name,
+          tenantId,
+          role: (clerkData.publicMetadata?.role as UserRole) || UserRole.ADMIN,
+        },
+        include: { tenant: true },
+      });
+
+      return user;
     });
-
-    if (!tenant) {
-      throw new BadRequestException('Tenant not found');
-    }
-
-    user = await this.prisma.user.create({
-      data: {
-        clerkId: clerkData.clerkId,
-        email: clerkData.email,
-        name: clerkData.name,
-        tenantId,
-        role: (clerkData.publicMetadata?.role as UserRole) || UserRole.ADMIN,
-      },
-      include: { tenant: true },
-    });
-
-    return user;
   }
 
   async validateUser(userId: string) {

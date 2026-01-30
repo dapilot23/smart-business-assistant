@@ -39,6 +39,7 @@ export function createMockPrismaService(): MockPrismaService {
 
   return {
     customer: createModelMock(),
+    communicationOptOut: createModelMock(),
     appointment: createModelMock(),
     invoice: createModelMock(),
     invoiceItem: createModelMock(),
@@ -64,11 +65,14 @@ export function createMockPrismaService(): MockPrismaService {
     technicianAvailability: createModelMock(),
     maintenanceAlert: createModelMock(),
     messageClassification: createModelMock(),
+    suggestedResponse: createModelMock(),
     autoResponderRule: createModelMock(),
     conversationThread: createModelMock(),
     message: createModelMock(),
     copilotConversation: createModelMock(),
     weeklyReport: createModelMock(),
+    businessAnomaly: createModelMock(),
+    agentTask: createModelMock(),
     $transaction: jest.fn((cb) => cb(createMockPrismaService())),
     $executeRaw: jest.fn(),
     $queryRaw: jest.fn(),

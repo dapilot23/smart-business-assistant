@@ -282,35 +282,37 @@ export class PreferenceLearningService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async updateAllPreferences(): Promise<void> {
-    this.logger.log('Starting batch preference analysis');
+    await this.prisma.withSystemContext(async () => {
+      this.logger.log('Starting batch preference analysis');
 
-    // Find customers with recent appointments who need preference updates
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      // Find customers with recent appointments who need preference updates
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const customers = await this.prisma.customer.findMany({
-      where: {
-        appointments: {
-          some: {
-            scheduledAt: { gte: thirtyDaysAgo },
-            status: 'COMPLETED',
+      const customers = await this.prisma.customer.findMany({
+        where: {
+          appointments: {
+            some: {
+              scheduledAt: { gte: thirtyDaysAgo },
+              status: 'COMPLETED',
+            },
           },
         },
-      },
-      select: { id: true },
-      take: 100, // Batch size
-    });
+        select: { id: true },
+        take: 100, // Batch size
+      });
 
-    let updated = 0;
-    for (const customer of customers) {
-      try {
-        await this.analyzeAndUpdatePreferences(customer.id);
-        updated++;
-      } catch (error) {
-        this.logger.error(`Failed to update preferences for ${customer.id}: ${error.message}`);
+      let updated = 0;
+      for (const customer of customers) {
+        try {
+          await this.analyzeAndUpdatePreferences(customer.id);
+          updated++;
+        } catch (error) {
+          this.logger.error(`Failed to update preferences for ${customer.id}: ${error.message}`);
+        }
       }
-    }
 
-    this.logger.log(`Batch preference update complete: ${updated}/${customers.length} customers`);
+      this.logger.log(`Batch preference update complete: ${updated}/${customers.length} customers`);
+    });
   }
 }

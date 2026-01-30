@@ -65,7 +65,10 @@ export class VoiceController {
     @Headers('x-vapi-secret') vapiSecret?: string,
   ) {
     this.validateVapiWebhook(vapiSecret);
-    const tenantId = webhookData.metadata?.tenantId || 'default';
+    const tenantId = webhookData.metadata?.tenantId;
+    if (!tenantId) {
+      return { received: true };
+    }
     return this.voiceService.handleIncomingCall(webhookData, tenantId);
   }
 

@@ -13,6 +13,7 @@ import { PreferenceLearningService } from './preference-learning.service';
 import { RouteOptimizationService } from './route-optimization.service';
 import { SmartDispatchService } from './smart-dispatch.service';
 import { DispatchIntelligenceService } from './dispatch-intelligence.service';
+import { DispatchSummaryService } from './dispatch-summary.service';
 import { FindBestTechnicianDto, FillGapDto } from './dto/dispatch.dto';
 
 @Controller('ai-scheduling')
@@ -23,6 +24,7 @@ export class AiSchedulingController {
     private readonly routeOptimization: RouteOptimizationService,
     private readonly smartDispatch: SmartDispatchService,
     private readonly dispatchIntelligence: DispatchIntelligenceService,
+    private readonly dispatchSummary: DispatchSummaryService,
   ) {}
 
   // ============================================
@@ -171,5 +173,12 @@ export class AiSchedulingController {
   async suggestUpsells(@Request() req, @Param('jobId') jobId: string) {
     const tenantId = req.user?.tenantId;
     return this.dispatchIntelligence.suggestUpsells(jobId, tenantId);
+  }
+
+  @Get('dispatch/summary')
+  async getEndOfDaySummary(@Request() req, @Query('date') dateStr?: string) {
+    const tenantId = req.user?.tenantId;
+    const date = dateStr ? new Date(dateStr) : new Date();
+    return this.dispatchSummary.getEndOfDaySummary(tenantId, date);
   }
 }

@@ -25,6 +25,6 @@ import { EventsModule } from '../../config/events/events.module';
     QuoteFollowupService,
     QuoteFollowupProcessor,
   ],
-  exports: [QuotesService, PdfService],
+  exports: [QuotesService, PdfService, QuoteFollowupService],
 })
 export class QuotesModule {}

@@ -114,7 +114,9 @@ export class NpsService {
       `How was ${serviceName}? Rate your experience: ${surveyUrl}`;
 
     try {
-      await this.smsService.sendSms(customer.phone, message);
+      await this.smsService.sendSms(customer.phone, message, {
+        tenantId: survey.tenantId,
+      });
 
       await this.prisma.npsSurvey.update({
         where: { token },
@@ -421,19 +423,21 @@ export class NpsService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async expireOldSurveys(): Promise<void> {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    await this.prisma.withSystemContext(async () => {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const result = await this.prisma.npsSurvey.updateMany({
-      where: {
-        status: 'SENT',
-        sentAt: { lt: thirtyDaysAgo },
-      },
-      data: { status: 'EXPIRED' },
+      const result = await this.prisma.npsSurvey.updateMany({
+        where: {
+          status: 'SENT',
+          sentAt: { lt: thirtyDaysAgo },
+        },
+        data: { status: 'EXPIRED' },
+      });
+
+      if (result.count > 0) {
+        this.logger.log(`Expired ${result.count} old NPS surveys`);
+      }
     });
-
-    if (result.count > 0) {
-      this.logger.log(`Expired ${result.count} old NPS surveys`);
-    }
   }
 }

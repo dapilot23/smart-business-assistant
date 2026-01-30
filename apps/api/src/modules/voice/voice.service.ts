@@ -5,12 +5,12 @@ import { PrismaService } from '../../config/prisma/prisma.service';
 import { CreateAssistantDto } from './dto/create-assistant.dto';
 import { OutboundCallDto } from './dto/outbound-call.dto';
 import { CallStatus } from '@prisma/client';
-import { randomBytes } from 'crypto';
 import {
   CustomerContextService,
   CustomerVoiceContext,
 } from '../customer-context/customer-context.service';
 import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-breaker.service';
+import { PublicBookingService } from '../public-booking/public-booking.service';
 
 @Injectable()
 export class VoiceService implements OnModuleInit {
@@ -24,6 +24,7 @@ export class VoiceService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly customerContext: CustomerContextService,
     private readonly circuitBreakerService: CircuitBreakerService,
+    private readonly publicBookingService: PublicBookingService,
   ) {
     const apiKey = this.configService.get<string>('VAPI_API_KEY');
     this.isConfigured = !!apiKey && apiKey.length > 0;
@@ -68,7 +69,10 @@ export class VoiceService implements OnModuleInit {
 
     // Get tenant info for personalized assistant
     const tenant = config.tenantId
-      ? await this.prisma.tenant.findUnique({ where: { id: config.tenantId } })
+      ? await this.prisma.withTenantContext(
+          config.tenantId,
+          () => this.prisma.tenant.findUnique({ where: { id: config.tenantId } }),
+        )
       : null;
 
     const businessName = tenant?.name || config.name || 'our business';
@@ -121,52 +125,54 @@ export class VoiceService implements OnModuleInit {
     assistant: any;
     customerContext: CustomerVoiceContext | null;
   }> {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-    });
-    const businessName = tenant?.name || 'our business';
+    return this.prisma.withTenantContext(tenantId, async () => {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+      });
+      const businessName = tenant?.name || 'our business';
 
-    // Get customer context if phone is available
-    let context: CustomerVoiceContext | null = null;
-    if (callerPhone) {
-      context = await this.customerContext.getContextByPhone(tenantId, callerPhone);
-      if (context) {
-        await this.customerContext.recordInteraction(context.customerId);
+      // Get customer context if phone is available
+      let context: CustomerVoiceContext | null = null;
+      if (callerPhone) {
+        context = await this.customerContext.getContextByPhone(tenantId, callerPhone);
+        if (context) {
+          await this.customerContext.recordInteraction(context.customerId);
+        }
       }
-    }
 
-    // Build personalized first message
-    const firstMessage = this.customerContext.buildGreeting(context, businessName);
+      // Build personalized first message
+      const firstMessage = this.customerContext.buildGreeting(context, businessName);
 
-    // Build personalized system prompt with customer context
-    const systemPrompt = this.getPersonalizedSystemPrompt(businessName, context);
+      // Build personalized system prompt with customer context
+      const systemPrompt = this.getPersonalizedSystemPrompt(businessName, context);
 
-    return {
-      assistant: {
-        model: {
-          provider: 'openai',
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-          ],
-          functions: this.getBookingFunctionDefinitions(),
+      return {
+        assistant: {
+          model: {
+            provider: 'openai',
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'system',
+                content: systemPrompt,
+              },
+            ],
+            functions: this.getBookingFunctionDefinitions(),
+          },
+          voice: {
+            provider: 'azure',
+            voiceId: 'andrew',
+          },
+          firstMessage,
+          transcriber: {
+            provider: 'deepgram',
+            model: 'nova-2',
+            language: 'en',
+          },
         },
-        voice: {
-          provider: 'azure',
-          voiceId: 'andrew',
-        },
-        firstMessage,
-        transcriber: {
-          provider: 'deepgram',
-          model: 'nova-2',
-          language: 'en',
-        },
-      },
-      customerContext: context,
-    };
+        customerContext: context,
+      };
+    });
   }
 
   /**
@@ -203,74 +209,83 @@ export class VoiceService implements OnModuleInit {
 
   async makeOutboundCall(dto: OutboundCallDto, tenantId: string) {
     this.ensureConfigured();
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required to place a call');
+    }
 
-    const assistant = dto.assistantId
-      ? { assistantId: dto.assistantId }
-      : await this.getOrCreateDefaultAssistant(tenantId);
+    return this.prisma.withTenantContext(tenantId, async () => {
+      const assistant = dto.assistantId
+        ? { assistantId: dto.assistantId }
+        : await this.getOrCreateDefaultAssistant(tenantId);
 
-    const callConfig: any = {
-      ...assistant,
-      customer: {
-        number: dto.phoneNumber,
-      },
-      ...(dto.metadata && { metadata: dto.metadata }),
-    };
+      const callConfig: any = {
+        ...assistant,
+        customer: {
+          number: dto.phoneNumber,
+        },
+        ...(dto.metadata && { metadata: dto.metadata }),
+      };
 
-    const call = await this.callVapi(() =>
-      this.vapiClient!.calls.create(callConfig)
-    );
-    const callId = (call as any).id || 'unknown';
+      const call = await this.callVapi(() =>
+        this.vapiClient!.calls.create(callConfig)
+      );
+      const callId = (call as any).id || 'unknown';
 
-    await this.prisma.callLog.create({
-      data: {
-        tenantId,
-        vapiCallId: callId,
-        callerPhone: dto.phoneNumber,
-        direction: 'OUTBOUND',
-        status: 'QUEUED',
-        metadata: dto.metadata || {},
-      },
+      await this.prisma.callLog.create({
+        data: {
+          tenantId,
+          vapiCallId: callId,
+          callerPhone: dto.phoneNumber,
+          direction: 'OUTBOUND',
+          status: 'QUEUED',
+          metadata: dto.metadata || {},
+        },
+      });
+
+      this.logger.log(`Outbound call initiated: ${callId}`);
+      return call;
     });
-
-    this.logger.log(`Outbound call initiated: ${callId}`);
-    return call;
   }
 
   async handleIncomingCall(callData: any, tenantId: string) {
     this.logger.log(`Incoming call webhook: ${callData.id}`);
 
-    const existingLog = await this.prisma.callLog.findUnique({
-      where: { vapiCallId: callData.id },
-    });
-
-    if (!existingLog) {
-      await this.prisma.callLog.create({
-        data: {
-          tenantId,
-          vapiCallId: callData.id,
-          callerPhone: callData.customer?.number || 'unknown',
-          direction: 'INBOUND',
-          status: 'IN_PROGRESS',
-          metadata: callData,
-        },
+    return this.prisma.withTenantContext(tenantId, async () => {
+      const existingLog = await this.prisma.callLog.findUnique({
+        where: { vapiCallId: callData.id },
       });
-    }
 
-    return { received: true };
+      if (!existingLog) {
+        await this.prisma.callLog.create({
+          data: {
+            tenantId,
+            vapiCallId: callData.id,
+            callerPhone: callData.customer?.number || 'unknown',
+            direction: 'INBOUND',
+            status: 'IN_PROGRESS',
+            metadata: callData,
+          },
+        });
+      }
+
+      return { received: true };
+    });
   }
 
   async handleCallStatusUpdate(callData: any) {
     this.logger.log(`Call status update: ${callData.id} - ${callData.status}`);
 
-    await this.prisma.callLog.updateMany({
-      where: { vapiCallId: callData.id },
-      data: {
-        status: this.mapVapiStatus(callData.status),
-        metadata: callData,
-      },
-    });
+    return this.prisma.withSystemContext(async () => {
+      await this.prisma.callLog.updateMany({
+        where: { vapiCallId: callData.id },
+        data: {
+          status: this.mapVapiStatus(callData.status),
+          metadata: callData,
+        },
+      });
 
-    return { received: true };
+      return { received: true };
+    });
   }
 
   async handleCallEnd(callData: any) {
@@ -282,18 +297,20 @@ export class VoiceService implements OnModuleInit {
       return { received: true };
     }
 
-    await this.prisma.callLog.updateMany({
-      where: { vapiCallId: callId },
-      data: {
-        status: 'ENDED',
-        duration: callData.duration || 0,
-        transcript: callData.transcript || '',
-        summary: callData.summary || '',
-        metadata: callData,
-      },
-    });
+    return this.prisma.withSystemContext(async () => {
+      await this.prisma.callLog.updateMany({
+        where: { vapiCallId: callId },
+        data: {
+          status: 'ENDED',
+          duration: callData.duration || 0,
+          transcript: callData.transcript || '',
+          summary: callData.summary || '',
+          metadata: callData,
+        },
+      });
 
-    return { received: true };
+      return { received: true };
+    });
   }
 
   async handleFunctionCall(functionCallData: any) {
@@ -331,11 +348,13 @@ export class VoiceService implements OnModuleInit {
   }
 
   async getCallLogs(tenantId: string, limit = 50) {
-    return this.prisma.callLog.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
+    return this.prisma.withTenantContext(tenantId, () =>
+      this.prisma.callLog.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      }),
+    );
   }
 
   private async getOrCreateDefaultAssistant(tenantId: string) {
@@ -443,16 +462,7 @@ Remember: Your goal is to make booking as easy as possible while being friendly 
   private async handleGetServices(tenantId: string) {
     this.logger.log(`Getting services for tenant: ${tenantId}`);
 
-    const services = await this.prisma.service.findMany({
-      where: { tenantId, isActive: true },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        durationMinutes: true,
-        price: true,
-      },
-    });
+    const services = await this.publicBookingService.getPublicServices(tenantId);
 
     if (services.length === 0) {
       return { result: 'We currently have no services available for booking.' };
@@ -475,21 +485,25 @@ Remember: Your goal is to make booking as easy as possible while being friendly 
     this.logger.log(`Getting available slots`, params);
 
     // Find service by ID or name
-    let service = params.serviceId
-      ? await this.prisma.service.findFirst({
+    const service = await this.prisma.withTenantContext(tenantId, async () => {
+      if (params.serviceId) {
+        return this.prisma.service.findFirst({
           where: { id: params.serviceId, tenantId },
-        })
-      : null;
+        });
+      }
 
-    if (!service && params.serviceName) {
-      service = await this.prisma.service.findFirst({
-        where: {
-          tenantId,
-          isActive: true,
-          name: { contains: params.serviceName, mode: 'insensitive' },
-        },
-      });
-    }
+      if (params.serviceName) {
+        return this.prisma.service.findFirst({
+          where: {
+            tenantId,
+            isActive: true,
+            name: { contains: params.serviceName, mode: 'insensitive' },
+          },
+        });
+      }
+
+      return null;
+    });
 
     if (!service) {
       return { result: 'I could not find that service. What service are you looking for?' };
@@ -497,55 +511,30 @@ Remember: Your goal is to make booking as easy as possible while being friendly 
 
     // Parse date or default to tomorrow
     const targetDate = this.parseDate(params.date) || this.getNextBusinessDay();
-    const dayOfWeek = targetDate.getDay();
 
-    // Get service availability for this day
-    const availability = await this.prisma.serviceAvailability.findFirst({
-      where: { serviceId: service.id, dayOfWeek, isActive: true },
-    });
-
-    if (!availability) {
-      return {
-        result: `We're not available for ${service.name} on ${this.formatDate(targetDate)}. Would you like to try another day?`,
-      };
-    }
-
-    // Get existing appointments for that day
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const existingAppointments = await this.prisma.appointment.findMany({
-      where: {
-        tenantId,
-        serviceId: service.id,
-        scheduledAt: { gte: startOfDay, lte: endOfDay },
-        status: { notIn: ['CANCELLED'] },
-      },
-      select: { scheduledAt: true, duration: true },
-    });
-
-    // Generate available slots
-    const slots = this.generateTimeSlots(
-      availability.startTime,
-      availability.endTime,
-      service.durationMinutes,
-      service.bufferMinutes,
-      existingAppointments,
+    const slots = await this.publicBookingService.getAvailableTimeSlots(
+      tenantId,
+      service.id,
       targetDate,
     );
+    const availableSlots = slots.filter((slot) => slot.available);
 
-    if (slots.length === 0) {
+    if (availableSlots.length === 0) {
       return {
         result: `Sorry, we're fully booked for ${service.name} on ${this.formatDate(targetDate)}. Would you like to try another day?`,
       };
     }
 
-    const slotList = slots.slice(0, 5).map((s) => s.display).join(', ');
+    const formattedSlots = availableSlots.map((slot) => ({
+      time: slot.time,
+      display: this.formatTimeLabel(slot.time),
+      datetime: this.combineDateAndTime(targetDate, slot.time),
+    }));
+
+    const slotList = formattedSlots.slice(0, 5).map((s) => s.display).join(', ');
     return {
       result: `Available times for ${service.name} on ${this.formatDate(targetDate)}: ${slotList}. Which time works for you?`,
-      slots: slots,
+      slots: formattedSlots,
       service: service,
       date: targetDate.toISOString().split('T')[0],
     };
@@ -566,36 +555,23 @@ Remember: Your goal is to make booking as easy as possible while being friendly 
       return { result: 'May I have your name for the booking?' };
     }
 
-    // Find or create customer
-    let customer = await this.prisma.customer.findFirst({
-      where: { tenantId, phone: callerPhone },
+    const service = await this.prisma.withTenantContext(tenantId, async () => {
+      if (params.serviceId) {
+        return this.prisma.service.findFirst({ where: { id: params.serviceId, tenantId } });
+      }
+
+      if (params.serviceName) {
+        return this.prisma.service.findFirst({
+          where: {
+            tenantId,
+            isActive: true,
+            name: { contains: params.serviceName, mode: 'insensitive' },
+          },
+        });
+      }
+
+      return null;
     });
-
-    if (!customer) {
-      customer = await this.prisma.customer.create({
-        data: {
-          tenantId,
-          name: params.customerName,
-          phone: callerPhone,
-        },
-      });
-      this.logger.log(`Created new customer: ${customer.id}`);
-    }
-
-    // Find service
-    let service = params.serviceId
-      ? await this.prisma.service.findFirst({ where: { id: params.serviceId, tenantId } })
-      : null;
-
-    if (!service && params.serviceName) {
-      service = await this.prisma.service.findFirst({
-        where: {
-          tenantId,
-          isActive: true,
-          name: { contains: params.serviceName, mode: 'insensitive' },
-        },
-      });
-    }
 
     if (!service) {
       return { result: 'Which service would you like to book?' };
@@ -611,81 +587,64 @@ Remember: Your goal is to make booking as easy as possible while being friendly 
       return { result: 'That time is not available. Please choose a future date and time.' };
     }
 
-    // Check for conflicts
-    const conflictEnd = new Date(scheduledAt.getTime() + service.durationMinutes * 60000);
-    const existingAppt = await this.prisma.appointment.findFirst({
-      where: {
-        tenantId,
-        serviceId: service.id,
-        status: { notIn: ['CANCELLED'] },
-        scheduledAt: {
-          gte: new Date(scheduledAt.getTime() - service.durationMinutes * 60000),
-          lt: conflictEnd,
-        },
-      },
-    });
-
-    if (existingAppt) {
-      return { result: 'That time slot is no longer available. Please choose another time.' };
-    }
-
-    // Create the appointment
-    const confirmationCode = this.generateConfirmationCode();
-    const manageToken = randomBytes(32).toString('hex');
-
-    const appointment = await this.prisma.appointment.create({
-      data: {
-        tenantId,
-        customerId: customer.id,
+    try {
+      const { appointment } = await this.publicBookingService.createBookingInternal(tenantId, {
         serviceId: service.id,
         scheduledAt,
-        duration: service.durationMinutes,
-        status: 'SCHEDULED',
-        confirmationCode,
-        manageToken,
-        notes: 'Booked via AI phone assistant',
-      },
-    });
+        customer: {
+          name: params.customerName,
+          phone: callerPhone,
+        },
+        appointmentNotes: 'Booked via AI phone assistant',
+      });
 
-    this.logger.log(`Created appointment: ${appointment.id}, confirmation: ${confirmationCode}`);
+      this.logger.log(
+        `Created appointment: ${appointment.id}, confirmation: ${appointment.confirmationCode}`,
+      );
 
-    const formattedDate = this.formatDate(scheduledAt);
-    const formattedTime = scheduledAt.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
+      const formattedDate = this.formatDate(appointment.scheduledAt);
+      const formattedTime = appointment.scheduledAt.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+      const serviceName = appointment.service?.name || service.name;
 
-    return {
-      result: `I've booked your ${service.name} appointment for ${formattedDate} at ${formattedTime}. Your confirmation code is ${confirmationCode}. We'll send you a reminder before your appointment. Is there anything else I can help you with?`,
-      appointment: {
-        id: appointment.id,
-        confirmationCode,
-        service: service.name,
-        date: formattedDate,
-        time: formattedTime,
-      },
-    };
+      return {
+        result: `I've booked your ${serviceName} appointment for ${formattedDate} at ${formattedTime}. Your confirmation code is ${appointment.confirmationCode}. We'll send you a reminder before your appointment. Is there anything else I can help you with?`,
+        appointment: {
+          id: appointment.id,
+          confirmationCode: appointment.confirmationCode,
+          service: serviceName,
+          date: formattedDate,
+          time: formattedTime,
+        },
+      };
+    } catch (error) {
+      return { result: this.formatBookingError(error) };
+    }
   }
 
   private async handleGetBusinessInfo(tenantId: string) {
     this.logger.log(`Getting business info for tenant: ${tenantId}`);
 
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
+    return this.prisma.withTenantContext(tenantId, async () => {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+      });
+
+      if (!tenant) {
+        return { result: 'Business information is not available.' };
+      }
+
+      return {
+        result: `You've reached ${tenant.name}. Our phone number is ${tenant.phone || 'not available'}. How can I assist you today?`,
+        business: {
+          name: tenant.name,
+          phone: tenant.phone,
+          email: tenant.email,
+        },
+      };
     });
-
-    if (!tenant) {
-      return { result: 'Business information is not available.' };
-    }
-
-    return {
-      result: `You've reached ${tenant.name}. Our phone number is ${tenant.phone || 'not available'}. How can I assist you today?`,
-      business: {
-        name: tenant.name,
-        phone: tenant.phone,
-        email: tenant.email,
-      },
-    };
   }
 
   private async handleTransferToHuman(params: any, callData: any) {
@@ -740,6 +699,33 @@ Remember: Your goal is to make booking as easy as possible while being friendly 
     });
   }
 
+  private formatTimeLabel(time: string): string {
+    const [hour, minute] = time.split(':').map(Number);
+    const timeValue = new Date();
+    timeValue.setHours(hour, minute, 0, 0);
+    return timeValue.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
+  private combineDateAndTime(date: Date, time: string): Date {
+    const [hour, minute] = time.split(':').map(Number);
+    const dateTime = new Date(date);
+    dateTime.setHours(hour, minute, 0, 0);
+    return dateTime;
+  }
+
+  private formatBookingError(error: unknown): string {
+    if (error && typeof error === 'object' && 'message' in error) {
+      const message = String((error as { message?: string }).message || '');
+      if (message) {
+        return message;
+      }
+    }
+    return 'Sorry, something went wrong while booking. Please try another time.';
+  }
+
   private parseDateTime(dateStr: string, timeStr: string): Date | null {
     try {
       // Handle various date formats
@@ -771,62 +757,6 @@ Remember: Your goal is to make booking as easy as possible while being friendly 
     } catch {
       return null;
     }
-  }
-
-  private generateTimeSlots(
-    startTime: string,
-    endTime: string,
-    durationMinutes: number,
-    bufferMinutes: number,
-    existingAppointments: Array<{ scheduledAt: Date; duration: number }>,
-    targetDate: Date,
-  ): Array<{ time: string; display: string; datetime: Date }> {
-    const slots: Array<{ time: string; display: string; datetime: Date }> = [];
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-
-    const slotDuration = durationMinutes + bufferMinutes;
-    const current = new Date(targetDate);
-    current.setHours(startHour, startMin, 0, 0);
-
-    const endDateTime = new Date(targetDate);
-    endDateTime.setHours(endHour, endMin, 0, 0);
-
-    const now = new Date();
-
-    while (current < endDateTime) {
-      const slotEnd = new Date(current.getTime() + durationMinutes * 60000);
-
-      // Skip past times
-      if (current > now) {
-        // Check for conflicts
-        const hasConflict = existingAppointments.some((appt) => {
-          const apptEnd = new Date(appt.scheduledAt.getTime() + appt.duration * 60000);
-          return current < apptEnd && slotEnd > appt.scheduledAt;
-        });
-
-        if (!hasConflict) {
-          slots.push({
-            time: current.toTimeString().slice(0, 5),
-            display: current.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-            datetime: new Date(current),
-          });
-        }
-      }
-
-      current.setMinutes(current.getMinutes() + slotDuration);
-    }
-
-    return slots;
-  }
-
-  private generateConfirmationCode(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
   }
 
   /**

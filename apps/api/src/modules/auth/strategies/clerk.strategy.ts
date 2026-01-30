@@ -28,13 +28,15 @@ export class ClerkStrategy extends PassportStrategy(Strategy, 'clerk') {
     // SECURITY: Demo mode is completely disabled in production
     if (demoMode && !isProduction && (!authHeader || !authHeader.startsWith('Bearer '))) {
       // Return demo user only in non-production environments
-      const demoUser = await this.prisma.user.findFirst({
-        where: {
-          tenant: { slug: 'demo-plumbing' },
-          role: 'ADMIN',
-        },
-        include: { tenant: true },
-      });
+      const demoUser = await this.prisma.withSystemContext(() =>
+        this.prisma.user.findFirst({
+          where: {
+            tenant: { slug: 'demo-plumbing' },
+            role: 'ADMIN',
+          },
+          include: { tenant: true },
+        }),
+      );
 
       if (demoUser) {
         return {

@@ -9,6 +9,7 @@ import {
   Request,
   Res,
   Header,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { InvoicesService, CreateInvoiceDto } from './invoices.service';
@@ -16,6 +17,8 @@ import { InvoicePdfService } from './invoice-pdf.service';
 import { SmsService } from '../sms/sms.service';
 import { InvoiceStatus } from '@prisma/client';
 import { toNum } from '../../common/utils/decimal';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('invoices')
 export class InvoicesController {
@@ -25,27 +28,35 @@ export class InvoicesController {
     private readonly smsService: SmsService,
   ) {}
 
+  private requireTenantId(req: any): string {
+    const tenantId = req.user?.tenantId || req.tenantId;
+    if (!tenantId) {
+      throw new UnauthorizedException('Tenant ID not found');
+    }
+    return tenantId;
+  }
+
   @Get()
   async findAll(@Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.invoicesService.findAll(tenantId);
   }
 
   @Get('stats')
   async getStats(@Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.invoicesService.getStats(tenantId);
   }
 
   @Get('pipeline-stats')
   async getPipelineStats(@Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.invoicesService.getPipelineStats(tenantId);
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string, @Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.invoicesService.findOne(id, tenantId);
   }
 
@@ -56,7 +67,7 @@ export class InvoicesController {
     @Request() req,
     @Res() res: Response,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     const invoice = await this.invoicesService.findOne(id, tenantId);
 
     const pdfBuffer = await this.pdfService.generateInvoicePdf({
@@ -86,37 +97,41 @@ export class InvoicesController {
   }
 
   @Post()
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async create(@Body() createData: CreateInvoiceDto, @Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.invoicesService.create(createData, tenantId);
   }
 
   @Post('from-quote')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async createFromQuote(
     @Body() data: { quoteId: string; dueDate: string },
     @Request() req,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.invoicesService.createFromQuote(data.quoteId, tenantId, data.dueDate);
   }
 
   @Patch(':id/status')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async updateStatus(
     @Param('id') id: string,
     @Body() statusData: { status: InvoiceStatus },
     @Request() req,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.invoicesService.updateStatus(id, statusData.status, tenantId);
   }
 
   @Post(':id/send')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async sendInvoice(
     @Param('id') id: string,
     @Body() sendOptions: { method?: 'sms' | 'email' | 'both' },
     @Request() req,
   ) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     const invoice = await this.invoicesService.findOne(id, tenantId);
 
     const results: { sms?: any; email?: any } = {};
@@ -130,6 +145,8 @@ export class InvoicesController {
           invoice.invoiceNumber,
           toNum(invoice.amount) - toNum(invoice.paidAmount),
           invoice.dueDate,
+          undefined,
+          tenantId,
         );
       } catch (error) {
         results.sms = { success: false, error: error.message };
@@ -149,8 +166,9 @@ export class InvoicesController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async delete(@Param('id') id: string, @Request() req) {
-    const tenantId = req.user?.tenantId || 'default';
+    const tenantId = this.requireTenantId(req);
     return this.invoicesService.delete(id, tenantId);
   }
 }

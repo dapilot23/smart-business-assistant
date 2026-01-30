@@ -14,7 +14,10 @@ export class RetentionEventHandler {
     this.logger.log(
       `Cancelling retention sequence for customer ${payload.customerId} - new appointment booked`,
     );
-    await this.retentionSequenceService.cancelSequence(payload.customerId);
+    await this.retentionSequenceService.cancelSequence(
+      payload.customerId,
+      payload.tenantId,
+    );
   }
 
   @OnEvent(EVENTS.APPOINTMENT_CONFIRMED)
@@ -22,6 +25,9 @@ export class RetentionEventHandler {
     this.logger.log(
       `Cancelling retention sequence for customer ${payload.customerId} - appointment confirmed`,
     );
-    await this.retentionSequenceService.cancelSequence(payload.customerId);
+    await this.retentionSequenceService.cancelSequence(
+      payload.customerId,
+      payload.tenantId,
+    );
   }
 }

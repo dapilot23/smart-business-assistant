@@ -53,6 +53,17 @@ export interface InterviewSummary {
   profile: Record<string, unknown>;
 }
 
+export type ProfileField =
+  | "industry"
+  | "targetMarket"
+  | "serviceArea"
+  | "teamSize"
+  | "communicationStyle"
+  | "primaryGoals"
+  | "currentChallenges"
+  | "peakSeasons"
+  | "growthStage";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export async function getOnboardingStatus(): Promise<OnboardingStatus> {
@@ -106,6 +117,17 @@ export async function getInterviewSummary(): Promise<InterviewSummary | null> {
 
 export async function getConversation(): Promise<InterviewMessage[]> {
   return fetchWithAuth(`${BASE_URL}/onboarding-interview/conversation`);
+}
+
+export async function updateProfileField(
+  field: ProfileField,
+  value: unknown,
+): Promise<{ success: boolean }> {
+  return fetchWithAuth(`${BASE_URL}/onboarding-interview/profile`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ field, value }),
+  });
 }
 
 // ============================================

@@ -35,9 +35,7 @@ export class CustomerPortalController {
   @Post('auth/otp/request')
   async requestOtp(@Body() body: { phone: string; tenantSlug: string }) {
     // Look up tenant by slug
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: body.tenantSlug },
-    });
+    const tenant = await this.getTenantBySlug(body.tenantSlug);
 
     if (!tenant) {
       return { success: true, message: 'If this number is registered, you will receive a code' };
@@ -56,9 +54,7 @@ export class CustomerPortalController {
     @Request() req,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: body.tenantSlug },
-    });
+    const tenant = await this.getTenantBySlug(body.tenantSlug);
 
     if (!tenant) {
       // SECURITY: Don't reveal tenant validation logic
@@ -86,9 +82,7 @@ export class CustomerPortalController {
   @Public()
   @Post('auth/magic-link/request')
   async requestMagicLink(@Body() body: { email: string; tenantSlug: string }) {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: body.tenantSlug },
-    });
+    const tenant = await this.getTenantBySlug(body.tenantSlug);
 
     if (!tenant) {
       return { success: true };
@@ -131,6 +125,14 @@ export class CustomerPortalController {
 
     res.clearCookie('customer_session');
     return { success: true };
+  }
+
+  private async getTenantBySlug(tenantSlug: string) {
+    return this.prisma.withSystemContext(() =>
+      this.prisma.tenant.findUnique({
+        where: { slug: tenantSlug },
+      }),
+    );
   }
 
   // ============================================

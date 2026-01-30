@@ -65,6 +65,20 @@ export class MessageClassificationService {
     conversationId: string,
     customerContext?: string,
   ): Promise<ClassificationResult> {
+    const existing = await this.prisma.messageClassification.findUnique({
+      where: { messageId },
+    });
+    if (existing) {
+      return {
+        intent: existing.intent,
+        sentiment: existing.sentiment,
+        confidence: existing.confidence,
+        urgencyScore: existing.urgencyScore,
+        keywords: existing.keywords,
+        suggestedRoute: existing.suggestedRoute,
+      };
+    }
+
     let aiResult: AiClassificationResponse | null = null;
 
     if (this.aiEngine.isReady()) {

@@ -95,12 +95,19 @@ export class ReviewRequestsService {
   async sendPendingReviewRequests() {
     this.logger.log('Checking for pending review requests to send...');
 
-    const settings = await this.prisma.tenantSettings.findMany({
-      where: { reviewRequestEnabled: true },
-    });
+    const settings = await this.prisma.withSystemContext(() =>
+      this.prisma.tenantSettings.findMany({
+        where: { reviewRequestEnabled: true },
+      }),
+    );
 
     for (const setting of settings) {
-      await this.processTenantReviewRequests(setting.tenantId, setting.reviewRequestDelay);
+      await this.prisma.withTenantContext(setting.tenantId, () =>
+        this.processTenantReviewRequests(
+          setting.tenantId,
+          setting.reviewRequestDelay,
+        ),
+      );
     }
   }
 
@@ -121,39 +128,41 @@ export class ReviewRequestsService {
   }
 
   async trackClick(requestId: string, platform: 'google' | 'yelp') {
-    const request = await this.prisma.reviewRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        tenant: {
-          include: {
-            settings: true,
+    return this.prisma.withSystemContext(async () => {
+      const request = await this.prisma.reviewRequest.findUnique({
+        where: { id: requestId },
+        include: {
+          tenant: {
+            include: {
+              settings: true,
+            },
           },
         },
-      },
+      });
+
+      if (!request) {
+        throw new NotFoundException('Review request not found');
+      }
+
+      await this.prisma.reviewRequest.update({
+        where: { id: requestId },
+        data: {
+          status: ReviewRequestStatus.CLICKED,
+          clickedAt: new Date(),
+          platform,
+        },
+      });
+
+      const reviewUrl = platform === 'google'
+        ? request.tenant.settings?.googleReviewUrl
+        : request.tenant.settings?.yelpReviewUrl;
+
+      if (!reviewUrl) {
+        throw new NotFoundException('Review URL not configured');
+      }
+
+      return { redirectUrl: reviewUrl };
     });
-
-    if (!request) {
-      throw new NotFoundException('Review request not found');
-    }
-
-    await this.prisma.reviewRequest.update({
-      where: { id: requestId },
-      data: {
-        status: ReviewRequestStatus.CLICKED,
-        clickedAt: new Date(),
-        platform,
-      },
-    });
-
-    const reviewUrl = platform === 'google'
-      ? request.tenant.settings?.googleReviewUrl
-      : request.tenant.settings?.yelpReviewUrl;
-
-    if (!reviewUrl) {
-      throw new NotFoundException('Review URL not configured');
-    }
-
-    return { redirectUrl: reviewUrl };
   }
 
   private async processTenantReviewRequests(tenantId: string, delayHours: number) {

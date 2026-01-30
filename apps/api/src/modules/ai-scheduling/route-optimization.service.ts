@@ -358,6 +358,7 @@ export class RouteOptimizationService {
     // Start with the earliest appointment
     remaining.sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
     optimized.push(remaining.shift()!);
+    optimized[0].order = 0;
 
     while (remaining.length > 0) {
       const current = optimized[optimized.length - 1];
@@ -381,9 +382,116 @@ export class RouteOptimizationService {
   }
 
   private async optimizeWithGoogleMaps(stops: RouteStop[]): Promise<RouteStop[]> {
-    // For now, fall back to nearest neighbor
-    // TODO: Implement Google Maps Distance Matrix API integration
-    return this.optimizeWithNearestNeighbor(stops);
+    if (!this.googleMapsApiKey) {
+      return this.optimizeWithNearestNeighbor(stops);
+    }
+
+    const maxStops = 10;
+    if (stops.length > maxStops) {
+      this.logger.warn(
+        `Google Maps optimization supports up to ${maxStops} stops. Falling back to nearest neighbor.`,
+      );
+      return this.optimizeWithNearestNeighbor(stops);
+    }
+
+    try {
+      const locations = stops.map(
+        (stop) => `${stop.location.lat},${stop.location.lng}`,
+      );
+      const encodedOrigins = encodeURIComponent(locations.join('|'));
+      const encodedDestinations = encodedOrigins;
+
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodedOrigins}&destinations=${encodedDestinations}&mode=driving&key=${this.googleMapsApiKey}`,
+      );
+      const data = await response.json();
+
+      if (data.status !== 'OK' || !Array.isArray(data.rows)) {
+        this.logger.warn(
+          `Distance Matrix API error: ${data.status || 'Unknown error'}`,
+        );
+        return this.optimizeWithNearestNeighbor(stops);
+      }
+
+      const distanceMatrix: number[][] = data.rows.map((row: any) =>
+        (row.elements || []).map((element: any) =>
+          element.status === 'OK' ? element.distance.value : Infinity,
+        ),
+      );
+
+      if (distanceMatrix.length !== stops.length) {
+        this.logger.warn('Distance matrix size mismatch, using nearest neighbor');
+        return this.optimizeWithNearestNeighbor(stops);
+      }
+
+      return this.optimizeWithDistanceMatrix(stops, distanceMatrix);
+    } catch (error) {
+      this.logger.error(`Distance Matrix API failed: ${error.message}`);
+      return this.optimizeWithNearestNeighbor(stops);
+    }
+  }
+
+  private optimizeWithDistanceMatrix(
+    stops: RouteStop[],
+    distances: number[][],
+  ): RouteStop[] {
+    if (stops.length <= 2) {
+      return stops;
+    }
+
+    let startIndex = 0;
+    for (let i = 1; i < stops.length; i++) {
+      if (stops[i].scheduledAt < stops[startIndex].scheduledAt) {
+        startIndex = i;
+      }
+    }
+
+    const remaining = new Set<number>();
+    for (let i = 0; i < stops.length; i++) {
+      if (i !== startIndex) remaining.add(i);
+    }
+
+    const ordered: RouteStop[] = [];
+    ordered.push(stops[startIndex]);
+    ordered[0].order = 0;
+
+    while (remaining.size > 0) {
+      const currentIndex = stops.indexOf(ordered[ordered.length - 1]);
+      let nearestIndex: number | null = null;
+      let nearestDistance = Infinity;
+
+      for (const idx of remaining) {
+        const distance = distances[currentIndex]?.[idx] ?? Infinity;
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = idx;
+        }
+      }
+
+      if (nearestIndex === null || nearestDistance === Infinity) {
+        for (const idx of remaining) {
+          const distance = this.haversineDistance(
+            stops[currentIndex].location,
+            stops[idx].location,
+          );
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = idx;
+          }
+        }
+      }
+
+      if (nearestIndex === null) {
+        break;
+      }
+
+      const nextStop = stops[nearestIndex];
+      nextStop.order = ordered.length;
+      ordered.push(nextStop);
+      remaining.delete(nearestIndex);
+    }
+
+    return ordered;
   }
 
   private calculateTotalDistance(stops: RouteStop[]): number {

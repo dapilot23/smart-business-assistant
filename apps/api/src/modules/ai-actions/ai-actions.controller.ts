@@ -11,6 +11,8 @@ import {
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { ActionExecutorService, CreateActionDto } from './action-executor.service';
 import { ActionStatus } from '@prisma/client';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 class ListActionsQueryDto {
   status?: ActionStatus;
@@ -36,6 +38,7 @@ export class AiActionsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async createAction(
     @CurrentUser() user: CurrentUserPayload,
     @Body() body: CreateActionBodyDto,
@@ -75,6 +78,7 @@ export class AiActionsController {
 
   @Post(':id/approve')
   @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async approveAction(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') actionId: string,
@@ -84,6 +88,7 @@ export class AiActionsController {
 
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   async cancelAction(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') actionId: string,

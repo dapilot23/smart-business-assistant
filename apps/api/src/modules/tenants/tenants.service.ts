@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service';
 import { UserRole, UserStatus } from '@prisma/client';
+import { CreateTenantDto } from './dto/create-tenant.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 
 @Injectable()
 export class TenantsService {
@@ -18,16 +20,14 @@ export class TenantsService {
     return tenant;
   }
 
-  async update(id: string, data: any) {
-    // TODO: Add proper DTO validation
+  async update(id: string, data: UpdateTenantDto) {
     return this.prisma.tenant.update({
       where: { id },
       data,
     });
   }
 
-  async create(data: any) {
-    // TODO: Add proper DTO validation
+  async create(data: CreateTenantDto) {
     return this.prisma.tenant.create({
       data,
     });

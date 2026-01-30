@@ -12,8 +12,10 @@
     "test:unit": "PATH=$HOME/.nvm/versions/node/v24.12.0/bin:$PATH NODE_OPTIONS='--max-old-space-size=8192' jest",
     "test:watch": "PATH=$HOME/.nvm/versions/node/v24.12.0/bin:$PATH NODE_OPTIONS='--max-old-space-size=8192' jest --watch",
     "test:cov": "PATH=$HOME/.nvm/versions/node/v24.12.0/bin:$PATH NODE_OPTIONS='--max-old-space-size=8192' jest --coverage",
+    "lint": "eslint \"{src,prisma}/**/*.ts\"",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:reset": "prisma migrate reset --force",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
     "db:seed": "npx ts-node prisma/seed.ts"

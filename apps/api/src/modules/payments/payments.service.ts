@@ -269,35 +269,37 @@ export class PaymentsService implements OnModuleInit {
   async handleWebhook(payload: Buffer, signature: string) {
     this.ensureConfigured();
 
-    let event: Stripe.Event;
+    return this.prisma.withSystemContext(async () => {
+      let event: Stripe.Event;
 
-    try {
-      event = this.stripe!.webhooks.constructEvent(payload, signature, this.webhookSecret);
-    } catch (err) {
-      this.logger.error('Webhook signature verification failed:', err.message);
-      throw new BadRequestException('Invalid webhook signature');
-    }
+      try {
+        event = this.stripe!.webhooks.constructEvent(payload, signature, this.webhookSecret);
+      } catch (err) {
+        this.logger.error('Webhook signature verification failed:', err.message);
+        throw new BadRequestException('Invalid webhook signature');
+      }
 
-    this.logger.log(`Processing webhook event: ${event.type}`);
+      this.logger.log(`Processing webhook event: ${event.type}`);
 
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        await this.handlePaymentSuccess(event.data.object as Stripe.PaymentIntent);
-        break;
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          await this.handlePaymentSuccess(event.data.object as Stripe.PaymentIntent);
+          break;
 
-      case 'payment_intent.payment_failed':
-        await this.handlePaymentFailure(event.data.object as Stripe.PaymentIntent);
-        break;
+        case 'payment_intent.payment_failed':
+          await this.handlePaymentFailure(event.data.object as Stripe.PaymentIntent);
+          break;
 
-      case 'checkout.session.completed':
-        await this.handleCheckoutComplete(event.data.object as Stripe.Checkout.Session);
-        break;
+        case 'checkout.session.completed':
+          await this.handleCheckoutComplete(event.data.object as Stripe.Checkout.Session);
+          break;
 
-      default:
-        this.logger.log(`Unhandled event type: ${event.type}`);
-    }
+        default:
+          this.logger.log(`Unhandled event type: ${event.type}`);
+      }
 
-    return { received: true };
+      return { received: true };
+    });
   }
 
   private async handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
@@ -308,6 +310,21 @@ export class PaymentsService implements OnModuleInit {
     }
 
     const paidAmount = paymentIntent.amount_received / 100;
+
+    const existing = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { customer: true },
+    });
+
+    if (!existing) {
+      this.logger.warn(`Invoice ${invoiceId} not found for payment intent`);
+      return;
+    }
+
+    if (existing.status === InvoiceStatus.PAID) {
+      this.logger.log(`Invoice ${invoiceId} already marked as paid, skipping`);
+      return;
+    }
 
     const invoice = await this.prisma.invoice.update({
       where: { id: invoiceId },
@@ -349,6 +366,19 @@ export class PaymentsService implements OnModuleInit {
 
     if (session.payment_status === 'paid') {
       const paidAmount = (session.amount_total || 0) / 100;
+      const existing = await this.prisma.invoice.findUnique({
+        where: { id: invoiceId },
+      });
+
+      if (!existing) {
+        this.logger.warn(`Invoice ${invoiceId} not found for checkout session`);
+        return;
+      }
+
+      if (existing.status === InvoiceStatus.PAID) {
+        this.logger.log(`Invoice ${invoiceId} already marked as paid, skipping`);
+        return;
+      }
 
       await this.prisma.invoice.update({
         where: { id: invoiceId },

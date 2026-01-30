@@ -33,7 +33,9 @@ export class NpsController {
   @Public()
   @Get('survey/:token')
   async getSurvey(@Param('token') token: string) {
-    return this.npsService.getSurveyByToken(token);
+    return this.prisma.withSystemContext(() =>
+      this.npsService.getSurveyByToken(token),
+    );
   }
 
   /**
@@ -45,7 +47,9 @@ export class NpsController {
     @Param('token') token: string,
     @Body() dto: SubmitScoreDto,
   ) {
-    return this.npsService.submitScore(token, dto.score, dto.feedback);
+    return this.prisma.withSystemContext(() =>
+      this.npsService.submitScore(token, dto.score, dto.feedback),
+    );
   }
 
   /**
@@ -57,7 +61,9 @@ export class NpsController {
     @Param('token') token: string,
     @Body() dto: RecordReviewClickDto,
   ) {
-    await this.npsService.recordReviewClick(token, dto.platform);
+    await this.prisma.withSystemContext(() =>
+      this.npsService.recordReviewClick(token, dto.platform),
+    );
     return { success: true };
   }
 
@@ -71,14 +77,18 @@ export class NpsController {
     @Param('platform') platform: string,
     @Res() res: Response,
   ) {
-    const survey = await this.npsService.getSurveyByToken(token);
+    const survey = await this.prisma.withSystemContext(() =>
+      this.npsService.getSurveyByToken(token),
+    );
 
     if (!survey) {
       return res.status(404).json({ error: 'Survey not found' });
     }
 
     // Record click
-    await this.npsService.recordReviewClick(token, platform);
+    await this.prisma.withSystemContext(() =>
+      this.npsService.recordReviewClick(token, platform),
+    );
 
     // Get review URL
     const reviewUrl = platform === 'google'

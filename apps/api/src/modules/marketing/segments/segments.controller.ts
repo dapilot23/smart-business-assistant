@@ -10,6 +10,8 @@ import {
 import { SegmentsService } from './segments.service';
 import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 import { SegmentRules } from './segment-rules.engine';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 class CreateSegmentDto {
   name: string;
@@ -32,6 +34,7 @@ export class SegmentsController {
   constructor(private readonly segmentsService: SegmentsService) {}
 
   @Post()
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateSegmentDto) {
     return this.segmentsService.create(user.tenantId, {
       ...dto,
@@ -65,6 +68,7 @@ export class SegmentsController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   update(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
@@ -74,11 +78,13 @@ export class SegmentsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   remove(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
     return this.segmentsService.delete(user.tenantId, id);
   }
 
   @Post('refresh-counts')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.DISPATCHER)
   refreshCounts(@CurrentUser() user: CurrentUserPayload) {
     return this.segmentsService.refreshAllSegmentCounts(user.tenantId);
   }

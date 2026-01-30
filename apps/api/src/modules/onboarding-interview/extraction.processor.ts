@@ -39,73 +39,75 @@ export class ExtractionProcessor extends WorkerHost {
     this.logger.debug(`Processing extraction job for conversation ${conversationId}`);
 
     try {
-      // Get conversation and existing data
-      const conversation = await this.prisma.onboardingConversation.findUnique({
-        where: { id: conversationId },
-        include: { businessProfile: true },
-      });
+      return await this.prisma.withTenantContext(tenantId, async () => {
+        // Get conversation and existing data
+        const conversation = await this.prisma.onboardingConversation.findUnique({
+          where: { id: conversationId },
+          include: { businessProfile: true },
+        });
 
-      if (!conversation) {
-        throw new Error('Conversation not found');
-      }
+        if (!conversation) {
+          throw new Error('Conversation not found');
+        }
 
-      const existingData = (conversation.extractedData as Record<string, unknown>) || {};
+        const existingData = (conversation.extractedData as Record<string, unknown>) || {};
 
-      // Get target fields for this question
-      const targetFields = this.inferenceEngine.getTargetFields(questionId);
+        // Get target fields for this question
+        const targetFields = this.inferenceEngine.getTargetFields(questionId);
 
-      // Run extraction with inference
-      const extractions = await this.inferenceEngine.extractWithInference({
-        questionId,
-        userResponse,
-        targetFields,
-        existingData,
-        industry: existingData.industry as string | undefined,
-      });
+        // Run extraction with inference
+        const extractions = await this.inferenceEngine.extractWithInference({
+          questionId,
+          userResponse,
+          targetFields,
+          existingData,
+          industry: existingData.industry as string | undefined,
+        });
 
-      // Filter high-confidence extractions
-      const validExtractions = extractions.filter((e) => e.confidence >= 0.6);
+        // Filter high-confidence extractions
+        const validExtractions = extractions.filter((e) => e.confidence >= 0.6);
 
-      if (validExtractions.length === 0) {
+        if (validExtractions.length === 0) {
+          return {
+            success: true,
+            extractions: [],
+            profileUpdated: false,
+          };
+        }
+
+        // Merge into existing data
+        const updatedData = { ...existingData };
+        for (const extraction of validExtractions) {
+          updatedData[extraction.field] = extraction.value;
+        }
+
+        // Update conversation with extracted data
+        await this.prisma.onboardingConversation.update({
+          where: { id: conversationId },
+          data: {
+            extractedData: updatedData as unknown as Prisma.JsonObject,
+          },
+        });
+
+        // Update business profile with mapped fields
+        const profileUpdate = this.mapExtractionsToProfile(validExtractions);
+        if (Object.keys(profileUpdate).length > 0) {
+          await this.prisma.businessProfile.update({
+            where: { id: conversation.businessProfileId },
+            data: profileUpdate,
+          });
+        }
+
+        this.logger.debug(
+          `Extracted ${validExtractions.length} fields for conversation ${conversationId}`,
+        );
+
         return {
           success: true,
-          extractions: [],
-          profileUpdated: false,
+          extractions: validExtractions,
+          profileUpdated: Object.keys(profileUpdate).length > 0,
         };
-      }
-
-      // Merge into existing data
-      const updatedData = { ...existingData };
-      for (const extraction of validExtractions) {
-        updatedData[extraction.field] = extraction.value;
-      }
-
-      // Update conversation with extracted data
-      await this.prisma.onboardingConversation.update({
-        where: { id: conversationId },
-        data: {
-          extractedData: updatedData as unknown as Prisma.JsonObject,
-        },
       });
-
-      // Update business profile with mapped fields
-      const profileUpdate = this.mapExtractionsToProfile(validExtractions);
-      if (Object.keys(profileUpdate).length > 0) {
-        await this.prisma.businessProfile.update({
-          where: { id: conversation.businessProfileId },
-          data: profileUpdate,
-        });
-      }
-
-      this.logger.debug(
-        `Extracted ${validExtractions.length} fields for conversation ${conversationId}`,
-      );
-
-      return {
-        success: true,
-        extractions: validExtractions,
-        profileUpdated: Object.keys(profileUpdate).length > 0,
-      };
     } catch (error) {
       this.logger.error(`Extraction job failed for conversation ${conversationId}`, {
         error: error instanceof Error ? error.message : 'Unknown error',

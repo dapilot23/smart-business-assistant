@@ -59,6 +59,12 @@ export default function DashboardLayout({
                 Insights
               </Link>
               <Link
+                href="/dashboard/actions"
+                className="transition-colors hover:text-foreground/80"
+              >
+                Actions
+              </Link>
+              <Link
                 href="/dashboard/settings"
                 className="transition-colors hover:text-foreground/80"
               >

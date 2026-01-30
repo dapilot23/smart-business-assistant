@@ -21,6 +21,7 @@ model Tenant {
   // Relations
   users        User[]
   customers    Customer[]
+  communicationOptOuts CommunicationOptOut[]
   services     Service[]
   appointments Appointment[]
   quotes       Quote[]
@@ -43,11 +44,14 @@ model Tenant {
   serviceIntervals   ServiceInterval[]
   technicianSkills   TechnicianSkill[]
   messageClassifications MessageClassification[]
+  suggestedResponses SuggestedResponse[]
   autoResponderRules AutoResponderRule[]
   copilotConversations CopilotConversation[]
   weeklyReports WeeklyReport[]
+  businessAnomalies BusinessAnomaly[]
   agentInsights AgentInsight[]
   aiActions     AIAction[]
+  agentTasks    AgentTask[]
   contextualSuggestions ContextualSuggestion[]
   marketingCampaigns MarketingCampaign[]
   audienceSegments   AudienceSegment[]
@@ -82,6 +86,8 @@ model User {
   jobs         Job[]
   locations    TechnicianLocation[]
   skills       TechnicianSkill[]
+  agentTasksOwned   AgentTask[] @relation("AgentTaskOwner")
+  agentTasksCreated AgentTask[] @relation("AgentTaskCreator")
 
   @@index([tenantId])
   @@index([clerkId])
@@ -138,6 +144,11 @@ enum InvitationStatus {
   CANCELLED
 }
 
+enum CommunicationChannel {
+  SMS
+  EMAIL
+}
+
 // Customers are tenant-specific
 model Customer {
   id        String   @id @default(cuid())
@@ -175,6 +186,22 @@ model Customer {
   @@index([tenantId])
   @@index([phone])
   @@map("customers")
+}
+
+model CommunicationOptOut {
+  id        String               @id @default(cuid())
+  tenantId  String
+  channel   CommunicationChannel
+  value     String
+  source    String?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, channel, value])
+  @@index([tenantId])
+  @@index([channel, value])
+  @@map("communication_opt_outs")
 }
 
 // Services catalog
@@ -1438,6 +1465,7 @@ model ConversationThread {
 
   messages Message[]
   classifications MessageClassification[]
+  suggestedResponses SuggestedResponse[]
 
   @@index([tenantId])
   @@index([customerId])
@@ -1486,6 +1514,7 @@ model Message {
   createdAt    DateTime         @default(now())
 
   thread ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  suggestedResponses SuggestedResponse[]
 
   @@index([threadId])
   @@index([tenantId])
@@ -1775,6 +1804,29 @@ model AutoResponderRule {
   @@map("auto_responder_rules")
 }
 
+// Suggested AI responses for inbound conversations
+model SuggestedResponse {
+  id             String   @id @default(cuid())
+  tenantId       String
+  conversationId String
+  messageId      String?
+  suggestion     String   @db.Text
+  confidence     Float?
+  tone           String?
+  accepted       Boolean?
+  editedText     String?
+  createdAt      DateTime @default(now())
+
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation  ConversationThread @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message       Message?           @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([conversationId])
+  @@index([messageId])
+  @@map("suggested_responses")
+}
+
 // ============================================
 // Sprint 7.8: AI Business Copilot
 // ============================================
@@ -1812,6 +1864,44 @@ model WeeklyReport {
   @@map("weekly_reports")
 }
 
+// AI-detected business anomalies
+enum AnomalySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AnomalyStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model BusinessAnomaly {
+  id          String          @id @default(cuid())
+  tenantId    String
+  category    String
+  title       String
+  description String          @db.Text
+  severity    AnomalySeverity
+  status      AnomalyStatus   @default(OPEN)
+  periodStart DateTime?
+  periodEnd   DateTime?
+  metrics     Json?
+  detectedAt  DateTime        @default(now())
+  resolvedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([severity])
+  @@map("business_anomalies")
+}
+
 // ============================================
 // AI Specialist Agents
 // ============================================
@@ -1821,6 +1911,7 @@ enum AgentType {
   CUSTOMER_SUCCESS
   OPERATIONS
   MARKETING
+  FOUNDER
 }
 
 enum InsightPriority {
@@ -1855,6 +1946,35 @@ enum ActionStatus {
   COMPLETED     // Done
   FAILED        // Error occurred
   CANCELLED     // User cancelled
+}
+
+enum TaskOwnerType {
+  AI_AGENT
+  HUMAN
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+  CANCELLED
+}
+
+enum TaskSourceType {
+  INSIGHT
+  ACTION
+  SUGGESTION
+  COPILOT
+  EVENT
+  MANUAL
 }
 
 // AI-generated insights from specialist agents
@@ -1990,6 +2110,48 @@ model AIAction {
   @@index([insightId])
   @@index([expiresAt])
   @@map("ai_actions")
+}
+
+// Ownership and accountability tasks for AI + humans
+model AgentTask {
+  id             String       @id @default(cuid())
+  tenantId       String
+  title          String
+  description    String?      @db.Text
+  status         TaskStatus   @default(PENDING)
+  priority       TaskPriority @default(MEDIUM)
+
+  ownerType      TaskOwnerType
+  ownerAgentType AgentType?
+  ownerUserId    String?
+
+  createdByType      TaskOwnerType @default(HUMAN)
+  createdByAgentType AgentType?
+  createdByUserId    String?
+
+  dueAt          DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  blockedReason  String?      @db.Text
+
+  sourceType     TaskSourceType?
+  sourceId       String?
+  metadata       Json?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ownerUser      User?        @relation("AgentTaskOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  createdByUser  User?        @relation("AgentTaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, ownerType])
+  @@index([tenantId, ownerAgentType])
+  @@index([tenantId, priority])
+  @@index([dueAt])
+  @@map("agent_tasks")
 }
 
 // Contextual suggestions - cached per-page suggestions
