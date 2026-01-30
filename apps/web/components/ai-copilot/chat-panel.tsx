@@ -124,21 +124,21 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
               </div>
             ) : (
               <div>
-                {messages.map((message) => (
-                  <ChatMessage key={message.id} message={message} />
-                ))}
-                {isSending && (
-                  <div className="flex gap-3 p-4">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                      <Sparkles className="h-4 w-4 animate-pulse text-primary" />
-                    </div>
-                    <div className="rounded-lg bg-card border border-border px-4 py-2">
-                      <p className="text-sm text-muted-foreground">
-                        Thinking...
-                      </p>
-                    </div>
-                  </div>
-                )}
+                {messages.map((message, index) => {
+                  // The last assistant message is streaming if isSending is true
+                  const isLastAssistant =
+                    message.role === 'assistant' &&
+                    index === messages.length - 1;
+                  const isStreaming = isSending && isLastAssistant;
+
+                  return (
+                    <ChatMessage
+                      key={message.id}
+                      message={message}
+                      isStreaming={isStreaming}
+                    />
+                  );
+                })}
                 <div ref={messagesEndRef} />
               </div>
             )}

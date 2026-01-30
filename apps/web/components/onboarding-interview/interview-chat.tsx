@@ -12,14 +12,15 @@ interface Message {
 interface InterviewChatProps {
   messages: Message[];
   isTyping?: boolean;
+  isStreaming?: boolean;
 }
 
-export function InterviewChat({ messages, isTyping = false }: InterviewChatProps) {
+export function InterviewChat({ messages, isTyping = false, isStreaming = false }: InterviewChatProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, isStreaming]);
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -46,7 +47,12 @@ export function InterviewChat({ messages, isTyping = false }: InterviewChatProps
                 <span className="text-xs font-medium text-muted-foreground">AI Assistant</span>
               </div>
             )}
-            <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+              {message.content}
+              {isStreaming && index === messages.length - 1 && message.role === "assistant" && (
+                <span className="inline-block w-2 h-4 bg-primary/60 ml-0.5 animate-pulse" />
+              )}
+            </p>
           </div>
         </div>
       ))}

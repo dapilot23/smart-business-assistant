@@ -78,7 +78,13 @@ describe('QuotesService', () => {
       expect(result).toEqual(mockQuote);
       expect(prisma.quote.findFirst).toHaveBeenCalledWith({
         where: { id: mockQuoteId, tenantId: mockTenantId },
-        include: { customer: true, items: true },
+        include: {
+          customer: true,
+          items: true,
+          followUps: {
+            orderBy: { step: 'asc' },
+          },
+        },
       });
     });
 

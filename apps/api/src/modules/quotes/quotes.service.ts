@@ -48,7 +48,13 @@ export class QuotesService {
   async findOne(id: string, tenantId: string) {
     const quote = await this.prisma.quote.findFirst({
       where: { id, tenantId },
-      include: { customer: true, items: true },
+      include: {
+        customer: true,
+        items: true,
+        followUps: {
+          orderBy: { step: 'asc' },
+        },
+      },
     });
 
     if (!quote) {

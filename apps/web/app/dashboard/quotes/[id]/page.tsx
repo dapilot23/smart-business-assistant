@@ -13,6 +13,15 @@ interface QuoteItem {
   total: number;
 }
 
+interface QuoteFollowUp {
+  id: string;
+  step: number;
+  channel: "SMS" | "EMAIL";
+  scheduledAt: string;
+  sentAt?: string;
+  status: "PENDING" | "SENT" | "CANCELLED";
+}
+
 interface Quote {
   id: string;
   quoteNumber: string;
@@ -32,6 +41,7 @@ interface Quote {
     address?: string;
   };
   items: QuoteItem[];
+  followUps?: QuoteFollowUp[];
 }
 
 export default function QuoteDetailPage() {
@@ -367,6 +377,15 @@ export default function QuoteDetailPage() {
                   active
                 />
               )}
+              {quote.followUps?.filter(f => f.status === "SENT").map((followUp) => (
+                <TimelineItem
+                  key={followUp.id}
+                  icon="mail"
+                  label={`Follow-up ${followUp.step} sent via ${followUp.channel}`}
+                  date={followUp.sentAt ? formatDate(followUp.sentAt) : ""}
+                  active
+                />
+              ))}
               {quote.acceptedAt && (
                 <TimelineItem
                   icon="check"
@@ -386,6 +405,20 @@ export default function QuoteDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Follow-ups Section */}
+          {quote.followUps && quote.followUps.length > 0 && (
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-6">
+              <h2 className="font-primary text-[16px] font-semibold text-[var(--foreground)] mb-4">
+                Automated Follow-ups
+              </h2>
+              <div className="space-y-3">
+                {quote.followUps.map((followUp) => (
+                  <FollowUpItem key={followUp.id} followUp={followUp} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </main>
@@ -415,6 +448,60 @@ function TimelineItem({ icon, label, date, active, variant = "default" }: {
           <p className="font-secondary text-[12px] text-[var(--muted-foreground)]">{date}</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function FollowUpItem({ followUp }: { followUp: QuoteFollowUp }) {
+  const getStatusStyles = (status: QuoteFollowUp["status"]) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-blue-900/20 text-blue-300 border-blue-800";
+      case "SENT":
+        return "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]";
+      case "CANCELLED":
+        return "bg-gray-800/50 text-gray-400 border-gray-700";
+      default:
+        return "bg-gray-800/50 text-gray-400 border-gray-700";
+    }
+  };
+
+  const getChannelIcon = (channel: string): "phone" | "mail" => {
+    return channel === "SMS" ? "phone" : "mail";
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/30">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center">
+          <Icon name={getChannelIcon(followUp.channel)} size={14} className="text-[var(--primary)]" />
+        </div>
+        <div>
+          <p className="font-secondary text-[14px] text-[var(--foreground)]">
+            Follow-up {followUp.step} via {followUp.channel}
+          </p>
+          <p className="font-secondary text-[12px] text-[var(--muted-foreground)]">
+            {followUp.status === "SENT"
+              ? `Sent ${formatDateTime(followUp.sentAt!)}`
+              : followUp.status === "PENDING"
+              ? `Scheduled for ${formatDateTime(followUp.scheduledAt)}`
+              : "Cancelled"}
+          </p>
+        </div>
+      </div>
+      <span className={`px-2 py-1 rounded-full font-secondary text-[11px] border ${getStatusStyles(followUp.status)}`}>
+        {followUp.status}
+      </span>
     </div>
   );
 }

@@ -125,7 +125,7 @@ describe('AppointmentsService', () => {
           assignedTo: mockUserId,
         },
         include: {
-          customer: { select: { id: true, name: true, phone: true } },
+          customer: { select: { id: true, name: true, phone: true, noShowCount: true } },
           service: { select: { id: true, name: true, durationMinutes: true } },
           assignedUser: { select: { id: true, name: true, email: true } },
         },

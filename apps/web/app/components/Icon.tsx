@@ -21,6 +21,7 @@ import {
   PhoneIncoming,
   PhoneOutgoing,
   Mic,
+  MicOff,
   Bot,
   Play,
   Pause,
@@ -77,6 +78,7 @@ interface IconProps {
     | "phone-incoming"
     | "phone-outgoing"
     | "mic"
+    | "mic-off"
     | "bot"
     | "play"
     | "pause"
@@ -135,6 +137,7 @@ export function Icon({ name, className = "", size = 20 }: IconProps) {
     "phone-incoming": PhoneIncoming,
     "phone-outgoing": PhoneOutgoing,
     mic: Mic,
+    "mic-off": MicOff,
     bot: Bot,
     play: Play,
     pause: Pause,

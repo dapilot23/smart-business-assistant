@@ -35,3 +35,11 @@ export interface SendMessageRequest {
   message: string;
   conversationId?: string;
 }
+
+export interface CopilotStreamEvent {
+  type: 'text' | 'tool_start' | 'tool_end' | 'done' | 'error';
+  content?: string;
+  toolName?: string;
+  conversationId?: string;
+  toolsUsed?: string[];
+}

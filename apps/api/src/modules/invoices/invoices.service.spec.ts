@@ -82,7 +82,13 @@ describe('InvoicesService', () => {
       expect(result).toEqual(mockInvoice);
       expect(prisma.invoice.findFirst).toHaveBeenCalledWith({
         where: { id: mockInvoiceId, tenantId: mockTenantId },
-        include: { customer: true, items: true },
+        include: {
+          customer: true,
+          items: true,
+          reminders: {
+            orderBy: { step: 'asc' },
+          },
+        },
       });
     });
 

@@ -45,7 +45,13 @@ export class InvoicesService {
   async findOne(id: string, tenantId: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, tenantId },
-      include: { customer: true, items: true },
+      include: {
+        customer: true,
+        items: true,
+        reminders: {
+          orderBy: { step: 'asc' },
+        },
+      },
     });
 
     if (!invoice) {

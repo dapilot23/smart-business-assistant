@@ -1,8 +1,9 @@
-import { fetchWithAuth, getApiUrl } from './client';
+import { fetchWithAuth, fetchStreamWithAuth, getApiUrl } from './client';
 import {
   Conversation,
   ConversationSummary,
   CopilotResponse,
+  CopilotStreamEvent,
   SendMessageRequest,
 } from '@/lib/types/ai-copilot';
 import { WeeklyReport } from '@/lib/types/weekly-report';
@@ -21,6 +22,53 @@ export async function sendChatMessage(
     body: JSON.stringify(request),
     signal: options?.signal,
   });
+}
+
+export async function* sendChatMessageStream(
+  request: SendMessageRequest,
+  options?: RequestOptions
+): AsyncGenerator<CopilotStreamEvent, void, unknown> {
+  const response = await fetchStreamWithAuth(getApiUrl('/ai-copilot/chat/stream'), {
+    method: 'POST',
+    body: JSON.stringify(request),
+    signal: options?.signal,
+  });
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('Response body is not readable');
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') {
+            return;
+          }
+          try {
+            const event: CopilotStreamEvent = JSON.parse(data);
+            yield event;
+          } catch {
+            // Skip invalid JSON
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 export async function getConversations(

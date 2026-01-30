@@ -4,10 +4,9 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ChatMessage,
   ConversationSummary,
-  CopilotResponse,
 } from '@/lib/types/ai-copilot';
 import {
-  sendChatMessage,
+  sendChatMessageStream,
   getConversations,
   getConversation,
   deleteConversation,
@@ -129,15 +128,25 @@ export function useAiCopilot() {
         createdAt: new Date().toISOString(),
       };
 
+      const assistantMessageId = `assistant-${Date.now()}`;
+      const assistantMessage: ChatMessage = {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        toolsUsed: [],
+        createdAt: new Date().toISOString(),
+      };
+
       // Track this message ID for potential cleanup
       pendingUserMessageIdRef.current = userMessage.id;
 
-      setMessages((prev) => [...prev, userMessage]);
+      // Add both user message and placeholder assistant message
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
       setIsSending(true);
       setError(null);
 
       try {
-        const response: CopilotResponse = await sendChatMessage(
+        const stream = sendChatMessageStream(
           {
             message: sanitizedContent,
             conversationId: currentConversationId || undefined,
@@ -145,35 +154,67 @@ export function useAiCopilot() {
           { signal: abortController.signal }
         );
 
-        // If aborted after response arrived, don't process
-        if (abortController.signal.aborted) {
-          return;
-        }
+        let fullContent = '';
+        const toolsUsed: string[] = [];
 
-        const assistantMessage: ChatMessage = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: response.message,
-          toolsUsed: response.toolsUsed,
-          createdAt: new Date().toISOString(),
-        };
-
-        setMessages((prev) => {
-          const updated = [...prev, assistantMessage];
-          // Trim old messages if exceeding limit (keep most recent)
-          if (updated.length > MAX_MESSAGES) {
-            return updated.slice(-MAX_MESSAGES);
+        for await (const event of stream) {
+          // Check if aborted
+          if (abortController.signal.aborted) {
+            return;
           }
-          return updated;
-        });
 
-        if (!currentConversationId && response.conversationId) {
-          setCurrentConversationId(response.conversationId);
-          loadConversations();
+          if (event.type === 'text' && event.content) {
+            fullContent += event.content;
+            // Update the assistant message with new content
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? { ...m, content: fullContent }
+                  : m
+              )
+            );
+          } else if (event.type === 'tool_start' && event.toolName) {
+            toolsUsed.push(event.toolName);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? { ...m, toolsUsed: Array.from(new Set(toolsUsed)) }
+                  : m
+              )
+            );
+          } else if (event.type === 'done') {
+            if (event.toolsUsed) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMessageId
+                    ? { ...m, toolsUsed: event.toolsUsed }
+                    : m
+                )
+              );
+            }
+            if (!currentConversationId && event.conversationId) {
+              setCurrentConversationId(event.conversationId);
+              loadConversations();
+            }
+          } else if (event.type === 'error') {
+            setError(event.content || 'An error occurred');
+          }
         }
+
+        // Trim old messages if exceeding limit (keep most recent)
+        setMessages((prev) => {
+          if (prev.length > MAX_MESSAGES) {
+            return prev.slice(-MAX_MESSAGES);
+          }
+          return prev;
+        });
       } catch (err) {
-        // Clean up user message on any error (including abort)
-        setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+        // Clean up messages on any error (including abort)
+        setMessages((prev) =>
+          prev.filter(
+            (m) => m.id !== userMessage.id && m.id !== assistantMessageId
+          )
+        );
         // Only set error for non-abort errors
         if (!(err instanceof Error && err.name === 'AbortError')) {
           setError(err instanceof Error ? err.message : 'Failed to send message');

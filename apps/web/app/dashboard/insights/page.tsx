@@ -10,6 +10,7 @@ import {
   ActionItems,
   ForecastSection,
   WeekSelector,
+  ReviewPipeline,
 } from '@/components/insights';
 
 export default function InsightsPage() {
@@ -125,6 +126,10 @@ export default function InsightsPage() {
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <ActionItems items={actionItems} reportId={currentReport.id} />
         <ForecastSection forecast={forecast} />
+      </div>
+
+      <div className="mt-6">
+        <ReviewPipeline />
       </div>
     </div>
   );

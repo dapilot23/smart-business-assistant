@@ -6,15 +6,21 @@ import { Icon } from "@/app/components/Icon";
 interface InterviewInputProps {
   onSend: (message: string) => void;
   onSkip: () => void;
+  onVoiceToggle?: () => void;
   disabled?: boolean;
   placeholder?: string;
+  isVoiceActive?: boolean;
+  voiceSupported?: boolean;
 }
 
 export function InterviewInput({
   onSend,
   onSkip,
+  onVoiceToggle,
   disabled = false,
   placeholder = "Type your answer...",
+  isVoiceActive = false,
+  voiceSupported = false,
 }: InterviewInputProps) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -84,19 +90,38 @@ export function InterviewInput({
         </div>
 
         <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onSkip}
-            disabled={disabled}
-            className="
-              text-sm text-muted-foreground hover:text-foreground
-              transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-              flex items-center gap-1
-            "
-          >
-            <Icon name="chevron-right" size={14} />
-            Skip this question
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onSkip}
+              disabled={disabled}
+              className="
+                text-sm text-muted-foreground hover:text-foreground
+                transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                flex items-center gap-1
+              "
+            >
+              <Icon name="chevron-right" size={14} />
+              Skip this question
+            </button>
+            {voiceSupported && onVoiceToggle && (
+              <button
+                type="button"
+                onClick={onVoiceToggle}
+                disabled={disabled}
+                className={`
+                  text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center gap-1.5 px-2 py-1 rounded-lg
+                  ${isVoiceActive
+                    ? 'text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'}
+                `}
+              >
+                <Icon name={isVoiceActive ? "mic-off" : "mic"} size={14} />
+                {isVoiceActive ? 'End voice' : 'Use voice'}
+              </button>
+            )}
+          </div>
           <span className="text-xs text-muted-foreground">
             Press Enter to send, Shift+Enter for new line
           </span>

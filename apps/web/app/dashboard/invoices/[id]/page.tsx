@@ -13,6 +13,15 @@ interface InvoiceItem {
   total: number;
 }
 
+interface PaymentReminder {
+  id: string;
+  step: number;
+  channel: "SMS" | "EMAIL" | "BOTH";
+  scheduledAt: string;
+  sentAt?: string;
+  status: "PENDING" | "SENT" | "CANCELLED";
+}
+
 interface Invoice {
   id: string;
   invoiceNumber: string;
@@ -33,6 +42,7 @@ interface Invoice {
     address?: string;
   };
   items: InvoiceItem[];
+  reminders?: PaymentReminder[];
 }
 
 export default function InvoiceDetailPage() {
@@ -401,6 +411,15 @@ export default function InvoiceDetailPage() {
                   active
                 />
               )}
+              {invoice.reminders?.filter(r => r.status === "SENT").map((reminder) => (
+                <TimelineItem
+                  key={reminder.id}
+                  icon="bell"
+                  label={`Reminder ${reminder.step} sent via ${reminder.channel}`}
+                  date={reminder.sentAt ? formatDate(reminder.sentAt) : ""}
+                  active
+                />
+              ))}
               {invoice.paidAt && (
                 <TimelineItem
                   icon="check"
@@ -421,6 +440,20 @@ export default function InvoiceDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Payment Reminders Section */}
+          {invoice.reminders && invoice.reminders.length > 0 && (
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-6">
+              <h2 className="font-primary text-[16px] font-semibold text-[var(--foreground)] mb-4">
+                Payment Reminders
+              </h2>
+              <div className="space-y-3">
+                {invoice.reminders.map((reminder) => (
+                  <ReminderItem key={reminder.id} reminder={reminder} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </main>
@@ -428,7 +461,7 @@ export default function InvoiceDetailPage() {
 }
 
 function TimelineItem({ icon, label, date, active, variant = "default" }: {
-  icon: "plus" | "mail" | "check" | "alert-circle";
+  icon: "plus" | "mail" | "check" | "alert-circle" | "bell";
   label: string;
   date: string;
   active?: boolean;
@@ -451,6 +484,83 @@ function TimelineItem({ icon, label, date, active, variant = "default" }: {
           <p className="font-secondary text-[12px] text-[var(--muted-foreground)]">{date}</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function ReminderItem({ reminder }: { reminder: PaymentReminder }) {
+  const getStatusStyles = (status: PaymentReminder["status"]) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-blue-900/20 text-blue-300 border-blue-800";
+      case "SENT":
+        return "bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]";
+      case "CANCELLED":
+        return "bg-gray-800/50 text-gray-400 border-gray-700";
+      default:
+        return "bg-gray-800/50 text-gray-400 border-gray-700";
+    }
+  };
+
+  const getChannelIcon = (channel: string): "phone" | "mail" | "bell" => {
+    switch (channel) {
+      case "SMS":
+        return "phone";
+      case "EMAIL":
+        return "mail";
+      default:
+        return "bell";
+    }
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const getScheduleLabel = (reminder: PaymentReminder) => {
+    const scheduledDate = new Date(reminder.scheduledAt);
+    const now = new Date();
+    const daysUntil = Math.ceil((scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (reminder.status === "SENT") {
+      return `Sent ${formatDateTime(reminder.sentAt!)}`;
+    } else if (reminder.status === "CANCELLED") {
+      return "Cancelled";
+    } else if (daysUntil < 0) {
+      return `Scheduled for ${formatDateTime(reminder.scheduledAt)}`;
+    } else if (daysUntil === 0) {
+      return "Scheduled for today";
+    } else if (daysUntil === 1) {
+      return "Scheduled for tomorrow";
+    } else {
+      return `Scheduled in ${daysUntil} days`;
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/30">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center">
+          <Icon name={getChannelIcon(reminder.channel)} size={14} className="text-[var(--primary)]" />
+        </div>
+        <div>
+          <p className="font-secondary text-[14px] text-[var(--foreground)]">
+            Reminder {reminder.step} via {reminder.channel}
+          </p>
+          <p className="font-secondary text-[12px] text-[var(--muted-foreground)]">
+            {getScheduleLabel(reminder)}
+          </p>
+        </div>
+      </div>
+      <span className={`px-2 py-1 rounded-full font-secondary text-[11px] border ${getStatusStyles(reminder.status)}`}>
+        {reminder.status}
+      </span>
     </div>
   );
 }

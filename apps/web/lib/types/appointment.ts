@@ -5,7 +5,7 @@ export interface Appointment {
   technician_id?: string;
   scheduled_at: string;
   duration_minutes: number;
-  status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
   notes?: string;
   customer?: {
     id: string;
@@ -13,6 +13,7 @@ export interface Appointment {
     last_name: string;
     email: string;
     phone: string;
+    noShowCount?: number;
   };
   service?: {
     id: string;

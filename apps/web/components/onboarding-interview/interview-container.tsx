@@ -22,15 +22,19 @@ export function InterviewContainer({ businessName }: InterviewContainerProps) {
     progress,
     isLoading,
     isSending,
+    isStreaming,
     error,
     isComplete,
     summary,
     canResume,
     status,
+    isVoiceActive,
     checkStatus,
     start,
     sendMessage,
     skipQuestion,
+    startVoiceSession,
+    endVoiceSession,
   } = useOnboardingInterview();
 
   useEffect(() => {
@@ -167,13 +171,16 @@ export function InterviewContainer({ businessName }: InterviewContainerProps) {
         )}
 
         {/* Chat area */}
-        <InterviewChat messages={messages} isTyping={isSending} />
+        <InterviewChat messages={messages} isTyping={isSending && !isStreaming} isStreaming={isStreaming} />
 
         {/* Input area */}
         <InterviewInput
           onSend={sendMessage}
           onSkip={skipQuestion}
+          onVoiceToggle={isVoiceActive ? endVoiceSession : () => startVoiceSession('BROWSER_VOICE')}
           disabled={isSending || isLoading}
+          isVoiceActive={isVoiceActive}
+          voiceSupported={true}
         />
       </div>
     </div>

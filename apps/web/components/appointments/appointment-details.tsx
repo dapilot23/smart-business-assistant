@@ -4,7 +4,11 @@ import { Appointment } from '@/lib/types/appointment';
 import { getStatusColor } from '@/lib/calendar-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock, User, Wrench, Phone, Mail } from 'lucide-react';
+import { Calendar, Clock, User, Wrench, Phone, Mail, AlertTriangle } from 'lucide-react';
+
+function isHighRiskCustomer(noShowCount?: number): boolean {
+  return (noShowCount ?? 0) >= 2;
+}
 
 interface AppointmentDetailsProps {
   appointment: Appointment;
@@ -48,6 +52,24 @@ export function AppointmentDetails({
         </span>
       </div>
 
+      {appointment.customer && isHighRiskCustomer(appointment.customer.noShowCount) && (
+        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-900/20">
+          <CardContent className="flex items-start gap-3 pt-4">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">
+                No-Show Risk Alert
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                This customer has {appointment.customer.noShowCount} previous no-show
+                {appointment.customer.noShowCount === 1 ? '' : 's'}. Consider
+                requesting a deposit or sending extra reminders.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -61,14 +83,21 @@ export function AppointmentDetails({
               <p className="font-medium">
                 {appointment.customer.first_name} {appointment.customer.last_name}
               </p>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Phone className="h-4 w-4" />
                 {appointment.customer.phone}
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Mail className="h-4 w-4" />
                 {appointment.customer.email}
               </div>
+              {(appointment.customer.noShowCount ?? 0) > 0 && (
+                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 mt-1">
+                  <AlertTriangle className="h-4 w-4" />
+                  {appointment.customer.noShowCount} previous no-show
+                  {appointment.customer.noShowCount === 1 ? '' : 's'}
+                </div>
+              )}
             </>
           )}
         </CardContent>

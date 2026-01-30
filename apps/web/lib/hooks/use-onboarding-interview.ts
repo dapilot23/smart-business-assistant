@@ -8,10 +8,13 @@ import {
   getOnboardingStatus,
   startInterview,
   sendMessage as sendMessageApi,
+  sendMessageStream,
   skipQuestion as skipQuestionApi,
   completeInterview as completeInterviewApi,
   getInterviewSummary,
   getConversation,
+  startVoiceSession as startVoiceSessionApi,
+  VoiceSessionConfig,
 } from '../api/onboarding-interview';
 
 export interface UseOnboardingInterview {
@@ -20,20 +23,25 @@ export interface UseOnboardingInterview {
   progress: ProgressInfo | null;
   isLoading: boolean;
   isSending: boolean;
+  isStreaming: boolean;
   error: string | null;
   isComplete: boolean;
   summary: InterviewSummary | null;
   conversationId: string | null;
   canResume: boolean;
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED' | null;
+  voiceSession: VoiceSessionConfig | null;
+  isVoiceActive: boolean;
 
   // Actions
   checkStatus: () => Promise<void>;
   start: (resume?: boolean) => Promise<void>;
-  sendMessage: (message: string) => Promise<void>;
+  sendMessage: (message: string, useStreaming?: boolean) => Promise<void>;
   skipQuestion: () => Promise<void>;
   completeEarly: () => Promise<void>;
   loadSummary: () => Promise<void>;
+  startVoiceSession: (mode: 'BROWSER_VOICE' | 'PHONE_CALL', phoneNumber?: string) => Promise<void>;
+  endVoiceSession: () => void;
 }
 
 export function useOnboardingInterview(): UseOnboardingInterview {
@@ -41,12 +49,15 @@ export function useOnboardingInterview(): UseOnboardingInterview {
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isComplete, setIsComplete] = useState(false);
   const [summary, setSummary] = useState<InterviewSummary | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [canResume, setCanResume] = useState(false);
   const [status, setStatus] = useState<UseOnboardingInterview['status']>(null);
+  const [voiceSession, setVoiceSession] = useState<VoiceSessionConfig | null>(null);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
 
   const checkStatus = useCallback(async () => {
     try {
@@ -100,7 +111,7 @@ export function useOnboardingInterview(): UseOnboardingInterview {
   }, []);
 
   const sendMessage = useCallback(
-    async (message: string) => {
+    async (message: string, useStreaming = true) => {
       if (!conversationId) {
         setError('No active conversation');
         return;
@@ -118,34 +129,83 @@ export function useOnboardingInterview(): UseOnboardingInterview {
         };
         setMessages((prev) => [...prev, userMessage]);
 
-        const response = await sendMessageApi(conversationId, message);
+        if (useStreaming) {
+          // Use streaming API
+          setIsStreaming(true);
+          let streamedContent = '';
 
-        // Add AI response
-        const aiMessage: InterviewMessage = {
-          role: 'assistant',
-          content: response.aiResponse,
-          timestamp: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, aiMessage]);
+          // Add a placeholder AI message that we'll update
+          const aiMessageIndex = messages.length + 1; // +1 for the user message we just added
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: '',
+              timestamp: new Date().toISOString(),
+            },
+          ]);
 
-        setProgress(response.progress);
+          for await (const event of sendMessageStream(conversationId, message)) {
+            switch (event.type) {
+              case 'text_delta':
+                streamedContent += event.content || '';
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  updated[aiMessageIndex] = {
+                    ...updated[aiMessageIndex],
+                    content: streamedContent,
+                  };
+                  return updated;
+                });
+                break;
 
-        if (response.isComplete) {
-          setIsComplete(true);
-          setStatus('COMPLETED');
-          // Load the summary
-          const summaryData = await getInterviewSummary();
-          setSummary(summaryData);
+              case 'done':
+                setIsStreaming(false);
+                if (event.progress) {
+                  setProgress(event.progress);
+                }
+                if (event.isComplete) {
+                  setIsComplete(true);
+                  setStatus('COMPLETED');
+                  const summaryData = await getInterviewSummary();
+                  setSummary(summaryData);
+                }
+                break;
+
+              case 'error':
+                throw new Error(event.message || 'Streaming error');
+            }
+          }
+        } else {
+          // Use regular API
+          const response = await sendMessageApi(conversationId, message);
+
+          const aiMessage: InterviewMessage = {
+            role: 'assistant',
+            content: response.aiResponse,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, aiMessage]);
+
+          setProgress(response.progress);
+
+          if (response.isComplete) {
+            setIsComplete(true);
+            setStatus('COMPLETED');
+            const summaryData = await getInterviewSummary();
+            setSummary(summaryData);
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to send message');
         // Remove the optimistic user message on error
         setMessages((prev) => prev.slice(0, -1));
+        setIsStreaming(false);
       } finally {
         setIsSending(false);
       }
     },
-    [conversationId],
+    [conversationId, messages.length],
   );
 
   const skipQuestion = useCallback(async () => {
@@ -227,22 +287,54 @@ export function useOnboardingInterview(): UseOnboardingInterview {
     }
   }, []);
 
+  const startVoiceSession = useCallback(
+    async (mode: 'BROWSER_VOICE' | 'PHONE_CALL', phoneNumber?: string) => {
+      if (!conversationId) {
+        setError('No active conversation');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        const session = await startVoiceSessionApi(conversationId, mode, phoneNumber);
+        setVoiceSession(session);
+        setIsVoiceActive(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to start voice session');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [conversationId],
+  );
+
+  const endVoiceSession = useCallback(() => {
+    setVoiceSession(null);
+    setIsVoiceActive(false);
+  }, []);
+
   return {
     messages,
     progress,
     isLoading,
     isSending,
+    isStreaming,
     error,
     isComplete,
     summary,
     conversationId,
     canResume,
     status,
+    voiceSession,
+    isVoiceActive,
     checkStatus,
     start,
     sendMessage,
     skipQuestion,
     completeEarly,
     loadSummary,
+    startVoiceSession,
+    endVoiceSession,
   };
 }

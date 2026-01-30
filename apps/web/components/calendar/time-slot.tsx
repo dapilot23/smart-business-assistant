@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Appointment } from '@/lib/types/appointment';
+import { AlertTriangle } from 'lucide-react';
 
 interface TimeSlotProps {
   hour: number;
@@ -10,6 +11,10 @@ interface TimeSlotProps {
   appointments: Appointment[];
   onSlotClick: (dateTime: Date) => void;
   onAppointmentClick: (appointment: Appointment) => void;
+}
+
+function isHighRiskCustomer(noShowCount?: number): boolean {
+  return (noShowCount ?? 0) >= 2;
 }
 
 export function TimeSlot({
@@ -49,14 +54,25 @@ export function TimeSlot({
         slotAppointments.length > 0 && 'bg-primary/10 hover:bg-primary/20'
       )}
     >
-      {slotAppointments.map((apt) => (
-        <div
-          key={apt.id}
-          className="text-xs font-medium truncate text-primary bg-primary/20 rounded px-1 py-0.5 mb-0.5"
-        >
-          {apt.customer ? `${apt.customer.first_name} ${apt.customer.last_name}` : 'Unknown'}
-        </div>
-      ))}
+      {slotAppointments.map((apt) => {
+        const highRisk = apt.customer && isHighRiskCustomer(apt.customer.noShowCount);
+        return (
+          <div
+            key={apt.id}
+            className={cn(
+              "text-xs font-medium truncate rounded px-1 py-0.5 mb-0.5 flex items-center gap-1",
+              highRisk
+                ? "text-amber-700 bg-amber-100 dark:text-amber-200 dark:bg-amber-900/50"
+                : "text-primary bg-primary/20"
+            )}
+          >
+            {highRisk && <AlertTriangle className="h-3 w-3 flex-shrink-0" />}
+            <span className="truncate">
+              {apt.customer ? `${apt.customer.first_name} ${apt.customer.last_name}` : 'Unknown'}
+            </span>
+          </div>
+        );
+      })}
     </button>
   );
 }
