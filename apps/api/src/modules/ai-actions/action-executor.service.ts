@@ -86,6 +86,8 @@ export class ActionExecutorService {
     });
     const autopilotMode =
       (settings as { autopilotMode?: string } | null)?.autopilotMode ?? 'DRAFT';
+    const maxDiscountPercent =
+      (settings as { maxDiscountPercent?: number } | null)?.maxDiscountPercent ?? 10;
     const highRiskActions = new Set<ActionType>([
       ActionType.APPLY_DISCOUNT,
       ActionType.CREATE_CAMPAIGN,
@@ -93,6 +95,13 @@ export class ActionExecutorService {
 
     let requiresApproval =
       data.requiresApproval ?? this.approvalDefaults[data.actionType];
+
+    if (data.actionType === ActionType.APPLY_DISCOUNT) {
+      const discountValue = Number(data.params?.discountPercent);
+      if (Number.isFinite(discountValue) && discountValue > maxDiscountPercent) {
+        requiresApproval = true;
+      }
+    }
 
     if (autopilotMode === 'SUGGEST') {
       requiresApproval = true;

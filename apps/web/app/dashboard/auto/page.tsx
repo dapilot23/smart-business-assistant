@@ -19,12 +19,14 @@ const agentToggles = [
 export default function AutopilotPage() {
   const [settings, setSettings] = useState<AgentSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [discountInput, setDiscountInput] = useState("10");
 
   useEffect(() => {
     async function load() {
       try {
         const data = await getAgentSettings();
         setSettings(data);
+        setDiscountInput(String(data.maxDiscountPercent ?? 10));
       } catch (error) {
         console.error("Failed to load agent settings", error);
       }
@@ -34,7 +36,6 @@ export default function AutopilotPage() {
   }, []);
 
   const mode = settings?.autopilotMode ?? "DRAFT";
-
   const saveSettings = async (updates: Partial<AgentSettings>) => {
     try {
       setSaving(true);
@@ -122,7 +123,30 @@ export default function AutopilotPage() {
           <p className="text-sm text-muted-foreground">Protect the business while AI runs.</p>
           <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
             <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-              Discount limit: 10%
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Discount limit (%)
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={discountInput}
+                  onChange={(event) => setDiscountInput(event.target.value)}
+                  className="h-10 w-24 rounded-full border border-border bg-card px-3 text-sm text-foreground focus:border-primary/40 focus:outline-none"
+                />
+                <button
+                  onClick={() =>
+                    saveSettings({ maxDiscountPercent: Number(discountInput) || 0 })
+                  }
+                  className="h-10 rounded-full border border-border-subtle bg-card px-4 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Update
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                AI discounts above this require approval.
+              </p>
             </div>
             <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
               Refunds over $100 require approval

@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsEnum,
   IsInt,
+  IsNumber,
   Min,
   Max,
 } from 'class-validator';
@@ -62,6 +63,12 @@ export class UpdateAgentSettingsDto {
   @IsOptional()
   @IsEnum(AutopilotMode)
   autopilotMode?: AutopilotMode;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  maxDiscountPercent?: number;
 
   @IsOptional()
   revenueAgentEnabled?: boolean;

@@ -2053,6 +2053,7 @@ model AgentSettings {
   operationsAgentEnabled  Boolean         @default(true)
   marketingAgentEnabled   Boolean         @default(true)
   autopilotMode           String          @default("DRAFT")
+  maxDiscountPercent      Float           @default(10)
 
   // Notification settings
   dashboardNotifications  Boolean         @default(true)

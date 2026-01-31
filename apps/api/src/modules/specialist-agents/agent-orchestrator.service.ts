@@ -153,6 +153,7 @@ export class AgentOrchestratorService {
     tenantId: string,
     updates: Partial<{
       autopilotMode: string;
+      maxDiscountPercent: number;
       revenueAgentEnabled: boolean;
       customerAgentEnabled: boolean;
       operationsAgentEnabled: boolean;

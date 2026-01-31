@@ -6,6 +6,7 @@ export interface AgentSettings {
   id: string;
   tenantId: string;
   autopilotMode: AutopilotMode;
+  maxDiscountPercent: number;
   revenueAgentEnabled: boolean;
   customerAgentEnabled: boolean;
   operationsAgentEnabled: boolean;

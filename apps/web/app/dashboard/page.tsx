@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Icon } from "../components/Icon";
 import { getAgentTasks, updateAgentTask } from "@/lib/api/agent-tasks";
 import { approveAction, cancelAction, getActions, type AIAction } from "@/lib/api/ai-actions";
+import { triggerAllAgents } from "@/lib/api/insights";
 import { getDashboardStats, type DashboardStats } from "@/lib/api/reports";
 import type { AgentTask } from "@/lib/types/agent-task";
 
@@ -54,6 +55,7 @@ export default function TodayPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
+  const [runningAgents, setRunningAgents] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -166,14 +168,35 @@ export default function TodayPage() {
     }
   };
 
+  const handleRunAgents = async () => {
+    try {
+      setRunningAgents(true);
+      await triggerAllAgents();
+      await refreshQueues();
+    } catch (error) {
+      console.error("Failed to run agents", error);
+    } finally {
+      setRunningAgents(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border-subtle bg-card p-6">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold text-foreground">
             {getGreeting()}, here is what matters today.
           </h1>
           <p className="text-sm text-muted-foreground">{formatDate()}</p>
+        </div>
+          <button
+            onClick={handleRunAgents}
+            disabled={runningAgents}
+            className="rounded-full border border-border-subtle bg-background px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+          >
+            {runningAgents ? "Running AI..." : "Run AI now"}
+          </button>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
