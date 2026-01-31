@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "../../components/Icon";
+import { getAgentSettings, type AgentSettings } from "@/lib/api/agents";
 import { getDashboardStats, type DashboardStats } from "@/lib/api/reports";
 import { getAgentTasks } from "@/lib/api/agent-tasks";
 import type { AgentTask } from "@/lib/types/agent-task";
@@ -29,18 +30,21 @@ const fallbackCollections: ActionItem[] = [
 export default function MoneyPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
+  const [settings, setSettings] = useState<AgentSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        const [statsData, taskData] = await Promise.all([
+        const [statsData, taskData, settingsData] = await Promise.all([
           getDashboardStats(),
           getAgentTasks({ status: "PENDING", ownerAgentType: "REVENUE_SALES", limit: 4 }),
+          getAgentSettings(),
         ]);
         setStats(statsData ?? null);
         setTasks(taskData ?? []);
+        setSettings(settingsData ?? null);
       } catch (error) {
         console.error("Failed to load money data", error);
       } finally {
@@ -143,13 +147,13 @@ export default function MoneyPage() {
           <p className="text-sm text-muted-foreground">Controls for hands-off collections.</p>
           <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
             <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-              Max discount: 10%
+              Max discount: {settings?.maxDiscountPercent ?? 10}%
             </div>
             <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-              Refund limit: $100 without approval
+              Refund guardrails: coming soon
             </div>
             <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-              Friendly reminders: 9am-6pm
+              Messaging windows: coming soon
             </div>
           </div>
         </div>

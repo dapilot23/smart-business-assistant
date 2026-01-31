@@ -149,10 +149,10 @@ export default function AutopilotPage() {
               </p>
             </div>
             <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-              Refunds over $100 require approval
+              Refund guardrails: coming soon
             </div>
             <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-              Escalate negative sentiment immediately
+              Sentiment escalation: coming soon
             </div>
           </div>
         </div>
