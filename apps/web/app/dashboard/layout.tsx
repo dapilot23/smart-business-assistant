@@ -1,107 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icon } from "../components/Icon";
 import { ApiAuthProvider } from "@/components/providers/api-auth-provider";
-import { ChatButton } from "@/components/ai-copilot";
+import { Icon } from "../components/Icon";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "layout-dashboard" as const },
-  { href: "/dashboard/appointments", label: "Appointments", icon: "calendar" as const },
-  { href: "/dashboard/jobs", label: "Jobs", icon: "briefcase" as const },
-  { href: "/dashboard/dispatch", label: "Dispatch", icon: "target" as const },
-  { href: "/dashboard/availability", label: "Availability", icon: "calendar-days" as const },
-  { href: "/dashboard/customers", label: "Customers", icon: "users" as const },
-  { href: "/dashboard/team", label: "Team", icon: "users" as const },
-  { href: "/dashboard/quotes", label: "Quotes", icon: "quote" as const },
-  { href: "/dashboard/inbox", label: "Inbox", icon: "inbox" as const },
-  { href: "/dashboard/sms", label: "SMS", icon: "message-square" as const },
-  { href: "/dashboard/voice", label: "Voice AI", icon: "phone-call" as const },
-  { href: "/dashboard/marketing", label: "Marketing", icon: "megaphone" as const },
-  { href: "/dashboard/insights", label: "Insights", icon: "bar-chart-3" as const },
-  { href: "/dashboard/actions", label: "Actions", icon: "check" as const },
-  { href: "/dashboard/settings", label: "Settings", icon: "settings" as const },
+  { href: "/dashboard", label: "Today" },
+  { href: "/dashboard/inbox", label: "Inbox" },
+  { href: "/dashboard/money", label: "Money" },
+  { href: "/dashboard/auto", label: "Autopilot" },
 ];
 
-function DemoUserSection() {
+function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
-    <div className="flex items-center gap-3 p-4 mx-3 mb-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-glow">
-        <Icon name="user-circle" size={20} className="text-primary-foreground" />
-      </div>
-      <div className="flex flex-col flex-1 min-w-0">
-        <span className="font-secondary text-[14px] font-medium text-foreground truncate">
-          Demo User
-        </span>
-        <span className="font-secondary text-[12px] text-muted-foreground truncate">
-          Elite Plumbing
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function Sidebar({
-  pathname,
-  onNavClick
-}: {
-  pathname: string;
-  onNavClick?: () => void;
-}) {
-  return (
-    <>
-      {/* Logo */}
-      <div className="flex items-center h-16 lg:h-20 px-4 lg:px-6 border-b border-border-subtle">
-        <Link href="/dashboard" className="flex items-center gap-3" onClick={onNavClick}>
-          <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary-hover rounded-xl flex items-center justify-center shadow-glow">
-            <Icon name="layout-dashboard" size={18} className="text-primary-foreground" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-primary text-[15px] font-bold text-foreground">
-              SBA
-            </span>
-            <span className="font-secondary text-[10px] text-muted-foreground -mt-0.5">
-              Business Assistant
-            </span>
-          </div>
-        </Link>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex flex-col gap-1 p-3 lg:p-4 flex-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'));
-          const isExactDashboard = item.href === '/dashboard' && pathname === '/dashboard';
-          const active = isActive || isExactDashboard;
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavClick}
-              className={`relative flex items-center gap-3 h-11 lg:h-10 px-4 rounded-lg transition-all duration-200 ${
-                active
-                  ? "bg-primary/15 text-primary border border-primary/30"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent"
-              }`}
-            >
-              {active && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
-              )}
-              <Icon name={item.icon} size={18} className={active ? "text-primary" : ""} />
-              <span className="font-secondary text-[14px] font-medium">
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* User Section */}
-      <DemoUserSection />
-    </>
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors border ${
+        active
+          ? "bg-primary/10 text-primary border-primary/30"
+          : "text-muted-foreground border-transparent hover:text-foreground hover:bg-secondary"
+      }`}
+    >
+      {label}
+    </Link>
   );
 }
 
@@ -111,76 +33,76 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Close sidebar on route change
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
-
-  // Prevent body scroll when mobile sidebar is open
-  useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [sidebarOpen]);
 
   return (
     <ApiAuthProvider>
-      <div className="flex h-full w-full bg-background">
-        {/* Mobile Header */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between h-14 px-4 border-b border-border-subtle bg-card/95 backdrop-blur-md">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-hover rounded-lg flex items-center justify-center">
-              <Icon name="layout-dashboard" size={18} className="text-primary-foreground" />
+      <div className="min-h-screen w-full bg-background">
+        <header className="sticky top-0 z-30 border-b border-border-subtle bg-background/90 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Link href="/dashboard" className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-primary-foreground">
+                  <Icon name="sparkles" size={18} />
+                </div>
+                <div>
+                  <div className="font-primary text-[16px] font-semibold text-foreground">
+                    AI Employee OS
+                  </div>
+                  <div className="font-secondary text-[12px] text-muted-foreground">
+                    Simple business operating system
+                  </div>
+                </div>
+              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-border-subtle bg-card px-3 py-1 text-xs text-muted-foreground">
+                  AI employee online
+                </span>
+                <button className="rounded-full border border-border-subtle bg-card px-3 py-1 text-xs font-medium text-foreground hover:bg-secondary">
+                  Autopilot: Draft + Ask
+                </button>
+              </div>
             </div>
-            <span className="font-primary text-[16px] font-semibold text-foreground">
-              SBA
-            </span>
-          </Link>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-secondary transition-colors"
-            aria-label={sidebarOpen ? "Close menu" : "Open menu"}
-          >
-            <Icon name={sidebarOpen ? "x" : "menu"} size={24} className="text-foreground" />
-          </button>
-        </div>
 
-        {/* Mobile Sidebar Overlay */}
-        {sidebarOpen && (
-          <div
-            className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+            <nav className="flex flex-wrap items-center gap-2">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  active={pathname === item.href}
+                />
+              ))}
+            </nav>
 
-        {/* Mobile Sidebar */}
-        <aside
-          className={`lg:hidden fixed top-0 left-0 z-50 h-full w-72 bg-card border-r border-border-subtle transform transition-transform duration-300 ease-in-out flex flex-col ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          <Sidebar pathname={pathname} onNavClick={() => setSidebarOpen(false)} />
-        </aside>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Icon
+                  name="sparkles"
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <input
+                  type="text"
+                  placeholder="Ask your AI employee to handle sales, support, or follow-ups…"
+                  className="h-11 w-full rounded-full border border-border bg-card pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none"
+                />
+              </div>
+              <button className="h-11 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90">
+                Run
+              </button>
+            </div>
 
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-border-subtle bg-card">
-          <Sidebar pathname={pathname} />
-        </aside>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">"Follow up on late invoices"</span>
+              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">"Fill Tuesday schedule"</span>
+              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">"Send review requests"</span>
+            </div>
+          </div>
+        </header>
 
-        {/* Main Content */}
-        <div className="flex flex-col flex-1 overflow-hidden pt-14 lg:pt-0 bg-background-subtle">
+        <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
           {children}
-        </div>
-
-        {/* AI Copilot Chat */}
-        <ChatButton />
+        </main>
       </div>
     </ApiAuthProvider>
   );
