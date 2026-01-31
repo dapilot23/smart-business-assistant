@@ -1,0 +1,2289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Smart Business Assistant – UX Overhaul Mockups</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
+
+      :root {
+        --ink: #0c1417;
+        --ink-soft: #1c2b31;
+        --sand: #f6f0e8;
+        --mist: #e6ecea;
+        --sage: #9db7a0;
+        --sun: #f1b56b;
+        --coral: #ed7a62;
+        --sky: #6da7b2;
+        --accent: #cfa77a;
+        --neon-cyan: #6fe8f3;
+        --neon-amber: #f5b56b;
+        --neon-lime: #a3f2a3;
+        --glow-primary: rgba(111, 232, 243, 0.18);
+        --glow-secondary: rgba(245, 181, 107, 0.15);
+        --glow-edge: rgba(111, 232, 243, 0.1);
+        --pill-bg: rgba(111, 232, 243, 0.08);
+        --glow-border: rgba(111, 232, 243, 0.2);
+        --kpi-bg: rgba(111, 232, 243, 0.08);
+        --spark-cool: rgba(111, 232, 243, 0.85);
+        --spark-warm: rgba(245, 181, 107, 0.9);
+        --spark-alert: rgba(237, 122, 98, 0.85);
+        --chart-warm: rgba(245, 181, 107, 0.9);
+        --chart-cool: rgba(111, 232, 243, 0.9);
+        --chart-alert: rgba(237, 122, 98, 0.9);
+        --bar-warm: rgba(245, 181, 107, 0.95);
+        --bar-cool: rgba(111, 232, 243, 0.9);
+        --bar-warm-soft: rgba(245, 181, 107, 0.15);
+        --bar-cool-soft: rgba(111, 232, 243, 0.15);
+        --ring-grad: var(--neon-cyan);
+        --ring-glow: rgba(111, 232, 243, 0.25);
+        --dot-primary: var(--neon-cyan);
+        --dot-secondary: var(--neon-amber);
+        --dot-tertiary: var(--neon-lime);
+        --dot-glow-primary: rgba(111, 232, 243, 0.12);
+        --dot-glow-secondary: rgba(245, 181, 107, 0.16);
+        --dot-glow-tertiary: rgba(163, 242, 163, 0.18);
+        --message-border: rgba(111, 232, 243, 0.08);
+        --message-shadow: rgba(111, 232, 243, 0.06);
+        --message-agent: rgba(111, 232, 243, 0.18);
+        --message-customer: rgba(245, 181, 107, 0.2);
+        --map-dash: rgba(111, 232, 243, 0.25);
+        --frame-glow: rgba(111, 232, 243, 0.15);
+        --avatar-primary-start: var(--neon-cyan);
+        --avatar-primary-end: #4fb0be;
+        --avatar-secondary-start: var(--neon-amber);
+        --avatar-secondary-end: #e57e54;
+        --shadow: 0 30px 90px rgba(4, 8, 12, 0.7);
+        --frame-bg: rgba(9, 15, 20, 0.88);
+        --frame-border: rgba(255, 255, 255, 0.12);
+        --surface: rgba(14, 22, 28, 0.72);
+        --surface-2: rgba(20, 30, 38, 0.75);
+        --surface-3: rgba(23, 34, 42, 0.75);
+        --text: #eef6f2;
+        --text-muted: #9fb3ad;
+      }
+
+      .frame.variant-amber {
+        --neon-cyan: #f5b56b;
+        --neon-amber: #f07c6f;
+        --neon-lime: #ffd27a;
+        --glow-primary: rgba(245, 181, 107, 0.22);
+        --glow-secondary: rgba(240, 124, 111, 0.2);
+        --glow-edge: rgba(245, 181, 107, 0.12);
+        --pill-bg: rgba(245, 181, 107, 0.12);
+        --glow-border: rgba(245, 181, 107, 0.28);
+        --kpi-bg: rgba(245, 181, 107, 0.12);
+        --spark-cool: rgba(245, 181, 107, 0.9);
+        --spark-warm: rgba(240, 124, 111, 0.9);
+        --spark-alert: rgba(255, 210, 122, 0.9);
+        --chart-warm: rgba(245, 181, 107, 0.9);
+        --chart-cool: rgba(240, 124, 111, 0.9);
+        --chart-alert: rgba(255, 210, 122, 0.9);
+        --bar-warm: rgba(245, 181, 107, 0.95);
+        --bar-cool: rgba(240, 124, 111, 0.9);
+        --bar-warm-soft: rgba(245, 181, 107, 0.18);
+        --bar-cool-soft: rgba(240, 124, 111, 0.16);
+        --ring-grad: var(--neon-amber);
+        --ring-glow: rgba(245, 181, 107, 0.28);
+        --dot-primary: var(--neon-amber);
+        --dot-secondary: var(--neon-cyan);
+        --dot-tertiary: var(--neon-lime);
+        --dot-glow-primary: rgba(240, 124, 111, 0.16);
+        --dot-glow-secondary: rgba(245, 181, 107, 0.16);
+        --dot-glow-tertiary: rgba(255, 210, 122, 0.18);
+        --message-border: rgba(245, 181, 107, 0.1);
+        --message-shadow: rgba(245, 181, 107, 0.07);
+        --message-agent: rgba(245, 181, 107, 0.22);
+        --message-customer: rgba(240, 124, 111, 0.22);
+        --map-dash: rgba(245, 181, 107, 0.25);
+        --frame-glow: rgba(245, 181, 107, 0.16);
+        --avatar-primary-end: #d9884d;
+        --avatar-secondary-end: #d7655d;
+      }
+
+      .frame.variant-violet {
+        --neon-cyan: #8f9bff;
+        --neon-amber: #7bd3ff;
+        --neon-lime: #b389ff;
+        --glow-primary: rgba(143, 155, 255, 0.22);
+        --glow-secondary: rgba(123, 211, 255, 0.2);
+        --glow-edge: rgba(143, 155, 255, 0.12);
+        --pill-bg: rgba(143, 155, 255, 0.12);
+        --glow-border: rgba(143, 155, 255, 0.28);
+        --kpi-bg: rgba(143, 155, 255, 0.12);
+        --spark-cool: rgba(143, 155, 255, 0.9);
+        --spark-warm: rgba(123, 211, 255, 0.9);
+        --spark-alert: rgba(179, 137, 255, 0.9);
+        --chart-warm: rgba(143, 155, 255, 0.9);
+        --chart-cool: rgba(123, 211, 255, 0.9);
+        --chart-alert: rgba(179, 137, 255, 0.9);
+        --bar-warm: rgba(143, 155, 255, 0.95);
+        --bar-cool: rgba(123, 211, 255, 0.9);
+        --bar-warm-soft: rgba(143, 155, 255, 0.18);
+        --bar-cool-soft: rgba(123, 211, 255, 0.16);
+        --ring-grad: var(--neon-cyan);
+        --ring-glow: rgba(143, 155, 255, 0.28);
+        --dot-primary: var(--neon-cyan);
+        --dot-secondary: var(--neon-amber);
+        --dot-tertiary: var(--neon-lime);
+        --dot-glow-primary: rgba(143, 155, 255, 0.16);
+        --dot-glow-secondary: rgba(123, 211, 255, 0.16);
+        --dot-glow-tertiary: rgba(179, 137, 255, 0.18);
+        --message-border: rgba(143, 155, 255, 0.1);
+        --message-shadow: rgba(143, 155, 255, 0.07);
+        --message-agent: rgba(143, 155, 255, 0.22);
+        --message-customer: rgba(123, 211, 255, 0.22);
+        --map-dash: rgba(143, 155, 255, 0.25);
+        --frame-glow: rgba(143, 155, 255, 0.16);
+        --avatar-primary-end: #6676e0;
+        --avatar-secondary-end: #4aa7da;
+      }
+
+      .frame.variant-emerald {
+        --neon-cyan: #5ef2c7;
+        --neon-amber: #6fd3ff;
+        --neon-lime: #c2ff7a;
+        --glow-primary: rgba(94, 242, 199, 0.22);
+        --glow-secondary: rgba(111, 211, 255, 0.2);
+        --glow-edge: rgba(94, 242, 199, 0.12);
+        --pill-bg: rgba(94, 242, 199, 0.12);
+        --glow-border: rgba(94, 242, 199, 0.28);
+        --kpi-bg: rgba(94, 242, 199, 0.12);
+        --spark-cool: rgba(94, 242, 199, 0.9);
+        --spark-warm: rgba(111, 211, 255, 0.9);
+        --spark-alert: rgba(194, 255, 122, 0.9);
+        --chart-warm: rgba(94, 242, 199, 0.9);
+        --chart-cool: rgba(111, 211, 255, 0.9);
+        --chart-alert: rgba(194, 255, 122, 0.9);
+        --bar-warm: rgba(94, 242, 199, 0.95);
+        --bar-cool: rgba(111, 211, 255, 0.9);
+        --bar-warm-soft: rgba(94, 242, 199, 0.18);
+        --bar-cool-soft: rgba(111, 211, 255, 0.16);
+        --ring-grad: var(--neon-cyan);
+        --ring-glow: rgba(94, 242, 199, 0.28);
+        --dot-primary: var(--neon-cyan);
+        --dot-secondary: var(--neon-amber);
+        --dot-tertiary: var(--neon-lime);
+        --dot-glow-primary: rgba(94, 242, 199, 0.16);
+        --dot-glow-secondary: rgba(111, 211, 255, 0.16);
+        --dot-glow-tertiary: rgba(194, 255, 122, 0.18);
+        --message-border: rgba(94, 242, 199, 0.1);
+        --message-shadow: rgba(94, 242, 199, 0.07);
+        --message-agent: rgba(94, 242, 199, 0.22);
+        --message-customer: rgba(111, 211, 255, 0.22);
+        --map-dash: rgba(94, 242, 199, 0.25);
+        --frame-glow: rgba(94, 242, 199, 0.16);
+        --avatar-primary-end: #3abf98;
+        --avatar-secondary-end: #3e9bc8;
+      }
+
+      .frame.variant-rose {
+        --neon-cyan: #ff7ad1;
+        --neon-amber: #ffb65e;
+        --neon-lime: #ffd1f2;
+        --glow-primary: rgba(255, 122, 209, 0.22);
+        --glow-secondary: rgba(255, 182, 94, 0.2);
+        --glow-edge: rgba(255, 122, 209, 0.12);
+        --pill-bg: rgba(255, 122, 209, 0.12);
+        --glow-border: rgba(255, 122, 209, 0.28);
+        --kpi-bg: rgba(255, 122, 209, 0.12);
+        --spark-cool: rgba(255, 122, 209, 0.9);
+        --spark-warm: rgba(255, 182, 94, 0.9);
+        --spark-alert: rgba(255, 209, 242, 0.9);
+        --chart-warm: rgba(255, 182, 94, 0.9);
+        --chart-cool: rgba(255, 122, 209, 0.9);
+        --chart-alert: rgba(255, 209, 242, 0.9);
+        --bar-warm: rgba(255, 182, 94, 0.95);
+        --bar-cool: rgba(255, 122, 209, 0.9);
+        --bar-warm-soft: rgba(255, 182, 94, 0.18);
+        --bar-cool-soft: rgba(255, 122, 209, 0.16);
+        --ring-grad: var(--neon-cyan);
+        --ring-glow: rgba(255, 122, 209, 0.28);
+        --dot-primary: var(--neon-cyan);
+        --dot-secondary: var(--neon-amber);
+        --dot-tertiary: var(--neon-lime);
+        --dot-glow-primary: rgba(255, 122, 209, 0.16);
+        --dot-glow-secondary: rgba(255, 182, 94, 0.16);
+        --dot-glow-tertiary: rgba(255, 209, 242, 0.18);
+        --message-border: rgba(255, 122, 209, 0.1);
+        --message-shadow: rgba(255, 122, 209, 0.07);
+        --message-agent: rgba(255, 122, 209, 0.22);
+        --message-customer: rgba(255, 182, 94, 0.22);
+        --map-dash: rgba(255, 122, 209, 0.25);
+        --frame-glow: rgba(255, 122, 209, 0.16);
+        --avatar-primary-end: #d458a8;
+        --avatar-secondary-end: #d4823b;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 10% 10%, rgba(111, 232, 243, 0.18), transparent 45%),
+          radial-gradient(circle at 90% 20%, rgba(245, 181, 107, 0.12), transparent 55%),
+          linear-gradient(120deg, #070d12 0%, #030608 100%),
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: auto, auto, auto, 48px 48px, 48px 48px;
+        background-position: center, center, center, -2px -2px, -2px -2px;
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      .canvas {
+        position: relative;
+        padding: 64px 6vw 96px;
+        overflow: hidden;
+      }
+
+      .canvas::before,
+      .canvas::after {
+        content: "";
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(0px);
+        opacity: 0.18;
+        pointer-events: none;
+      }
+
+      .canvas::before {
+        width: 420px;
+        height: 420px;
+        background: radial-gradient(circle, rgba(111, 232, 243, 0.4) 0%, rgba(111, 232, 243, 0) 70%);
+        top: -120px;
+        left: -120px;
+      }
+
+      .canvas::after {
+        width: 360px;
+        height: 360px;
+        background: radial-gradient(circle, rgba(245, 181, 107, 0.3) 0%, rgba(245, 181, 107, 0) 70%);
+        bottom: -140px;
+        right: -100px;
+      }
+
+      .header {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        max-width: 900px;
+        margin: 0 auto 56px;
+        animation: fadeUp 0.8s ease forwards;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        background: linear-gradient(120deg, rgba(111, 232, 243, 0.2), rgba(245, 181, 107, 0.2));
+        color: #d9f6ff;
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        border: 1px solid rgba(111, 232, 243, 0.35);
+        box-shadow: 0 0 20px rgba(111, 232, 243, 0.2);
+      }
+
+      h1 {
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        font-size: clamp(32px, 4vw, 54px);
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+      }
+
+      p.lede {
+        font-size: clamp(16px, 2.2vw, 20px);
+        color: var(--text-muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 42px;
+      }
+
+      .frame {
+        background: var(--frame-bg);
+        border-radius: 30px;
+        padding: 30px 32px;
+        box-shadow: var(--shadow);
+        color: var(--text);
+        width: min(92vw, 1280px);
+        aspect-ratio: 16 / 10;
+        min-height: 560px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--frame-border);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 0 0 1px var(--frame-glow), var(--shadow);
+        animation: rise 0.9s ease forwards;
+      }
+
+      .frame.selected {
+        box-shadow:
+          0 0 0 1px var(--frame-glow),
+          var(--shadow);
+      }
+
+      .frame::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(130deg, var(--glow-primary), transparent 55%);
+        pointer-events: none;
+      }
+
+      .frame:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+
+      .frame:nth-child(3) {
+        animation-delay: 0.2s;
+      }
+
+      .frame:nth-child(4) {
+        animation-delay: 0.3s;
+      }
+
+      .frame-title {
+        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0.18em;
+        color: #7f9498;
+        text-transform: uppercase;
+        font-family: "Space Mono", monospace;
+      }
+
+      .panel {
+        background: var(--surface);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 20px;
+        display: grid;
+        gap: 14px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(14px);
+      }
+
+      .panel::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        border: 1px solid var(--glow-edge);
+        pointer-events: none;
+      }
+
+      .panel.dark {
+        background: #0a1216;
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .pill {
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: var(--pill-bg);
+        font-size: 12px;
+        color: var(--text);
+        border: 1px solid var(--glow-border);
+        box-shadow: 0 0 16px var(--glow-edge);
+      }
+
+      .pill.urgent {
+        background: rgba(237, 122, 98, 0.2);
+        color: #ffc1b3;
+      }
+
+      .metric {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .metric strong {
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .nav {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .nav span {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: var(--surface-2);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+      }
+
+      .nav span.active {
+        background: linear-gradient(135deg, var(--glow-primary), var(--glow-secondary));
+        color: #fff;
+        border: 1px solid var(--glow-border);
+        box-shadow: 0 0 18px var(--glow-primary);
+      }
+
+      .columns {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 14px;
+      }
+
+      .cards {
+        display: grid;
+        gap: 10px;
+      }
+
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .kpi-card {
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: linear-gradient(140deg, var(--kpi-bg), rgba(255, 255, 255, 0));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        display: grid;
+        gap: 6px;
+      }
+
+      .kpi-card .label {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-family: "Space Mono", monospace;
+      }
+
+      .kpi-card .value {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .spark {
+        height: 36px;
+        border-radius: 12px;
+        background: rgba(9, 15, 20, 0.8);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+      }
+
+      .spark svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .card {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: var(--surface-3);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .card strong {
+        font-size: 14px;
+        color: #f0f6f2;
+      }
+
+      .action {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .chart {
+        height: 160px;
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(10, 18, 24, 0.95), rgba(14, 24, 30, 0.5));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+      }
+
+      .chart svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .bar-chart {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 8px;
+        align-items: end;
+        height: 110px;
+      }
+
+      .bar {
+        border-radius: 8px 8px 4px 4px;
+        background: linear-gradient(180deg, var(--bar-warm), var(--bar-warm-soft));
+      }
+
+      .bar.cool {
+        background: linear-gradient(180deg, var(--bar-cool), var(--bar-cool-soft));
+      }
+
+      .ring {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: conic-gradient(var(--ring-grad) 0deg 250deg, rgba(255, 255, 255, 0.08) 0deg);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 0 20px var(--ring-glow);
+      }
+
+      .ring span {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--surface);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        color: var(--text);
+      }
+
+      .avatar-stack {
+        display: flex;
+        align-items: center;
+      }
+
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid var(--surface);
+        margin-left: -8px;
+        background: linear-gradient(135deg, var(--avatar-primary-start), var(--avatar-primary-end));
+      }
+
+      .avatar.cool {
+        background: linear-gradient(135deg, var(--avatar-secondary-start), var(--avatar-secondary-end));
+      }
+
+      .timeline-item {
+        grid-template-columns: 12px 1fr;
+        align-items: start;
+      }
+
+      .timeline-item .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--dot-primary);
+        margin-top: 4px;
+        box-shadow: 0 0 0 6px var(--dot-glow-primary);
+      }
+
+      .timeline-item .dot.cool {
+        background: var(--dot-secondary);
+        box-shadow: 0 0 0 6px var(--dot-glow-secondary);
+      }
+
+      .timeline-item .dot.sun {
+        background: var(--dot-tertiary);
+        box-shadow: 0 0 0 6px var(--dot-glow-tertiary);
+      }
+
+      .timeline {
+        display: grid;
+        gap: 10px;
+      }
+
+      .timeline-item {
+        display: grid;
+        gap: 6px;
+        padding: 12px 14px;
+        border-radius: 18px;
+        background: #0f1a20;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .thread {
+        display: grid;
+        gap: 8px;
+      }
+
+      .message {
+        background: linear-gradient(135deg, rgba(18, 28, 36, 0.9), rgba(10, 18, 24, 0.6));
+        padding: 12px 14px;
+        border-radius: 14px;
+        color: var(--text);
+        border: 1px solid var(--message-border);
+        box-shadow: inset 0 0 20px var(--message-shadow);
+      }
+
+      .message.agent {
+        background: linear-gradient(135deg, var(--message-agent), rgba(10, 18, 24, 0.6));
+        align-self: flex-start;
+      }
+
+      .message.customer {
+        background: linear-gradient(135deg, var(--message-customer), rgba(10, 18, 24, 0.6));
+        align-self: flex-end;
+      }
+
+      .map {
+        background: linear-gradient(120deg, #0d1920, #14242d);
+        border-radius: 20px;
+        min-height: 200px;
+        position: relative;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .map::after {
+        content: "";
+        position: absolute;
+        top: 20%;
+        left: 15%;
+        width: 70%;
+        height: 60%;
+        border: 2px dashed var(--map-dash);
+        border-radius: 16px;
+      }
+
+      .route-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--dot-primary);
+        top: 32%;
+        left: 30%;
+        box-shadow: 0 0 0 6px var(--dot-glow-primary);
+      }
+
+      .route-dot.secondary {
+        background: var(--dot-secondary);
+        top: 60%;
+        left: 62%;
+        box-shadow: 0 0 0 6px var(--dot-glow-secondary);
+      }
+
+      .frame.style-glass {
+        --shadow: 0 10px 24px rgba(4, 8, 12, 0.28);
+        --frame-bg: rgba(8, 12, 20, 0.84);
+        --frame-border: rgba(255, 255, 255, 0.16);
+        --surface: rgba(18, 30, 40, 0.42);
+        --surface-2: rgba(16, 26, 36, 0.5);
+        --surface-3: rgba(24, 36, 48, 0.55);
+        --text: #eef6ff;
+        --text-muted: #9db0c0;
+        --glow-primary: rgba(120, 210, 255, 0.18);
+        --glow-secondary: rgba(160, 130, 255, 0.14);
+        --glow-edge: rgba(120, 210, 255, 0.08);
+        --pill-bg: rgba(120, 210, 255, 0.08);
+        --glow-border: rgba(120, 210, 255, 0.18);
+        --kpi-bg: rgba(120, 210, 255, 0.08);
+        --spark-cool: rgba(120, 210, 255, 0.75);
+        --spark-warm: rgba(160, 130, 255, 0.75);
+        --spark-alert: rgba(255, 135, 180, 0.75);
+        --chart-warm: rgba(160, 130, 255, 0.75);
+        --chart-cool: rgba(120, 210, 255, 0.75);
+        --chart-alert: rgba(255, 135, 180, 0.75);
+        --bar-warm: rgba(160, 130, 255, 0.8);
+        --bar-cool: rgba(120, 210, 255, 0.8);
+        --bar-warm-soft: rgba(160, 130, 255, 0.12);
+        --bar-cool-soft: rgba(120, 210, 255, 0.12);
+        --ring-grad: #7ad7ff;
+        --ring-glow: rgba(122, 215, 255, 0.18);
+        --dot-primary: #7ad7ff;
+        --dot-secondary: #b08bff;
+        --dot-tertiary: #ff87b4;
+        --dot-glow-primary: rgba(122, 215, 255, 0.1);
+        --dot-glow-secondary: rgba(176, 139, 255, 0.12);
+        --dot-glow-tertiary: rgba(255, 135, 180, 0.12);
+        --message-border: rgba(122, 215, 255, 0.08);
+        --message-shadow: rgba(122, 215, 255, 0.05);
+        --message-agent: rgba(122, 215, 255, 0.16);
+        --message-customer: rgba(176, 139, 255, 0.16);
+        --map-dash: rgba(122, 215, 255, 0.2);
+        --frame-glow: rgba(122, 215, 255, 0.12);
+        --avatar-primary-start: #7ad7ff;
+        --avatar-primary-end: #3b9ad6;
+        --avatar-secondary-start: #b08bff;
+        --avatar-secondary-end: #6d5ae0;
+      }
+
+      .frame.style-glass .panel {
+        background: linear-gradient(135deg, rgba(20, 32, 45, 0.6), rgba(12, 20, 30, 0.35));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 0 18px rgba(120, 210, 255, 0.035), 0 10px 24px rgba(5, 10, 20, 0.32);
+      }
+
+      .frame.style-glass .panel::after {
+        border: 1px solid rgba(122, 215, 255, 0.18);
+      }
+
+      .frame.style-glass .pill {
+        background: linear-gradient(120deg, rgba(122, 215, 255, 0.18), rgba(176, 139, 255, 0.12));
+      }
+
+      .glass-orb {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.55), rgba(120, 210, 255, 0.1) 45%, rgba(12, 20, 30, 0.2) 70%);
+        box-shadow: 0 0 20px rgba(120, 210, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+      }
+
+      .glass-orb.small {
+        width: 68px;
+        height: 68px;
+        background: radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.45), rgba(176, 139, 255, 0.2) 50%, rgba(12, 20, 30, 0.2) 70%);
+        box-shadow: 0 0 16px rgba(176, 139, 255, 0.22);
+      }
+
+      .orb-stack {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+      }
+
+      .float {
+        animation: none;
+      }
+
+      .glass-stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .glass-stack .card {
+        background: linear-gradient(135deg, rgba(122, 215, 255, 0.12), rgba(12, 20, 30, 0.35));
+        border: 1px solid rgba(122, 215, 255, 0.18);
+      }
+
+      .frame.style-fluent {
+        --frame-bg: rgba(12, 16, 20, 0.96);
+        --frame-border: rgba(255, 255, 255, 0.08);
+        --surface: rgba(18, 22, 26, 0.7);
+        --surface-2: rgba(18, 22, 26, 0.4);
+        --surface-3: rgba(18, 22, 26, 0.6);
+        --text: #f7f8f9;
+        --text-muted: #aeb7c1;
+        --glow-primary: rgba(255, 255, 255, 0.04);
+        --glow-secondary: rgba(255, 255, 255, 0.02);
+        --glow-edge: rgba(255, 255, 255, 0.06);
+        --pill-bg: rgba(255, 255, 255, 0.04);
+        --glow-border: rgba(255, 255, 255, 0.08);
+        --kpi-bg: rgba(255, 255, 255, 0.04);
+        --spark-cool: rgba(174, 205, 235, 0.7);
+        --spark-warm: rgba(210, 220, 230, 0.7);
+        --spark-alert: rgba(231, 187, 187, 0.7);
+        --chart-warm: rgba(210, 220, 230, 0.7);
+        --chart-cool: rgba(174, 205, 235, 0.7);
+        --chart-alert: rgba(231, 187, 187, 0.7);
+        --bar-warm: rgba(210, 220, 230, 0.8);
+        --bar-cool: rgba(174, 205, 235, 0.7);
+        --bar-warm-soft: rgba(210, 220, 230, 0.12);
+        --bar-cool-soft: rgba(174, 205, 235, 0.1);
+        --ring-grad: rgba(207, 214, 222, 0.9);
+        --ring-glow: rgba(207, 214, 222, 0.2);
+        --dot-primary: rgba(207, 214, 222, 0.8);
+        --dot-secondary: rgba(174, 205, 235, 0.8);
+        --dot-tertiary: rgba(231, 187, 187, 0.8);
+        --dot-glow-primary: rgba(207, 214, 222, 0.12);
+        --dot-glow-secondary: rgba(174, 205, 235, 0.12);
+        --dot-glow-tertiary: rgba(231, 187, 187, 0.12);
+        --message-border: rgba(255, 255, 255, 0.08);
+        --message-shadow: rgba(255, 255, 255, 0.04);
+        --message-agent: rgba(255, 255, 255, 0.08);
+        --message-customer: rgba(255, 255, 255, 0.06);
+        --map-dash: rgba(255, 255, 255, 0.16);
+        --frame-glow: rgba(255, 255, 255, 0.06);
+        --avatar-primary-start: #dfe6ee;
+        --avatar-primary-end: #9aa7b5;
+        --avatar-secondary-start: #d3dde8;
+        --avatar-secondary-end: #7e8c9a;
+      }
+
+      .frame.style-fluent .panel {
+        background: linear-gradient(180deg, rgba(18, 22, 26, 0.85), rgba(16, 20, 24, 0.75));
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: none;
+      }
+
+      .frame.style-fluent .panel::after {
+        border-color: rgba(255, 255, 255, 0.04);
+      }
+
+      .frame.style-fluent .pill {
+        background: rgba(255, 255, 255, 0.04);
+        color: #e4e8ed;
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: none;
+      }
+
+      .frame.style-fluent .nav span {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .frame.style-fluent .nav span.active {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        box-shadow: none;
+      }
+
+      .frame.style-fluent .card {
+        background: rgba(20, 24, 28, 0.6);
+        border-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .frame.style-fluent .chart {
+        background: linear-gradient(180deg, rgba(15, 18, 22, 0.9), rgba(15, 18, 22, 0.55));
+      }
+
+      .frame.style-bento {
+        --frame-bg: rgba(10, 14, 18, 0.92);
+        --frame-border: rgba(255, 255, 255, 0.12);
+        --surface: rgba(18, 24, 30, 0.55);
+        --surface-2: rgba(18, 24, 30, 0.4);
+        --surface-3: rgba(22, 30, 38, 0.55);
+        --text: #f1f5f9;
+        --text-muted: #9aa6b2;
+        --glow-primary: rgba(134, 201, 255, 0.2);
+        --glow-secondary: rgba(120, 160, 255, 0.18);
+        --glow-edge: rgba(134, 201, 255, 0.1);
+        --pill-bg: rgba(134, 201, 255, 0.08);
+        --glow-border: rgba(134, 201, 255, 0.18);
+        --kpi-bg: rgba(134, 201, 255, 0.08);
+        --spark-cool: rgba(134, 201, 255, 0.9);
+        --spark-warm: rgba(160, 192, 255, 0.9);
+        --spark-alert: rgba(255, 170, 120, 0.9);
+        --chart-warm: rgba(160, 192, 255, 0.9);
+        --chart-cool: rgba(134, 201, 255, 0.9);
+        --chart-alert: rgba(255, 170, 120, 0.9);
+        --bar-warm: rgba(160, 192, 255, 0.95);
+        --bar-cool: rgba(134, 201, 255, 0.9);
+        --bar-warm-soft: rgba(160, 192, 255, 0.18);
+        --bar-cool-soft: rgba(134, 201, 255, 0.16);
+        --ring-grad: #86c9ff;
+        --ring-glow: rgba(134, 201, 255, 0.28);
+        --dot-primary: #86c9ff;
+        --dot-secondary: #98a7ff;
+        --dot-tertiary: #ffb36a;
+        --dot-glow-primary: rgba(134, 201, 255, 0.16);
+        --dot-glow-secondary: rgba(152, 167, 255, 0.16);
+        --dot-glow-tertiary: rgba(255, 179, 106, 0.18);
+        --message-border: rgba(134, 201, 255, 0.1);
+        --message-shadow: rgba(134, 201, 255, 0.06);
+        --message-agent: rgba(134, 201, 255, 0.2);
+        --message-customer: rgba(152, 167, 255, 0.2);
+        --map-dash: rgba(134, 201, 255, 0.22);
+        --frame-glow: rgba(134, 201, 255, 0.15);
+        --avatar-primary-start: #86c9ff;
+        --avatar-primary-end: #4b87c8;
+        --avatar-secondary-start: #98a7ff;
+        --avatar-secondary-end: #6670d6;
+      }
+
+      .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-auto-rows: 140px;
+        gap: 14px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .bento-tile {
+        background: linear-gradient(135deg, rgba(18, 24, 30, 0.75), rgba(12, 18, 24, 0.6));
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(16px);
+      }
+
+      .bento-tile .bar-chart {
+        height: 90px;
+      }
+
+      .bento-tile::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        border: 1px solid rgba(134, 201, 255, 0.12);
+        pointer-events: none;
+      }
+
+      .bento-tile.blur::after {
+        content: "";
+        position: absolute;
+        inset: -30% -10% auto auto;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(134, 201, 255, 0.05) 55%, transparent 70%);
+        filter: blur(26px);
+        opacity: 0.5;
+      }
+
+      .bento-tile > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .bento-tile.large {
+        grid-column: span 2;
+        grid-row: span 2;
+      }
+
+      .bento-tile.tall {
+        grid-row: span 2;
+      }
+
+      .bento-tile.wide {
+        grid-column: span 2;
+      }
+
+      .tile-title {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .tile-value {
+        margin-top: 8px;
+        font-size: 26px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .tile-meta {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .tile-spark {
+        height: 70px;
+        margin-top: 10px;
+      }
+
+      .tile-spark svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .tile-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .tile-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .tile-item strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .layout-01::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(122, 215, 255, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(122, 215, 255, 0.05) 1px, transparent 1px);
+        background-size: 42px 42px;
+        opacity: 0.12;
+        mix-blend-mode: screen;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .layout-01 > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .panel.hud::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          radial-gradient(circle at 10% 20%, rgba(122, 215, 255, 0.12), transparent 55%),
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: auto, 36px 36px, 36px 36px;
+        opacity: 0.25;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .panel.hud > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .status-strip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-radius: 12px;
+        border: 1px dashed var(--glow-border);
+        background: linear-gradient(120deg, rgba(122, 215, 255, 0.06), rgba(176, 139, 255, 0.04));
+        font-size: 12px;
+        color: var(--text-muted);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .status-strip strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .status-strip::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -40%;
+        width: 40%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(122, 215, 255, 0.3), transparent);
+        opacity: 0.2;
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid rgba(122, 215, 255, 0.2);
+        background: rgba(122, 215, 255, 0.08);
+        color: var(--text);
+      }
+
+      .chip.alt {
+        border-color: rgba(176, 139, 255, 0.3);
+        background: rgba(176, 139, 255, 0.12);
+      }
+
+      .signal-bars {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        height: 56px;
+        align-items: end;
+      }
+
+      .signal-bar {
+        border-radius: 8px 8px 4px 4px;
+        background: linear-gradient(180deg, rgba(122, 215, 255, 0.9), rgba(122, 215, 255, 0.1));
+        box-shadow: 0 0 8px rgba(122, 215, 255, 0.18);
+      }
+
+      .holo-card {
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(122, 215, 255, 0.2);
+        background: linear-gradient(140deg, rgba(122, 215, 255, 0.12), rgba(12, 20, 30, 0.5));
+        display: grid;
+        gap: 8px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .holo-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+        opacity: 0.18;
+      }
+
+      .radar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 1px solid rgba(122, 215, 255, 0.25);
+        background:
+          radial-gradient(circle at center, rgba(122, 215, 255, 0.12), transparent 60%),
+          conic-gradient(from 0deg, rgba(122, 215, 255, 0.12), transparent 70%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .radar::before {
+        content: "";
+        position: absolute;
+        width: 50%;
+        height: 2px;
+        background: rgba(122, 215, 255, 0.6);
+        top: 50%;
+        left: 50%;
+        transform-origin: left center;
+      }
+
+      .radar::after {
+        content: "";
+        position: absolute;
+        inset: 14px;
+        border-radius: 50%;
+        border: 1px dashed rgba(122, 215, 255, 0.25);
+      }
+
+      .pulse-dot {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(122, 215, 255, 0.9);
+        box-shadow: 0 0 0 6px rgba(122, 215, 255, 0.2);
+      }
+
+      .pulse-dot.secondary {
+        background: rgba(176, 139, 255, 0.9);
+        box-shadow: 0 0 0 6px rgba(176, 139, 255, 0.2);
+      }
+
+      .footer-note {
+        margin-top: 28px;
+        font-size: 13px;
+        color: #95a2a0;
+        text-align: center;
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes sweep {
+        0% {
+          transform: translateX(-60%);
+        }
+        50% {
+          transform: translateX(120%);
+        }
+        100% {
+          transform: translateX(120%);
+        }
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.85;
+        }
+        50% {
+          transform: scale(1.15);
+          opacity: 1;
+        }
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      @media (max-width: 860px) {
+        .columns {
+          grid-template-columns: 1fr;
+        }
+        .frame {
+          min-height: 480px;
+          aspect-ratio: auto;
+        }
+        .bento-grid {
+          grid-template-columns: 1fr;
+          grid-auto-rows: auto;
+        }
+        .bento-tile.large,
+        .bento-tile.tall,
+        .bento-tile.wide {
+          grid-column: auto;
+          grid-row: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="canvas">
+      <section class="header">
+        <span class="tag">UX Overhaul • Concept Mockups</span>
+        <h1>Make the assistant feel like a mission control desk.</h1>
+        <p class="lede">
+          Calm, roomy, and dark‑themed mockups sized for laptop screens. Layout 01 is the chosen direction,
+          refined for a more cutting‑edge feel.
+        </p>
+      </section>
+
+      <section class="grid">
+        <div class="frame style-glass selected layout-01">
+          <div class="frame-title">Layout 01 · Left Rail + Wide Canvas</div>
+          <div class="pill" style="width: fit-content;">Chosen direction</div>
+          <div class="columns" style="grid-template-columns: 0.6fr 1.4fr 0.7fr;">
+            <div class="panel hud">
+              <div class="nav">
+                <span class="active">Command</span>
+                <span>Inbox</span>
+                <span>Dispatch</span>
+                <span>Insights</span>
+                <span>Settings</span>
+              </div>
+              <div class="status-strip"><span>System sync</span><strong>Stable · 99.2%</strong></div>
+              <div class="signal-bars">
+                <span class="signal-bar" style="height: 36%;"></span>
+                <span class="signal-bar" style="height: 62%;"></span>
+                <span class="signal-bar" style="height: 48%;"></span>
+                <span class="signal-bar" style="height: 72%;"></span>
+                <span class="signal-bar" style="height: 58%;"></span>
+              </div>
+              <div class="chip-row">
+                <span class="chip">Auto‑routes</span>
+                <span class="chip alt">Copilot ON</span>
+                <span class="chip">SLA 92%</span>
+              </div>
+              <div class="kpi-card">
+                <div class="label">Response rate</div>
+                <div class="value">92%</div>
+                <div class="spark">
+                  <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                    <polyline
+                      fill="none"
+                      stroke="var(--spark-cool)"
+                      stroke-width="2"
+                      points="0,30 14,26 28,28 42,20 56,18 70,14 84,16 100,10"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div class="metric"><span>Status</span><strong>All systems green</strong></div>
+              <div class="metric"><span>Quick add</span><strong>Booking · Invoice · Task</strong></div>
+            </div>
+            <div class="panel hud" style="gap: 18px;">
+              <div class="pill">Today focus: Reduce churn risk</div>
+              <div class="status-strip"><span>Queue entropy</span><strong>Low · 0.18</strong></div>
+              <div class="chip-row">
+                <span class="chip">Intent: Renewals</span>
+                <span class="chip alt">Priority lane A</span>
+                <span class="chip">Auto‑summaries</span>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-card">
+                  <div class="label">Inbox</div>
+                  <div class="value">6 open</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-cool)"
+                        stroke-width="2"
+                        points="0,24 12,26 24,18 36,20 48,16 60,14 72,18 84,12 100,16"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Revenue</div>
+                  <div class="value">$6.4k</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-warm)"
+                        stroke-width="2"
+                        points="0,30 14,22 28,24 42,18 56,16 70,14 84,12 100,8"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Churn risk</div>
+                  <div class="value">3%</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-alert)"
+                        stroke-width="2"
+                        points="0,14 16,12 32,18 48,16 64,22 80,20 96,26"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="holo-card">
+                <div class="metric"><span>Live drift</span><strong>+4m</strong></div>
+                <div class="metric"><span>Recommended swap</span><strong>Johnson ↔ Patel</strong></div>
+              </div>
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="dot sun"></div>
+                  <div>
+                    <strong>Johnson · Follow‑up</strong>
+                    <span>Customer hasn’t replied in 3 days. Suggested nudge ready.</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="dot cool"></div>
+                  <div>
+                    <strong>Overflow call queue</strong>
+                    <span>Routing to AI agent, ETA 4 minutes.</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="dot"></div>
+                  <div>
+                    <strong>Friday route drift</strong>
+                    <span>Swap 2 appointments to save 22 minutes.</span>
+                  </div>
+                </div>
+              </div>
+              <div class="panel dark" style="border-radius: 18px;">
+                <div class="metric"><span>Assistant suggestion</span><strong>Approve follow‑up flow</strong></div>
+                <div class="metric"><span>Impact</span><strong>+6% retention</strong></div>
+              </div>
+            </div>
+            <div class="panel hud">
+              <div class="pill urgent">AI context</div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <div class="metric"><span>Focus agent</span><strong>Customer Success</strong></div>
+                  <div class="avatar-stack" style="margin-top:8px;">
+                    <span class="avatar"></span>
+                    <span class="avatar cool"></span>
+                    <span class="avatar"></span>
+                  </div>
+                </div>
+                <div class="ring"><span>86%</span></div>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div class="radar">
+                  <span class="pulse-dot" style="top: 28%; left: 42%;"></span>
+                  <span class="pulse-dot secondary" style="top: 56%; left: 64%;"></span>
+                </div>
+                <div class="chip-row" style="flex-direction: column;">
+                  <span class="chip">Latency 0.7s</span>
+                  <span class="chip alt">Context 14k</span>
+                  <span class="chip">Auto‑triage</span>
+                </div>
+              </div>
+              <div class="cards">
+                <div class="card">
+                  <strong>Active assistant</strong>
+                  <div class="action">Customer Success</div>
+                </div>
+                <div class="card">
+                  <strong>Open tasks</strong>
+                  <div class="action">5 pending · 2 urgent</div>
+                </div>
+                <div class="card">
+                  <strong>Quick reply</strong>
+                  <div class="action">“Can you confirm 3 PM?”</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="frame variant-amber">
+          <div class="frame-title">Layout 02 · Top Nav + Stacked Panels</div>
+          <div class="panel" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; gap:12px; align-items:center;">
+              <div class="pill">Smart Business Assistant</div>
+              <div class="pill">Austin · HQ</div>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <div class="pill">Inbox</div>
+              <div class="pill">Dispatch</div>
+              <div class="pill">Insights</div>
+              <div class="pill">Reports</div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="metric"><span>Today</span><strong>14 jobs · $6.4k revenue · 3 risks</strong></div>
+            <div class="chart">
+              <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--chart-warm)" stop-opacity="0.45" />
+                    <stop offset="100%" stop-color="var(--chart-warm)" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M0,90 L20,70 L40,80 L60,60 L80,62 L100,40 L120,48 L140,34 L160,38 L180,26 L200,30 L220,18 L240,24 L240,120 L0,120 Z"
+                  fill="url(#revGrad)"
+                />
+                <polyline
+                  fill="none"
+                  stroke="var(--chart-warm)"
+                  stroke-width="2"
+                  points="0,90 20,70 40,80 60,60 80,62 100,40 120,48 140,34 160,38 180,26 200,30 220,18 240,24"
+                />
+              </svg>
+            </div>
+            <div class="cards">
+              <div class="card">
+                <strong>Morning block running late</strong>
+                <div class="action">AI route adjustment saves 18 minutes.</div>
+              </div>
+              <div class="card">
+                <strong>Payment reminder window</strong>
+                <div class="action">12 invoices eligible, est. $4.2k.</div>
+              </div>
+            </div>
+          </div>
+          <div class="columns" style="grid-template-columns: 1.2fr 0.8fr;">
+            <div class="panel">
+              <div class="thread">
+                <div class="message customer">“Can you come by after 5?”</div>
+                <div class="message agent">“Yes — I can move your slot to 5:30 PM.”</div>
+                <div class="message">Suggested follow‑up: “Lock in the time?”</div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="metric"><span>Next recommended</span><strong>Send confirmation</strong></div>
+              <div class="metric"><span>Confidence</span><strong>82%</strong></div>
+              <div class="card">
+                <strong>Send SMS</strong>
+                <div class="action">One‑tap approve</div>
+              </div>
+              <div class="bar-chart">
+                <span class="bar" style="height: 35%;"></span>
+                <span class="bar cool" style="height: 60%;"></span>
+                <span class="bar" style="height: 45%;"></span>
+                <span class="bar cool" style="height: 75%;"></span>
+                <span class="bar" style="height: 55%;"></span>
+                <span class="bar cool" style="height: 68%;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="frame variant-violet">
+          <div class="frame-title">Command Center</div>
+          <div class="columns">
+            <div class="panel">
+              <div class="nav">
+                <span class="active">Today</span>
+                <span>Inbox</span>
+                <span>Dispatch</span>
+                <span>Insights</span>
+                <span>Revenue</span>
+              </div>
+              <div class="metric"><span>Live jobs</span><strong>14</strong></div>
+              <div class="metric"><span>Open conversations</span><strong>6</strong></div>
+              <div class="metric"><span>At-risk invoices</span><strong>$8.1k</strong></div>
+              <div class="metric"><span>CSAT trend</span><strong>+4.3%</strong></div>
+              <div class="kpi-row">
+                <div class="kpi-card">
+                  <div class="label">Arrival ETA</div>
+                  <div class="value">12m</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-cool)"
+                        stroke-width="2"
+                        points="0,26 12,22 24,24 36,16 48,18 60,14 72,18 84,10 100,14"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Capacity</div>
+                  <div class="value">78%</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-warm)"
+                        stroke-width="2"
+                        points="0,28 18,24 36,20 54,18 72,14 90,10 100,12"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Bookings</div>
+                  <div class="value">+9%</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-alert)"
+                        stroke-width="2"
+                        points="0,24 14,20 28,22 42,18 56,16 70,18 84,14 100,12"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="pill urgent">3 urgent decisions</div>
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="dot"></div>
+                  <div>
+                    <strong>Dispatch: leak repair late</strong>
+                    <span>Re-route Tyler to Springdale. ETA +12m</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="dot sun"></div>
+                  <div>
+                    <strong>Inbox: refund request</strong>
+                    <span>Offer 10% credit + follow-up call</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="dot cool"></div>
+                  <div>
+                    <strong>Payment reminder</strong>
+                    <span>Send SMS to 4 overdue invoices</span>
+                  </div>
+                </div>
+              </div>
+              <div class="chart">
+                <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="riskGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="var(--chart-cool)" stop-opacity="0.4" />
+                      <stop offset="100%" stop-color="var(--chart-cool)" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0,80 L20,78 L40,70 L60,72 L80,60 L100,62 L120,50 L140,52 L160,46 L180,40 L200,44 L220,36 L240,40 L240,120 L0,120 Z"
+                    fill="url(#riskGrad)"
+                  />
+                  <polyline
+                    fill="none"
+                    stroke="var(--chart-cool)"
+                    stroke-width="2"
+                    points="0,80 20,78 40,70 60,72 80,60 100,62 120,50 140,52 160,46 180,40 200,44 220,36 240,40"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="panel dark">
+            <div class="metric"><span>Assistant focus</span><strong>“Protect Friday revenue”</strong></div>
+            <div class="metric"><span>Next auto-move</span><strong>11:30 AM → Confirm 2 bookings</strong></div>
+          </div>
+        </div>
+
+        <div class="frame variant-amber">
+          <div class="frame-title">Conversation Hub</div>
+          <div class="panel">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div class="pill">Live conversations</div>
+              <div class="avatar-stack">
+                <span class="avatar"></span>
+                <span class="avatar cool"></span>
+                <span class="avatar"></span>
+              </div>
+            </div>
+            <div class="cards">
+              <div class="card">
+                <strong>Jones – Water heater</strong>
+                <div class="action">AI draft: schedule + quote range</div>
+              </div>
+              <div class="card">
+                <strong>Nguyen – Review request</strong>
+                <div class="action">Auto-send after invoice</div>
+              </div>
+              <div class="card">
+                <strong>Patel – Emergency clog</strong>
+                <div class="action">Urgent: dispatch now</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="thread">
+              <div class="message customer">“Can you come today? Basement leaking.”</div>
+              <div class="message agent">“Yes — I can reroute a tech at 2:30 PM. Want a quick quote?”</div>
+              <div class="message">Suggested reply: “We can arrive 2:30–3:00, est. $189 diagnostic.”</div>
+            </div>
+            <div class="chart">
+              <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="sentGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--chart-alert)" stop-opacity="0.45" />
+                    <stop offset="100%" stop-color="var(--chart-alert)" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M0,60 L20,54 L40,50 L60,58 L80,52 L100,46 L120,44 L140,40 L160,44 L180,36 L200,38 L220,32 L240,35 L240,120 L0,120 Z"
+                  fill="url(#sentGrad)"
+                />
+                <polyline
+                  fill="none"
+                  stroke="var(--chart-alert)"
+                  stroke-width="2"
+                  points="0,60 20,54 40,50 60,58 80,52 100,46 120,44 140,40 160,44 180,36 200,38 220,32 240,35"
+                />
+              </svg>
+            </div>
+          </div>
+          <div class="panel">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div>
+                <div class="metric"><span>Next action</span><strong>Confirm appointment</strong></div>
+                <div class="metric"><span>Confidence</span><strong>86%</strong></div>
+              </div>
+              <div class="ring"><span>86%</span></div>
+            </div>
+            <div class="spark">
+              <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                <polyline
+                  fill="none"
+                  stroke="var(--spark-cool)"
+                  stroke-width="2"
+                  points="0,28 14,24 28,18 42,20 56,16 70,14 84,12 100,10"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="frame variant-violet">
+          <div class="frame-title">Dispatch Canvas</div>
+          <div class="panel">
+            <div class="map">
+              <span class="route-dot"></span>
+              <span class="route-dot secondary"></span>
+            </div>
+          </div>
+          <div class="panel">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div>
+                <div class="metric"><span>Route savings</span><strong>18 mins</strong></div>
+                <div class="metric"><span>Fuel impact</span><strong>$23</strong></div>
+                <div class="metric"><span>Idle time removed</span><strong>1 slot</strong></div>
+              </div>
+              <div class="ring"><span>92%</span></div>
+            </div>
+            <div class="bar-chart">
+              <span class="bar cool" style="height: 45%;"></span>
+              <span class="bar" style="height: 65%;"></span>
+              <span class="bar cool" style="height: 55%;"></span>
+              <span class="bar" style="height: 75%;"></span>
+              <span class="bar cool" style="height: 60%;"></span>
+              <span class="bar" style="height: 82%;"></span>
+            </div>
+          </div>
+          <div class="panel">
+            <strong>Unassigned</strong>
+            <div class="cards">
+              <div class="card">
+                <strong>Leak detection</strong>
+                <div class="action">Assign to: Marco (skill 92)</div>
+              </div>
+              <div class="card">
+                <strong>Drain clean</strong>
+                <div class="action">Assign to: Sarah (distance 1.2mi)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="frame">
+          <div class="frame-title">Decision-Ready Insights</div>
+          <div class="panel">
+            <div class="metric"><span>Revenue variance</span><strong>-12% week-to-date</strong></div>
+            <div class="metric"><span>Root cause</span><strong>Service mix shift</strong></div>
+            <div class="metric"><span>Recommended action</span><strong>Upsell inspections</strong></div>
+            <div class="chart">
+              <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="insightGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--chart-warm)" stop-opacity="0.4" />
+                    <stop offset="100%" stop-color="var(--chart-warm)" stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M0,70 L20,66 L40,60 L60,58 L80,54 L100,52 L120,48 L140,44 L160,46 L180,42 L200,38 L220,36 L240,34 L240,120 L0,120 Z"
+                  fill="url(#insightGrad)"
+                />
+                <polyline
+                  fill="none"
+                  stroke="var(--chart-warm)"
+                  stroke-width="2"
+                  points="0,70 20,66 40,60 60,58 80,54 100,52 120,48 140,44 160,46 180,42 200,38 220,36 240,34"
+                />
+              </svg>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="cards">
+              <div class="card">
+                <strong>Launch inspection add-on</strong>
+                <div class="action">+ $2.3k projected, 24 customers</div>
+              </div>
+              <div class="card">
+                <strong>Automate reschedule follow-ups</strong>
+                <div class="action">Reduce lost bookings by 9%</div>
+              </div>
+              <div class="card">
+                <strong>Proactive review campaign</strong>
+                <div class="action">Boost rating before peak season</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel dark">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div>
+                <div class="metric"><span>AI confidence</span><strong>High</strong></div>
+                <div class="metric"><span>Owner attention needed</span><strong>15 minutes</strong></div>
+              </div>
+              <div class="ring"><span>91%</span></div>
+            </div>
+            <div class="spark">
+              <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                <polyline
+                  fill="none"
+                  stroke="var(--spark-warm)"
+                  stroke-width="2"
+                  points="0,26 14,22 28,20 42,16 56,14 70,12 84,10 100,12"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="frame variant-emerald">
+          <div class="frame-title">Layout 03 · Signal Wall</div>
+          <div class="columns" style="grid-template-columns: 0.8fr 1.2fr;">
+            <div class="panel">
+              <div class="pill">Signal queue</div>
+              <div class="metric"><span>Active automations</span><strong>18</strong></div>
+              <div class="metric"><span>Human in loop</span><strong>4</strong></div>
+              <div class="nav">
+                <span class="active">Signals</span>
+                <span>Escalations</span>
+                <span>Revenue</span>
+                <span>Customer</span>
+              </div>
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="dot"></div>
+                  <div>
+                    <strong>Leak triage merged</strong>
+                    <span>Auto-quote sent · 2 approvals pending</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="dot cool"></div>
+                  <div>
+                    <strong>Availability gap</strong>
+                    <span>Shift 2 PM slot to cover north zone</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel" style="gap: 18px;">
+              <div class="kpi-row">
+                <div class="kpi-card">
+                  <div class="label">Mean reply</div>
+                  <div class="value">1m 24s</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-cool)"
+                        stroke-width="2"
+                        points="0,26 14,24 28,20 42,18 56,16 70,14 84,12 100,10"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Automation</div>
+                  <div class="value">72%</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-warm)"
+                        stroke-width="2"
+                        points="0,30 16,26 32,22 48,18 64,16 80,12 96,10"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Escalations</div>
+                  <div class="value">2 today</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-alert)"
+                        stroke-width="2"
+                        points="0,18 18,16 36,20 54,18 72,22 90,24 100,26"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="chart">
+                <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="signalGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="var(--chart-cool)" stop-opacity="0.4" />
+                      <stop offset="100%" stop-color="var(--chart-cool)" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0,86 L20,78 L40,72 L60,74 L80,60 L100,62 L120,50 L140,46 L160,40 L180,38 L200,32 L220,28 L240,30 L240,120 L0,120 Z"
+                    fill="url(#signalGrad)"
+                  />
+                  <polyline
+                    fill="none"
+                    stroke="var(--chart-cool)"
+                    stroke-width="2"
+                    points="0,86 20,78 40,72 60,74 80,60 100,62 120,50 140,46 160,40 180,38 200,32 220,28 240,30"
+                  />
+                </svg>
+              </div>
+              <div class="cards">
+                <div class="card">
+                  <strong>AI summary ready</strong>
+                  <div class="action">Top 3 wins & blockers for this week.</div>
+                </div>
+                <div class="card">
+                  <strong>Shift recommendation</strong>
+                  <div class="action">Move 1 tech to north corridor.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel dark">
+            <div class="metric"><span>System note</span><strong>Autopilot held 6 escalations</strong></div>
+            <div class="metric"><span>Next review</span><strong>Tomorrow · 9:00 AM</strong></div>
+          </div>
+        </div>
+
+        <div class="frame variant-rose">
+          <div class="frame-title">Layout 04 · Workflow Studio</div>
+          <div class="columns" style="grid-template-columns: 0.7fr 1.3fr 0.9fr;">
+            <div class="panel">
+              <div class="pill">Playbooks</div>
+              <div class="cards">
+                <div class="card">
+                  <strong>New booking intake</strong>
+                  <div class="action">SMS + quote range + confirm slot</div>
+                </div>
+                <div class="card">
+                  <strong>Late arrival recovery</strong>
+                  <div class="action">Notify + reschedule + credit</div>
+                </div>
+                <div class="card">
+                  <strong>Review follow‑up</strong>
+                  <div class="action">Auto-send 24h after invoice</div>
+                </div>
+              </div>
+              <div class="metric"><span>Drafts</span><strong>3 flows pending</strong></div>
+            </div>
+            <div class="panel" style="gap: 16px;">
+              <div class="pill">Flow canvas</div>
+              <div class="map">
+                <span class="route-dot" style="top: 26%; left: 22%;"></span>
+                <span class="route-dot secondary" style="top: 52%; left: 46%;"></span>
+                <span class="route-dot" style="top: 68%; left: 70%;"></span>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-card">
+                  <div class="label">Coverage</div>
+                  <div class="value">84%</div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Steps</div>
+                  <div class="value">7 nodes</div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Confidence</div>
+                  <div class="value">High</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <div class="metric"><span>Next step</span><strong>Send estimate</strong></div>
+                  <div class="metric"><span>Confidence</span><strong>88%</strong></div>
+                </div>
+                <div class="ring"><span>88%</span></div>
+              </div>
+              <div class="bar-chart">
+                <span class="bar cool" style="height: 42%;"></span>
+                <span class="bar" style="height: 64%;"></span>
+                <span class="bar cool" style="height: 58%;"></span>
+                <span class="bar" style="height: 78%;"></span>
+                <span class="bar cool" style="height: 66%;"></span>
+                <span class="bar" style="height: 82%;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="frame style-glass">
+          <div class="frame-title">Style A · Liquid Glass + Expressive Motion</div>
+          <div class="columns" style="grid-template-columns: 0.8fr 1.4fr 0.8fr;">
+            <div class="panel">
+              <div class="pill">Live lanes</div>
+              <div class="orb-stack">
+                <div class="glass-orb float"></div>
+                <div class="glass-orb small float delay"></div>
+              </div>
+              <div class="metric"><span>Signal depth</span><strong>24 active</strong></div>
+              <div class="metric"><span>Latency</span><strong>0.8s</strong></div>
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="dot"></div>
+                  <div>
+                    <strong>Auto‑triage engaged</strong>
+                    <span>6 conversations flowing through copilot</span>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="dot cool"></div>
+                  <div>
+                    <strong>Priority shift</strong>
+                    <span>Move VIP follow‑ups to top lane</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel" style="gap: 18px;">
+              <div class="pill">Realtime flow</div>
+              <div class="kpi-row">
+                <div class="kpi-card">
+                  <div class="label">Assist rate</div>
+                  <div class="value">76%</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-cool)"
+                        stroke-width="2"
+                        points="0,26 12,22 24,18 36,20 48,16 60,14 72,12 84,14 100,10"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Revenue pulse</div>
+                  <div class="value">$8.2k</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-warm)"
+                        stroke-width="2"
+                        points="0,30 14,26 28,22 42,16 56,18 70,14 84,12 100,8"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <div class="label">Risk drift</div>
+                  <div class="value">2.1%</div>
+                  <div class="spark">
+                    <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="var(--spark-alert)"
+                        stroke-width="2"
+                        points="0,20 16,18 32,16 48,22 64,20 80,24 96,26"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="chart">
+                <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="glassFlowGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="var(--chart-cool)" stop-opacity="0.45" />
+                      <stop offset="100%" stop-color="var(--chart-cool)" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0,86 L20,72 L40,80 L60,64 L80,60 L100,52 L120,46 L140,48 L160,38 L180,34 L200,30 L220,24 L240,28 L240,120 L0,120 Z"
+                    fill="url(#glassFlowGrad)"
+                  />
+                  <polyline
+                    fill="none"
+                    stroke="var(--chart-cool)"
+                    stroke-width="2"
+                    points="0,86 20,72 40,80 60,64 80,60 100,52 120,46 140,48 160,38 180,34 200,30 220,24 240,28"
+                  />
+                </svg>
+              </div>
+              <div class="glass-stack">
+                <div class="card">
+                  <strong>Adaptive playbook</strong>
+                  <div class="action">Auto‑route VIP escalations to senior agent.</div>
+                </div>
+                <div class="card">
+                  <strong>Wave detected</strong>
+                  <div class="action">Peak load in 14 minutes · prep capacity.</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="pill">Focus beam</div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <div class="metric"><span>Primary goal</span><strong>Protect margin</strong></div>
+                  <div class="metric"><span>Priority lane</span><strong>Inbound inquiries</strong></div>
+                </div>
+                <div class="ring"><span>94%</span></div>
+              </div>
+              <div class="bar-chart">
+                <span class="bar cool" style="height: 40%;"></span>
+                <span class="bar" style="height: 62%;"></span>
+                <span class="bar cool" style="height: 52%;"></span>
+                <span class="bar" style="height: 78%;"></span>
+                <span class="bar cool" style="height: 66%;"></span>
+                <span class="bar" style="height: 84%;"></span>
+              </div>
+              <div class="card">
+                <strong>Suggested move</strong>
+                <div class="action">Hold dispatch for 10 mins to bundle routes.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="frame style-fluent">
+          <div class="frame-title">Style B · Fluent Minimal + Mica</div>
+          <div class="panel" style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="pill">Northwind Ops</div>
+            <div class="pill">Week 05 · KPI Review</div>
+          </div>
+          <div class="columns" style="grid-template-columns: 1.2fr 0.8fr;">
+            <div class="panel">
+              <div class="metric"><span>Today</span><strong>12 jobs · 3 risks · $5.1k</strong></div>
+              <div class="chart">
+                <svg viewBox="0 0 240 120" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="fluentTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="var(--chart-warm)" stop-opacity="0.35" />
+                      <stop offset="100%" stop-color="var(--chart-warm)" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0,88 L20,80 L40,74 L60,70 L80,68 L100,62 L120,56 L140,54 L160,48 L180,44 L200,40 L220,38 L240,34 L240,120 L0,120 Z"
+                    fill="url(#fluentTrendGrad)"
+                  />
+                  <polyline
+                    fill="none"
+                    stroke="var(--chart-warm)"
+                    stroke-width="2"
+                    points="0,88 20,80 40,74 60,70 80,68 100,62 120,56 140,54 160,48 180,44 200,40 220,38 240,34"
+                  />
+                </svg>
+              </div>
+              <div class="cards">
+                <div class="card">
+                  <strong>Morning block stable</strong>
+                  <div class="action">No conflicts detected across routes.</div>
+                </div>
+                <div class="card">
+                  <strong>Invoice pacing</strong>
+                  <div class="action">4 invoices due within 24h.</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="metric"><span>Assist queue</span><strong>5 open</strong></div>
+              <div class="metric"><span>Manual review</span><strong>2 items</strong></div>
+              <div class="cards">
+                <div class="card">
+                  <strong>Escalation draft</strong>
+                  <div class="action">Refund request requires approval.</div>
+                </div>
+                <div class="card">
+                  <strong>Priority response</strong>
+                  <div class="action">Customer waiting 12 minutes.</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <div class="metric"><span>Assist confidence</span><strong>88%</strong></div>
+                  <div class="metric"><span>Owner time</span><strong>12 mins</strong></div>
+                </div>
+                <div class="ring"><span>88%</span></div>
+              </div>
+              <div class="spark">
+                <svg viewBox="0 0 100 36" preserveAspectRatio="none">
+                  <polyline
+                    fill="none"
+                    stroke="var(--spark-cool)"
+                    stroke-width="2"
+                    points="0,28 14,26 28,22 42,20 56,16 70,14 84,12 100,10"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="metric"><span>Next review</span><strong>Friday · 9:30 AM</strong></div>
+            <div class="metric"><span>Owner summary</span><strong>3 decisions ready</strong></div>
+          </div>
+        </div>
+
+        <div class="frame style-bento">
+          <div class="frame-title">Style C · Bento Grid + Progressive Blur</div>
+          <div class="bento-grid">
+            <div class="bento-tile large blur">
+              <div class="tile-title">Performance</div>
+              <div class="tile-value">$42.1k</div>
+              <div class="tile-meta">+12% vs last week</div>
+              <div class="tile-spark">
+                <svg viewBox="0 0 240 80" preserveAspectRatio="none">
+                  <polyline
+                    fill="none"
+                    stroke="var(--spark-cool)"
+                    stroke-width="3"
+                    points="0,60 20,52 40,48 60,44 80,40 100,36 120,34 140,30 160,28 180,26 200,22 220,20 240,18"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div class="bento-tile tall">
+              <div class="tile-title">Urgent</div>
+              <div class="tile-list">
+                <div class="tile-item"><span>Refund request</span><strong>2h</strong></div>
+                <div class="tile-item"><span>Route conflict</span><strong>1h</strong></div>
+                <div class="tile-item"><span>Overdue invoice</span><strong>3h</strong></div>
+                <div class="tile-item"><span>VIP follow‑up</span><strong>Now</strong></div>
+              </div>
+            </div>
+            <div class="bento-tile blur">
+              <div class="tile-title">CSAT</div>
+              <div class="tile-value">4.7</div>
+              <div class="tile-meta">Up 0.3 this month</div>
+              <div class="tile-spark">
+                <svg viewBox="0 0 120 60" preserveAspectRatio="none">
+                  <polyline
+                    fill="none"
+                    stroke="var(--spark-warm)"
+                    stroke-width="3"
+                    points="0,44 12,42 24,38 36,34 48,32 60,28 72,26 84,24 96,22 108,18 120,16"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div class="bento-tile">
+              <div class="tile-title">AI queue</div>
+              <div class="tile-value">9</div>
+              <div class="tile-meta">Ready to approve</div>
+              <div class="tile-spark">
+                <svg viewBox="0 0 120 60" preserveAspectRatio="none">
+                  <polyline
+                    fill="none"
+                    stroke="var(--spark-alert)"
+                    stroke-width="3"
+                    points="0,50 15,46 30,42 45,38 60,36 75,32 90,30 105,26 120,24"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div class="bento-tile wide blur">
+              <div class="tile-title">Capacity</div>
+              <div class="bar-chart">
+                <span class="bar cool" style="height: 42%;"></span>
+                <span class="bar" style="height: 66%;"></span>
+                <span class="bar cool" style="height: 58%;"></span>
+                <span class="bar" style="height: 72%;"></span>
+                <span class="bar cool" style="height: 64%;"></span>
+                <span class="bar" style="height: 86%;"></span>
+              </div>
+            </div>
+            <div class="bento-tile">
+              <div class="tile-title">Route delta</div>
+              <div class="tile-value">‑18m</div>
+              <div class="tile-meta">Saved this afternoon</div>
+            </div>
+            <div class="bento-tile blur">
+              <div class="tile-title">Retention</div>
+              <div class="tile-value">96%</div>
+              <div class="tile-meta">Target 94%</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p class="footer-note">Mockups are conceptual layouts to guide UX direction and prioritization.</p>
+    </main>
+  </body>
+</html>
