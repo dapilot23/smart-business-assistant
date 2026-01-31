@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "prisma/**/*.ts",
+    "src/scripts/**/*.ts",
+    "src/**/examples/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ApiAuthProvider } from "@/components/providers/api-auth-provider";
 import { Icon } from "../components/Icon";
 import { AskBar } from "./_components/ask-bar";
+import { getAgentSettings, type AutopilotMode } from "@/lib/api/agents";
 
 const navItems = [
   { href: "/dashboard", label: "Today" },
@@ -34,6 +36,27 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [autopilotMode, setAutopilotMode] = useState<AutopilotMode>("DRAFT");
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const settings = await getAgentSettings();
+        setAutopilotMode(settings.autopilotMode ?? "DRAFT");
+      } catch (error) {
+        console.error("Failed to load autopilot mode", error);
+      }
+    }
+
+    loadSettings();
+  }, []);
+
+  const modeLabel =
+    autopilotMode === "AUTO"
+      ? "Auto-execute"
+      : autopilotMode === "SUGGEST"
+        ? "Suggest only"
+        : "Draft + Ask";
 
   return (
     <ApiAuthProvider>
@@ -59,7 +82,7 @@ export default function DashboardLayout({
                   AI employee online
                 </span>
                 <button className="rounded-full border border-border-subtle bg-card px-3 py-1 text-xs font-medium text-foreground hover:bg-secondary">
-                  Autopilot: Draft + Ask
+                  Autopilot: {modeLabel}
                 </button>
               </div>
             </div>
