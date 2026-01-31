@@ -55,5 +55,5 @@ export function useDispatchSuggestions(
     return () => {
       active = false;
     };
-  }, [unassigned, date]);
+  }, [unassigned, date, setSuggestions, setSuggestionsLoading]);
 }

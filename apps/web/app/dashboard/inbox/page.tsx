@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AiAssistantPanel } from '@/components/messaging/ai-assistant-panel';
 import { ConversationList } from '@/components/messaging/conversation-list';
@@ -32,34 +32,7 @@ export default function InboxPage() {
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
-  useEffect(() => {
-    loadConversations();
-  }, []);
-
-  const sortedConversations = useMemo(() => {
-    return [...conversations].sort((a, b) => {
-      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
-      return bTime - aTime;
-    });
-  }, [conversations]);
-
-  async function loadConversations() {
-    try {
-      setLoading(true);
-      const data = await listConversations();
-      setConversations(data);
-      if (!selectedId && data.length > 0) {
-        await selectConversation(data[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to load conversations', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function selectConversation(id: string) {
+  const selectConversation = useCallback(async (id: string) => {
     setSelectedId(id);
     setLoadingConversation(true);
     try {
@@ -74,7 +47,34 @@ export default function InboxPage() {
     } finally {
       setLoadingConversation(false);
     }
-  }
+  }, []);
+
+  const loadConversations = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await listConversations();
+      setConversations(data);
+      if (!selectedId && data.length > 0) {
+        await selectConversation(data[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load conversations', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedId, selectConversation]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [conversations]);
 
   async function handleSend() {
     if (!current || !messageInput.trim()) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   AgentInsight,
@@ -126,11 +126,7 @@ export function InsightsPanel({ maxItems = 5 }: InsightsPanelProps) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [insightsData, summaryData] = await Promise.all([
@@ -144,7 +140,11 @@ export function InsightsPanel({ maxItems = 5 }: InsightsPanelProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [maxItems]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAction = async (insight: AgentInsight, action: "APPROVED" | "REJECTED") => {
     try {

@@ -26,7 +26,7 @@ export async function optimizeRoute(
 export async function getOptimizedRoute(
   technicianId: string,
   date?: string,
-): Promise<any> {
+): Promise<OptimizedRouteResult> {
   const query = date ? `?date=${encodeURIComponent(date)}` : '';
   return fetchWithAuth(getApiUrl(`/ai-scheduling/routes/${technicianId}${query}`));
 }
