@@ -2052,6 +2052,7 @@ model AgentSettings {
   customerAgentEnabled    Boolean         @default(true)
   operationsAgentEnabled  Boolean         @default(true)
   marketingAgentEnabled   Boolean         @default(true)
+  autopilotMode           String          @default("DRAFT")
 
   // Notification settings
   dashboardNotifications  Boolean         @default(true)

@@ -8,6 +8,12 @@ import {
 } from 'class-validator';
 import { AgentType, InsightPriority, InsightStatus } from '@prisma/client';
 
+export enum AutopilotMode {
+  SUGGEST = 'SUGGEST',
+  DRAFT = 'DRAFT',
+  AUTO = 'AUTO',
+}
+
 export class ListInsightsDto {
   @IsOptional()
   @IsEnum(AgentType)
@@ -53,6 +59,10 @@ export class TriggerAgentDto {
 }
 
 export class UpdateAgentSettingsDto {
+  @IsOptional()
+  @IsEnum(AutopilotMode)
+  autopilotMode?: AutopilotMode;
+
   @IsOptional()
   revenueAgentEnabled?: boolean;
 

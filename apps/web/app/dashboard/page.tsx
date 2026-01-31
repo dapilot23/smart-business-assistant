@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "../components/Icon";
-import { getAgentTasks } from "@/lib/api/agent-tasks";
+import { getAgentTasks, updateAgentTask } from "@/lib/api/agent-tasks";
+import { approveAction, cancelAction, getActions, type AIAction } from "@/lib/api/ai-actions";
 import { getDashboardStats, type DashboardStats } from "@/lib/api/reports";
 import type { AgentTask } from "@/lib/types/agent-task";
 
 type ActionItem = {
   id?: string;
+  source?: "action" | "task" | "fallback";
   title: string;
   description?: string;
   priority?: string;
@@ -48,19 +50,23 @@ const fallbackTasks: ActionItem[] = [
 
 export default function TodayPage() {
   const [tasks, setTasks] = useState<AgentTask[]>([]);
+  const [actions, setActions] = useState<AIAction[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [workingId, setWorkingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        const [taskData, statsData] = await Promise.all([
+        const [taskData, statsData, actionData] = await Promise.all([
           getAgentTasks({ status: "PENDING", limit: 6 }),
           getDashboardStats(),
+          getActions("PENDING"),
         ]);
         setTasks(taskData ?? []);
         setStats(statsData ?? null);
+        setActions(actionData ?? []);
       } catch (error) {
         console.error("Failed to load today data", error);
       } finally {
@@ -72,21 +78,100 @@ export default function TodayPage() {
   }, []);
 
   const displayTasks = useMemo<ActionItem[]>(() => {
-    if (tasks.length === 0) return fallbackTasks;
-    return tasks.map((task) => ({
-      id: task.id,
-      title: task.title,
-      description: task.description ?? "",
-      priority: task.priority,
-    }));
-  }, [tasks]);
+    if (actions.length > 0) {
+      return actions.map((action) => ({
+        id: action.id,
+        source: "action",
+        title: action.title,
+        description: action.description,
+        priority: action.riskLevel ?? "MEDIUM",
+      }));
+    }
+    if (tasks.length > 0) {
+      return tasks.map((task) => ({
+        id: task.id,
+        source: "task",
+        title: task.title,
+        description: task.description ?? "",
+        priority: task.priority,
+      }));
+    }
+    return fallbackTasks.map((task) => ({ ...task, source: "fallback" }));
+  }, [actions, tasks]);
+
+  const refreshQueues = async () => {
+    const [taskData, actionData] = await Promise.all([
+      getAgentTasks({ status: "PENDING", limit: 6 }),
+      getActions("PENDING"),
+    ]);
+    setTasks(taskData ?? []);
+    setActions(actionData ?? []);
+  };
+
+  const handleApprove = async (item: ActionItem) => {
+    if (!item.id || !item.source) return;
+    try {
+      setWorkingId(item.id);
+      if (item.source === "action") {
+        await approveAction(item.id);
+      } else if (item.source === "task") {
+        await updateAgentTask(item.id, { status: "COMPLETED" });
+      }
+      await refreshQueues();
+    } catch (error) {
+      console.error("Failed to approve item", error);
+    } finally {
+      setWorkingId(null);
+    }
+  };
+
+  const handleSkip = async (item: ActionItem) => {
+    if (!item.id || !item.source) return;
+    try {
+      setWorkingId(item.id);
+      if (item.source === "action") {
+        await cancelAction(item.id);
+      } else if (item.source === "task") {
+        await updateAgentTask(item.id, { status: "CANCELLED" });
+      }
+      await refreshQueues();
+    } catch (error) {
+      console.error("Failed to skip item", error);
+    } finally {
+      setWorkingId(null);
+    }
+  };
+
+  const handleApproveAll = async () => {
+    if (displayTasks.length === 0) return;
+    try {
+      setWorkingId("bulk");
+      await Promise.all(
+        displayTasks.map((item) => {
+          if (!item.id || !item.source) return Promise.resolve();
+          if (item.source === "action") {
+            return approveAction(item.id);
+          }
+          if (item.source === "task") {
+            return updateAgentTask(item.id, { status: "COMPLETED" });
+          }
+          return Promise.resolve();
+        }),
+      );
+      await refreshQueues();
+    } catch (error) {
+      console.error("Failed to approve all items", error);
+    } finally {
+      setWorkingId(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border-subtle bg-card p-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold text-foreground">
-            {getGreeting()}, here's what matters today.
+            {getGreeting()}, here is what matters today.
           </h1>
           <p className="text-sm text-muted-foreground">{formatDate()}</p>
         </div>
@@ -122,7 +207,11 @@ export default function TodayPage() {
               <h2 className="text-lg font-semibold text-foreground">Top actions</h2>
               <p className="text-sm text-muted-foreground">Ranked by impact.</p>
             </div>
-            <button className="rounded-full border border-border-subtle bg-background px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+            <button
+              onClick={handleApproveAll}
+              disabled={workingId === "bulk"}
+              className="rounded-full border border-border-subtle bg-background px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+            >
               Approve all
             </button>
           </div>
@@ -148,13 +237,21 @@ export default function TodayPage() {
                     </div>
                     <p className="text-sm text-muted-foreground">{task.description}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <button className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
+                      <button
+                        onClick={() => handleApprove(task)}
+                        disabled={workingId === task.id}
+                        className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                      >
                         Approve
                       </button>
                       <button className="rounded-full border border-border-subtle bg-card px-4 py-1.5 text-xs font-semibold text-foreground">
                         Edit
                       </button>
-                      <button className="rounded-full border border-border-subtle bg-card px-4 py-1.5 text-xs font-semibold text-muted-foreground">
+                      <button
+                        onClick={() => handleSkip(task)}
+                        disabled={workingId === task.id}
+                        className="rounded-full border border-border-subtle bg-card px-4 py-1.5 text-xs font-semibold text-muted-foreground disabled:opacity-60"
+                      >
                         Skip
                       </button>
                     </div>
@@ -168,7 +265,7 @@ export default function TodayPage() {
         <div className="rounded-2xl border border-border-subtle bg-card p-6">
           <h2 className="text-lg font-semibold text-foreground">AI employee is doing</h2>
           <p className="text-sm text-muted-foreground">
-            Running behind-the-scenes tasks so you don't have to.
+            Running behind-the-scenes tasks so you do not have to.
           </p>
           <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
             <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">

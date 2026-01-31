@@ -170,7 +170,7 @@ export default function InboxPage() {
 
         <div className="mt-4 flex flex-col gap-3">
           <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3 text-sm text-muted-foreground">
-            AI suggestion: "Happy to help - your order is scheduled for Friday at 2 PM. Want me to confirm?"
+            AI suggestion: Happy to help - your order is scheduled for Friday at 2 PM. Want me to confirm?
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input

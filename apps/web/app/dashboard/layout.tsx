@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ApiAuthProvider } from "@/components/providers/api-auth-provider";
 import { Icon } from "../components/Icon";
+import { AskBar } from "./_components/ask-bar";
 
 const navItems = [
   { href: "/dashboard", label: "Today" },
@@ -74,28 +75,18 @@ export default function DashboardLayout({
               ))}
             </nav>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <Icon
-                  name="sparkles"
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-                <input
-                  type="text"
-                  placeholder="Ask your AI employee to handle sales, support, or follow-ups…"
-                  className="h-11 w-full rounded-full border border-border bg-card pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none"
-                />
-              </div>
-              <button className="h-11 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90">
-                Run
-              </button>
-            </div>
+            <AskBar />
 
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">"Follow up on late invoices"</span>
-              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">"Fill Tuesday schedule"</span>
-              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">"Send review requests"</span>
+              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">
+                Follow up on late invoices
+              </span>
+              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">
+                Fill Tuesday schedule
+              </span>
+              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">
+                Send review requests
+              </span>
             </div>
           </div>
         </header>

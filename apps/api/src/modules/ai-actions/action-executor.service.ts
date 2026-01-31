@@ -81,8 +81,30 @@ export class ActionExecutorService {
     tenantId: string,
     data: CreateActionDto,
   ): Promise<AIAction> {
-    const requiresApproval =
+    const settings = await this.prisma.agentSettings.findUnique({
+      where: { tenantId },
+    });
+    const autopilotMode =
+      (settings as { autopilotMode?: string } | null)?.autopilotMode ?? 'DRAFT';
+    const highRiskActions = new Set<ActionType>([
+      ActionType.APPLY_DISCOUNT,
+      ActionType.CREATE_CAMPAIGN,
+    ]);
+
+    let requiresApproval =
       data.requiresApproval ?? this.approvalDefaults[data.actionType];
+
+    if (autopilotMode === 'SUGGEST') {
+      requiresApproval = true;
+    }
+
+    if (autopilotMode === 'AUTO') {
+      if (data.requiresApproval === true) {
+        requiresApproval = true;
+      } else {
+        requiresApproval = highRiskActions.has(data.actionType);
+      }
+    }
 
     const action = await this.prisma.aIAction.create({
       data: {

@@ -12,11 +12,21 @@ import { cn } from '@/lib/utils';
 interface ChatPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  initialPrompt?: string;
+  promptKey?: number;
+  onPromptHandled?: () => void;
 }
 
-export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
+export function ChatPanel({
+  isOpen,
+  onClose,
+  initialPrompt,
+  promptKey,
+  onPromptHandled,
+}: ChatPanelProps) {
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastPromptKeyRef = useRef<number | null>(null);
 
   const {
     conversations,
@@ -38,6 +48,16 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !initialPrompt) return;
+    if (typeof promptKey === 'number') {
+      if (lastPromptKeyRef.current === promptKey) return;
+      lastPromptKeyRef.current = promptKey;
+    }
+    sendMessage(initialPrompt);
+    onPromptHandled?.();
+  }, [initialPrompt, isOpen, onPromptHandled, promptKey, sendMessage]);
 
   if (!isOpen) return null;
 

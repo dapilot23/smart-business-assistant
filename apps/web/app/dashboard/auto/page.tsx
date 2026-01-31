@@ -1,34 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getAgentSettings, updateAgentSettings, type AutopilotMode, type AgentSettings } from "@/lib/api/agents";
 
-const modes = [
-  { id: "suggest", label: "Suggest only", description: "AI recommends, you decide." },
-  { id: "draft", label: "Draft + ask", description: "AI drafts and waits for approval." },
-  { id: "auto", label: "Auto-execute", description: "AI runs playbooks within guardrails." },
+const modes: { id: AutopilotMode; label: string; description: string }[] = [
+  { id: "SUGGEST", label: "Suggest only", description: "AI recommends, you decide." },
+  { id: "DRAFT", label: "Draft + ask", description: "AI drafts and waits for approval." },
+  { id: "AUTO", label: "Auto-execute", description: "AI runs playbooks within guardrails." },
 ];
 
-const playbooks = [
-  {
-    name: "New lead follow-up",
-    description: "Reply within 2 minutes and book when possible.",
-  },
-  {
-    name: "Support auto-triage",
-    description: "Resolve common questions and escalate edge cases.",
-  },
-  {
-    name: "No-show prevention",
-    description: "Confirm appointments and collect deposits when needed.",
-  },
-  {
-    name: "Review requests",
-    description: "Send a review ask 24 hours after service.",
-  },
-];
+const agentToggles = [
+  { key: "revenueAgentEnabled", label: "Revenue + Sales" },
+  { key: "customerAgentEnabled", label: "Customer Support" },
+  { key: "operationsAgentEnabled", label: "Operations" },
+  { key: "marketingAgentEnabled", label: "Marketing" },
+] as const;
 
 export default function AutopilotPage() {
-  const [mode, setMode] = useState("draft");
+  const [settings, setSettings] = useState<AgentSettings | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getAgentSettings();
+        setSettings(data);
+      } catch (error) {
+        console.error("Failed to load agent settings", error);
+      }
+    }
+
+    load();
+  }, []);
+
+  const mode = settings?.autopilotMode ?? "DRAFT";
+
+  const saveSettings = async (updates: Partial<AgentSettings>) => {
+    try {
+      setSaving(true);
+      const updated = await updateAgentSettings(updates);
+      setSettings(updated);
+    } catch (error) {
+      console.error("Failed to update settings", error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,7 +58,7 @@ export default function AutopilotPage() {
           {modes.map((item) => (
             <button
               key={item.id}
-              onClick={() => setMode(item.id)}
+              onClick={() => saveSettings({ autopilotMode: item.id })}
               className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
                 mode === item.id
                   ? "border-primary/40 bg-primary/10"
@@ -53,35 +70,50 @@ export default function AutopilotPage() {
             </button>
           ))}
         </div>
+        {saving && (
+          <p className="mt-3 text-xs text-muted-foreground">Saving changes…</p>
+        )}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-2xl border border-border-subtle bg-card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Active playbooks</h2>
-              <p className="text-sm text-muted-foreground">Turn automations on or off.</p>
+              <h2 className="text-lg font-semibold text-foreground">AI departments</h2>
+              <p className="text-sm text-muted-foreground">Toggle which teams can act.</p>
             </div>
-            <button className="rounded-full border border-border-subtle bg-background px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
-              Add playbook
+            <button className="rounded-full border border-border-subtle bg-background px-4 py-2 text-xs font-medium text-muted-foreground">
+              {settings ? "Configured" : "Loading"}
             </button>
           </div>
 
           <div className="mt-4 grid gap-3">
-            {playbooks.map((playbook) => (
-              <div
-                key={playbook.name}
-                className="flex flex-col gap-2 rounded-2xl border border-border-subtle bg-background px-4 py-4"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-foreground">{playbook.name}</h3>
-                  <button className="rounded-full border border-border-subtle bg-card px-3 py-1 text-xs text-muted-foreground">
-                    Enabled
+            {agentToggles.map((toggle) => {
+              const enabled = settings ? settings[toggle.key] : false;
+              return (
+                <div
+                  key={toggle.key}
+                  className="flex items-center justify-between rounded-2xl border border-border-subtle bg-background px-4 py-4"
+                >
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{toggle.label}</div>
+                    <div className="text-xs text-muted-foreground">Agent enabled</div>
+                  </div>
+                  <button
+                    onClick={() =>
+                      saveSettings({ [toggle.key]: !enabled } as Partial<AgentSettings>)
+                    }
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      enabled
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border-subtle bg-card text-muted-foreground"
+                    }`}
+                  >
+                    {enabled ? "On" : "Off"}
                   </button>
                 </div>
-                <p className="text-sm text-muted-foreground">{playbook.description}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

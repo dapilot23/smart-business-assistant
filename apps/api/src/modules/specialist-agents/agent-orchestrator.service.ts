@@ -152,6 +152,7 @@ export class AgentOrchestratorService {
   async updateSettings(
     tenantId: string,
     updates: Partial<{
+      autopilotMode: string;
       revenueAgentEnabled: boolean;
       customerAgentEnabled: boolean;
       operationsAgentEnabled: boolean;
