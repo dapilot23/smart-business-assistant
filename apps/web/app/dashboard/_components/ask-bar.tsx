@@ -22,7 +22,7 @@ export function AskBar() {
         <Icon
           name="sparkles"
           size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-200"
         />
         <input
           type="text"
@@ -35,12 +35,12 @@ export function AskBar() {
             }
           }}
           placeholder="Ask your AI employee to handle sales, support, or follow-ups..."
-          className="h-11 w-full rounded-full border border-border bg-card pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none"
+          className="h-11 w-full rounded-full border border-white/10 bg-white/5 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
         />
       </div>
       <button
         onClick={runPrompt}
-        className="h-11 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+        className="h-11 rounded-full bg-emerald-400 px-5 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
       >
         Run
       </button>

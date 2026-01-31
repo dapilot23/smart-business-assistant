@@ -19,10 +19,10 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
   return (
     <Link
       href={href}
-      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors border ${
+      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors ${
         active
-          ? "bg-primary/10 text-primary border-primary/30"
-          : "text-muted-foreground border-transparent hover:text-foreground hover:bg-secondary"
+          ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200 shadow-[0_0_18px_rgba(110,231,183,0.18)]"
+          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-slate-100"
       }`}
     >
       {label}
@@ -60,34 +60,45 @@ export default function DashboardLayout({
 
   return (
     <ApiAuthProvider>
-      <div className="min-h-screen w-full bg-background">
-        <header className="sticky top-0 z-30 border-b border-border-subtle bg-background/90 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative min-h-screen w-full bg-os-shell text-slate-100">
+        <div className="pointer-events-none absolute inset-0 bg-grid-faint opacity-40" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.12),transparent_65%)]" />
+
+        <header className="relative z-20 pt-6">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 sm:px-6">
+            <div className="flex flex-col gap-4 rounded-full border border-white/10 bg-white/5 px-4 py-3 shadow-[0_18px_45px_rgba(0,0,0,0.35)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
               <Link href="/dashboard" className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-primary-foreground">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-200">
                   <Icon name="sparkles" size={18} />
                 </div>
                 <div>
-                  <div className="font-primary text-[16px] font-semibold text-foreground">
-                    AI Employee OS
+                  <div className="font-display text-[16px] font-semibold text-slate-100">
+                    Business OS
                   </div>
-                  <div className="font-secondary text-[12px] text-muted-foreground">
-                    Simple business operating system
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                    Agentic workflow layer
                   </div>
                 </div>
               </Link>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-border-subtle bg-card px-3 py-1 text-xs text-muted-foreground">
-                  AI employee online
+
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 sm:justify-center">
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
+                  AI online
                 </span>
-                <button className="rounded-full border border-border-subtle bg-card px-3 py-1 text-xs font-medium text-foreground hover:bg-secondary">
-                  Autopilot: {modeLabel}
-                </button>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                  Focused ops mode
+                </span>
+                <span className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 sm:inline-flex">
+                  24/7 agent coverage
+                </span>
               </div>
+
+              <button className="rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 shadow-[0_0_18px_rgba(110,231,183,0.35)]">
+                Autopilot: {modeLabel}
+              </button>
             </div>
 
-            <nav className="flex flex-wrap items-center gap-2">
+            <nav className="flex flex-wrap items-center justify-center gap-2">
               {navItems.map((item) => (
                 <NavLink
                   key={item.href}
@@ -98,23 +109,25 @@ export default function DashboardLayout({
               ))}
             </nav>
 
-            <AskBar />
+            <div className="glass-panel rounded-3xl p-4">
+              <AskBar />
+            </div>
 
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">
-                Follow up on late invoices
+            <div className="flex flex-wrap gap-2 text-xs text-slate-400">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                Clear overdue invoices
               </span>
-              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">
-                Fill Tuesday schedule
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                Lock next-week schedule
               </span>
-              <span className="rounded-full border border-border-subtle bg-card px-3 py-1">
-                Send review requests
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                Queue review requests
               </span>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
+        <main className="relative z-10 mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
           {children}
         </main>
       </div>

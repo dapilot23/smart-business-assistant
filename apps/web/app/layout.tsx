@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Inter } from "next/font/google";
+import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import dynamic from "next/dynamic";
 import { ThemeProvider } from "@/lib/theme-context";
 import "./globals.css";
@@ -38,14 +38,14 @@ const themeScript = `
     // Use system fonts as fallback for non-default typography themes
     // This reduces initial font download from 10 fonts to 2
     var fonts = {
-      modern: { '--font-primary-family': 'var(--font-jetbrains-mono), "JetBrains Mono", monospace', '--font-secondary-family': 'var(--font-inter), "Inter", sans-serif' },
+      modern: { '--font-primary-family': 'var(--font-jetbrains-mono), "JetBrains Mono", monospace', '--font-secondary-family': 'var(--font-space-grotesk), "Space Grotesk", sans-serif' },
       classic: { '--font-primary-family': '"Source Code Pro", "Menlo", monospace', '--font-secondary-family': '"Lato", system-ui, sans-serif' },
       minimal: { '--font-primary-family': '"Fira Code", "Menlo", monospace', '--font-secondary-family': '"Open Sans", system-ui, sans-serif' },
       technical: { '--font-primary-family': '"IBM Plex Mono", "Menlo", monospace', '--font-secondary-family': '"IBM Plex Sans", system-ui, sans-serif' },
       elegant: { '--font-primary-family': '"Roboto Mono", "Menlo", monospace', '--font-secondary-family': '"Poppins", system-ui, sans-serif' },
       friendly: { '--font-primary-family': '"Fira Code", "Menlo", monospace', '--font-secondary-family': '"Poppins", system-ui, sans-serif' },
       bold: { '--font-primary-family': 'var(--font-jetbrains-mono), "JetBrains Mono", monospace', '--font-secondary-family': '"Lato", system-ui, sans-serif' },
-      clean: { '--font-primary-family': '"Source Code Pro", "Menlo", monospace', '--font-secondary-family': 'var(--font-inter), "Inter", sans-serif' }
+      clean: { '--font-primary-family': '"Source Code Pro", "Menlo", monospace', '--font-secondary-family': 'var(--font-space-grotesk), "Space Grotesk", sans-serif' }
     };
 
     var c = colors[colorTheme] || colors.default;
@@ -65,13 +65,13 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
   display: "swap",
 });
 
-const fontVariables = `${jetbrainsMono.variable} ${inter.variable}`;
+const fontVariables = `${jetbrainsMono.variable} ${spaceGrotesk.variable}`;
 
 export const metadata: Metadata = {
   title: "Smart Business Assistant",
