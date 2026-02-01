@@ -224,7 +224,10 @@ export default function TodayPage() {
         </div>
         <div className="flex flex-col gap-4">
           <h1 className="font-display text-4xl font-semibold text-slate-100 sm:text-5xl">
-            Build Your <span className="text-emerald-200">Business OS</span>
+            Build Your{" "}
+            <span className="bg-gradient-to-r from-violet-300 via-sky-200 to-emerald-200 bg-clip-text text-transparent">
+              Business OS
+            </span>
           </h1>
           <p className="max-w-2xl text-sm text-slate-400">
             Track every lead, booking, invoice, and customer signal in one place.
@@ -305,7 +308,7 @@ export default function TodayPage() {
             {loading ? (
               <div className="flex items-center gap-2 text-sm text-slate-400">
                 <Icon name="loader-2" size={16} className="animate-spin" />
-                Loading today's queue...
+                Loading today&apos;s queue...
               </div>
             ) : (
               displayTasks.map((item, index) => (

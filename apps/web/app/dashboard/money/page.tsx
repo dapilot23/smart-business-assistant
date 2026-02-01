@@ -66,73 +66,86 @@ export default function MoneyPage() {
   }, [tasks]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="rounded-2xl border border-border-subtle bg-card p-6">
+    <div className="flex flex-col gap-8">
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
+          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
+            Cashflow mode
+          </span>
+          <span className="font-primary text-emerald-200/80">&gt; ./business-os --money</span>
+        </div>
+        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Money control</h1>
+        <p className="text-sm text-slate-400">
+          Watch collections, forecast revenue, and keep invoices moving with AI assistance.
+        </p>
+      </section>
+
+      <section className="glass-panel rounded-3xl p-6">
         <div className="flex flex-col gap-2">
-          <h1 className="text-lg font-semibold text-foreground">Money</h1>
-          <p className="text-sm text-muted-foreground">Cash flow and collections, simplified.</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Business pulse</p>
+          <h2 className="font-display text-lg text-slate-100">Revenue signals</h2>
         </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Revenue</p>
-            <p className="mt-2 text-xl font-semibold text-foreground">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Revenue</p>
+            <p className="mt-2 text-xl font-semibold text-slate-100">
               ${stats?.revenue?.current?.toLocaleString() ?? "--"}
             </p>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <p className="text-xs text-slate-400">This month</p>
           </div>
-          <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Pending quotes</p>
-            <p className="mt-2 text-xl font-semibold text-foreground">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Pending quotes</p>
+            <p className="mt-2 text-xl font-semibold text-slate-100">
               {stats?.quotes?.pending ?? "--"}
             </p>
-            <p className="text-xs text-muted-foreground">Awaiting approval</p>
+            <p className="text-xs text-slate-400">Awaiting approval</p>
           </div>
-          <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Jobs in progress</p>
-            <p className="mt-2 text-xl font-semibold text-foreground">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Jobs in progress</p>
+            <p className="mt-2 text-xl font-semibold text-slate-100">
               {stats?.jobs?.inProgress ?? "--"}
             </p>
-            <p className="text-xs text-muted-foreground">Active today</p>
+            <p className="text-xs text-slate-400">Active today</p>
           </div>
         </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-2xl border border-border-subtle bg-card p-6">
+        <div className="glass-panel rounded-3xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Collections queue</h2>
-              <p className="text-sm text-muted-foreground">Approve, edit, or let AI run.</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Collections queue</p>
+              <h2 className="mt-2 font-display text-lg text-slate-100">Follow-up actions</h2>
             </div>
-            <button className="rounded-full border border-border-subtle bg-background px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
+            <button className="rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300">
               Run all
             </button>
           </div>
 
           <div className="mt-4 grid gap-3">
             {loading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-slate-400">
                 <Icon name="loader-2" size={16} className="animate-spin" />
-                Loading collections…
+                Loading collections...
               </div>
             ) : (
               collections.map((task, index) => (
                 <div
                   key={task.id ?? `${task.title}-${index}`}
-                  className="rounded-2xl border border-border-subtle bg-background px-4 py-4"
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-foreground">{task.title}</h3>
-                    <span className="rounded-full border border-border-subtle bg-card px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <h3 className="text-sm font-semibold text-slate-100">{task.title}</h3>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
                       {task.priority ?? "MEDIUM"}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{task.description}</p>
+                  <p className="mt-1 text-sm text-slate-400">{task.description}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
+                    <button className="rounded-full bg-emerald-400 px-4 py-1.5 text-xs font-semibold text-slate-950">
                       Approve
                     </button>
-                    <button className="rounded-full border border-border-subtle bg-card px-4 py-1.5 text-xs font-semibold text-foreground">
+                    <button className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-slate-200">
                       Edit
                     </button>
                   </div>
@@ -142,17 +155,19 @@ export default function MoneyPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border-subtle bg-card p-6">
-          <h2 className="text-lg font-semibold text-foreground">AI cash guardrails</h2>
-          <p className="text-sm text-muted-foreground">Controls for hands-off collections.</p>
-          <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
-            <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
+        <div className="glass-panel rounded-3xl p-6">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Guardrails</p>
+            <h2 className="mt-2 font-display text-lg text-slate-100">Cash controls</h2>
+          </div>
+          <div className="mt-4 grid gap-3 text-sm text-slate-400">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               Max discount: {settings?.maxDiscountPercent ?? 10}%
             </div>
-            <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               Refund guardrails: coming soon
             </div>
-            <div className="rounded-2xl border border-border-subtle bg-background px-4 py-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               Messaging windows: coming soon
             </div>
           </div>

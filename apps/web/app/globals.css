@@ -10,45 +10,45 @@
    * 10% - Accent colors (orange + supporting colors)
    */
 
-  /* Base backgrounds - 60% (Dark blue-gray tones for depth) */
-  --background: #0c1220;
-  --background-subtle: #101827;
-  --foreground: #f1f5f9;
+  /* Base backgrounds - 60% (Deep graphite tones) */
+  --background: #0b0d12;
+  --background-subtle: #0f1218;
+  --foreground: #f8fafc;
 
   /* Card surfaces - 30% (Elevated, slightly lighter) */
-  --card: #151f2e;
-  --card-elevated: #1a2638;
-  --card-foreground: #f1f5f9;
+  --card: #141824;
+  --card-elevated: #1a1f2c;
+  --card-foreground: #f8fafc;
 
   /* Borders and inputs */
-  --border: #1e3a5f;
-  --border-subtle: #172135;
-  --input: #1a2638;
-  --input-focus: #243447;
+  --border: #1f2432;
+  --border-subtle: #171b26;
+  --input: #141824;
+  --input-focus: #1f2636;
 
-  /* Primary accent - 10% (Warm orange) */
-  --primary: #f97316;
-  --primary-hover: #fb923c;
-  --primary-muted: #f9731620;
-  --primary-foreground: #ffffff;
-  --ring: #f97316;
+  /* Primary accent - 10% (Neon green) */
+  --primary: #84ffbd;
+  --primary-hover: #a7ffd2;
+  --primary-muted: #84ffbd20;
+  --primary-foreground: #0b0d12;
+  --ring: #84ffbd;
 
   /* Secondary surfaces */
-  --secondary: #1e293b;
-  --secondary-hover: #273548;
+  --secondary: #1a1f2c;
+  --secondary-hover: #222838;
   --secondary-foreground: #e2e8f0;
 
   /* Muted elements */
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
+  --muted: #1a1f2c;
+  --muted-foreground: #8a94a6;
 
   /* Accent (for highlights, different from primary) */
-  --accent: #1e3a5f;
+  --accent: #242b3d;
   --accent-foreground: #e2e8f0;
 
   /* Popover/Dialog surfaces */
-  --popover: #151f2e;
-  --popover-foreground: #f1f5f9;
+  --popover: #141824;
+  --popover-foreground: #f8fafc;
 
   /* Destructive/Error */
   --destructive: #ef4444;
