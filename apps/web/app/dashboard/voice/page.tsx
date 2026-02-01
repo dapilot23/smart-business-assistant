@@ -32,10 +32,10 @@ export default function VoicePage() {
       <header className="flex items-center justify-between h-20 px-8 border-b border-[var(--border)]">
         <div className="flex flex-col gap-0.5">
           <h1 className="font-primary text-[20px] font-semibold text-[var(--foreground)]">
-            Voice AI Assistant
+            Voice
           </h1>
           <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
-            Configure your AI phone assistant and view call logs
+            Configure your phone assistant.
           </p>
         </div>
       </header>
@@ -44,15 +44,15 @@ export default function VoicePage() {
       <div className="flex gap-1 px-8 pt-6 border-b border-[var(--border)]">
         <TabButton active={activeTab === "assistant"} onClick={() => setActiveTab("assistant")}>
           <Icon name="bot" size={16} />
-          Assistant Config
+          Assistant
         </TabButton>
         <TabButton active={activeTab === "calls"} onClick={() => setActiveTab("calls")}>
           <Icon name="phone-call" size={16} />
-          Call Logs
+          Calls
         </TabButton>
         <TabButton active={activeTab === "test"} onClick={() => setActiveTab("test")}>
           <Icon name="phone-outgoing" size={16} />
-          Test Call
+          Test
         </TabButton>
         <TabButton active={activeTab === "webhooks"} onClick={() => setActiveTab("webhooks")}>
           <Icon name="external-link" size={16} />

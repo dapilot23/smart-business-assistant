@@ -75,28 +75,20 @@ export default function InboxPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
-            Active queue
-          </span>
-          <span className="font-primary text-emerald-200/80">&gt; ./business-os --inbox</span>
-        </div>
-        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Inbox control</h1>
-        <p className="text-sm text-slate-400">
-          Unify sales and support threads. Let the AI draft, you decide what ships.
-        </p>
+      <section className="flex flex-col gap-2">
+        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Inbox</h1>
+        <p className="text-sm text-slate-400">Messages from customers.</p>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <section className="glass-panel rounded-3xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Command inbox</p>
-              <h2 className="mt-2 font-display text-lg text-slate-100">Threads</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Threads</p>
+              <h2 className="mt-2 font-display text-lg text-slate-100">All conversations</h2>
             </div>
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-slate-400">
-              {conversations.length} active
+              {conversations.length} total
             </span>
           </div>
 
@@ -148,15 +140,12 @@ export default function InboxPage() {
         <section className="glass-panel rounded-3xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Focus view</p>
-              <h2 className="mt-2 font-display text-lg text-slate-100">Conversation</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Conversation</p>
+              <h2 className="mt-2 font-display text-lg text-slate-100">Thread</h2>
               <p className="text-xs text-slate-400">
                 {current ? `Talking with ${current.customerName ?? "customer"}` : "Select a thread"}
               </p>
             </div>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-slate-400">
-              AI draft ready
-            </span>
           </div>
 
           <div className="mt-4 flex h-[420px] flex-col gap-3 overflow-y-auto rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -183,24 +172,19 @@ export default function InboxPage() {
             )}
           </div>
 
-          <div className="mt-4 flex flex-col gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-400">
-              AI suggestion: Happy to help - your order is scheduled for Friday at 2 PM. Want me to confirm?
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                value={messageInput}
-                onChange={(event) => setMessageInput(event.target.value)}
-                placeholder="Type a response or ask the AI to draft one..."
-                className="h-11 flex-1 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
-              />
-              <button
-                onClick={handleSend}
-                className="h-11 rounded-full bg-emerald-400 px-5 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
-              >
-                Send
-              </button>
-            </div>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <input
+              value={messageInput}
+              onChange={(event) => setMessageInput(event.target.value)}
+              placeholder="Type a response..."
+              className="h-11 flex-1 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
+            />
+            <button
+              onClick={handleSend}
+              className="h-11 rounded-full bg-emerald-400 px-5 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
+            >
+              Send
+            </button>
           </div>
         </section>
       </div>

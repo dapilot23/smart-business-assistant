@@ -109,10 +109,8 @@ export default function SMSPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-[var(--border)]">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--foreground)]">SMS Management</h1>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            Send broadcast messages to your team
-          </p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--foreground)]">SMS</h1>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">Send team broadcasts.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="self-start sm:self-auto">
           <Send className="h-4 w-4 mr-2" />

@@ -128,28 +128,18 @@ export default function MarketingPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
-            Growth layer
-          </span>
-          <span className="font-primary text-emerald-200/80">&gt; ./business-os --marketing</span>
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Marketing</h1>
+          <p className="text-sm text-slate-400">Campaigns, segments, and referrals.</p>
         </div>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Marketing control</h1>
-            <p className="text-sm text-slate-400">
-              Manage campaigns, segments, and referral programs with AI support.
-            </p>
-          </div>
-          <Link
-            href="/dashboard/marketing/new"
-            className="inline-flex items-center gap-2 rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
-          >
-            <Icon name="plus" size={16} />
-            New campaign
-          </Link>
-        </div>
+        <Link
+          href="/dashboard/marketing/new"
+          className="inline-flex items-center gap-2 rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
+        >
+          <Icon name="plus" size={16} />
+          New campaign
+        </Link>
       </section>
 
       {error && (
@@ -200,9 +190,6 @@ export default function MarketingPage() {
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Recent campaigns</p>
               <h2 className="mt-2 font-display text-lg text-slate-100">Outbound launches</h2>
             </div>
-            <button className="text-xs uppercase tracking-[0.2em] text-emerald-200 hover:text-emerald-100">
-              View all
-            </button>
           </div>
           <div className="mt-4 space-y-3">
             {campaigns.length === 0 ? (
@@ -251,17 +238,11 @@ export default function MarketingPage() {
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Segments</p>
                 <h2 className="mt-2 font-display text-lg text-slate-100">Audience groups</h2>
               </div>
-              <button className="text-xs uppercase tracking-[0.2em] text-emerald-200 hover:text-emerald-100">
-                Manage
-              </button>
             </div>
             <div className="mt-4 space-y-3">
               {segments.length === 0 ? (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
-                  <p className="text-sm text-slate-400">No segments created</p>
-                  <button className="mt-2 text-xs uppercase tracking-[0.2em] text-emerald-200">
-                    Create segment
-                  </button>
+                  <p className="text-sm text-slate-400">No segments yet.</p>
                 </div>
               ) : (
                 segments.slice(0, 4).map((segment) => (
@@ -286,9 +267,6 @@ export default function MarketingPage() {
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Referrals</p>
                 <h2 className="mt-2 font-display text-lg text-slate-100">Referral program</h2>
               </div>
-              <button className="text-xs uppercase tracking-[0.2em] text-emerald-200 hover:text-emerald-100">
-                Settings
-              </button>
             </div>
             <div className="mt-4">
               {referralStats ? (
@@ -322,43 +300,9 @@ export default function MarketingPage() {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
-                  <p className="text-sm text-slate-400">Referral program not configured</p>
-                  <button className="mt-2 text-xs uppercase tracking-[0.2em] text-emerald-200">
-                    Set up program
-                  </button>
+                  <p className="text-sm text-slate-400">Referral program not set up.</p>
                 </div>
               )}
-            </div>
-          </div>
-
-          <div className="glass-panel rounded-3xl p-6">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Quick actions</p>
-            <h3 className="mt-2 font-display text-lg text-slate-100">Launch tools</h3>
-            <div className="mt-4 space-y-2">
-              <button className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm text-slate-100 hover:border-white/30">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sky-200">
-                    <Icon name="send" size={16} />
-                  </span>
-                  Send SMS blast
-                </div>
-              </button>
-              <button className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm text-slate-100 hover:border-white/30">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-violet-200">
-                    <Icon name="users" size={16} />
-                  </span>
-                  Create segment
-                </div>
-              </button>
-              <button className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm text-slate-100 hover:border-white/30">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-emerald-200">
-                    <Icon name="gift" size={16} />
-                  </span>
-                  Generate referral code
-                </div>
-              </button>
             </div>
           </div>
         </div>

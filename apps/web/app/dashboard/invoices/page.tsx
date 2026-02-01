@@ -110,7 +110,7 @@ export default function InvoicesPage() {
             Invoices
           </h1>
           <p className="font-secondary text-[13px] sm:text-[14px] text-[var(--muted-foreground)]">
-            Manage billing and track payments
+            Track billing and payments.
           </p>
         </div>
         <Link
@@ -152,7 +152,7 @@ export default function InvoicesPage() {
               <Icon name="file-text" size={24} className="text-[var(--muted-foreground)]" />
             </div>
             <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
-              No invoices yet. Create your first invoice to get started.
+              No invoices yet. Create your first invoice.
             </p>
             <Link
               href="/dashboard/invoices/new"

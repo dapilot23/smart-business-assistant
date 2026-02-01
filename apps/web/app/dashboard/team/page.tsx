@@ -68,7 +68,7 @@ export default function TeamPage() {
         <div>
           <h1 className="text-2xl font-semibold text-[var(--foreground)]">Team Management</h1>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            Manage your team members and their permissions
+            Manage team members and roles.
           </p>
         </div>
         <Button onClick={() => setIsInviteModalOpen(true)}>
@@ -100,7 +100,7 @@ export default function TeamPage() {
                     Team Members
                   </CardTitle>
                   <CardDescription>
-                    All active and inactive members of your organization
+                    All members in your organization.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -120,7 +120,7 @@ export default function TeamPage() {
                 <CardHeader>
                   <CardTitle>Role Permissions</CardTitle>
                   <CardDescription>
-                    Understanding team member roles and their capabilities
+                    What each role can do.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

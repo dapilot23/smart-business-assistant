@@ -62,21 +62,18 @@ export default function NewCampaignPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
           <Link
             href="/dashboard/marketing"
-            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-emerald-200 hover:border-white/30"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-200 hover:text-emerald-100"
           >
             <Icon name="chevron-right" size={14} className="rotate-180" />
             Back
           </Link>
-          <span className="font-primary text-emerald-200/80">&gt; ./business-os --new-campaign</span>
+          <h1 className="mt-3 font-display text-3xl text-slate-100 sm:text-4xl">New campaign</h1>
+          <p className="text-sm text-slate-400">Create a campaign.</p>
         </div>
-        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">New campaign</h1>
-        <p className="text-sm text-slate-400">
-          Let AI assemble the messaging or craft your own campaign manually.
-        </p>
       </section>
 
       {!showManualForm && (
@@ -87,9 +84,8 @@ export default function NewCampaignPage() {
                 <Icon name="sparkles" size={18} />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">AI recommended</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Suggestions</p>
                 <h2 className="mt-1 font-display text-lg text-slate-100">Campaign starters</h2>
-                <p className="text-xs text-slate-400">Based on your business data</p>
               </div>
             </div>
             <button

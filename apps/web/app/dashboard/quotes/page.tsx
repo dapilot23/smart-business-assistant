@@ -88,7 +88,7 @@ export default function QuotesPage() {
             Quotes
           </h1>
           <p className="font-secondary text-[13px] sm:text-[14px] text-[var(--muted-foreground)]">
-            Create and manage quotes for your customers
+            Create and track quotes.
           </p>
         </div>
         <Link
@@ -114,7 +114,7 @@ export default function QuotesPage() {
             <div className="text-center">
               <p className="font-primary text-[16px] text-[var(--foreground)]">No quotes yet</p>
               <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
-                Create your first quote to get started
+                Create your first quote.
               </p>
             </div>
             <Link

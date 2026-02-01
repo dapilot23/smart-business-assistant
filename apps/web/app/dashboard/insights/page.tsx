@@ -33,40 +33,30 @@ export default function InsightsPage() {
   };
 
   const header = (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
-        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
-          Weekly intel
-        </span>
-        <span className="font-primary text-emerald-200/80">&gt; ./business-os --insights</span>
+    <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Insights</h1>
+        <p className="text-sm text-slate-400">Weekly summary of your business.</p>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Business insights</h1>
-          <p className="text-sm text-slate-400">
-            AI-powered weekly analysis of revenue, operations, and customer momentum.
-          </p>
-        </div>
-        {currentReport && (
-          <Button
-            onClick={handleGenerateReport}
-            disabled={isGenerating}
-            className="rounded-full bg-emerald-400 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
-          >
-            {isGenerating ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Generate new report
-              </>
-            )}
-          </Button>
-        )}
-      </div>
+      {currentReport && (
+        <Button
+          onClick={handleGenerateReport}
+          disabled={isGenerating}
+          className="rounded-full bg-emerald-400 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
+        >
+          {isGenerating ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              New report
+            </>
+          )}
+        </Button>
+      )}
     </section>
   );
 
@@ -107,13 +97,13 @@ export default function InsightsPage() {
             <div className="rounded-full border border-white/10 bg-white/5 p-3">
               <BarChart3 className="h-6 w-6 text-emerald-200" />
             </div>
-            <p className="text-sm text-slate-400">No reports generated yet</p>
+            <p className="text-sm text-slate-400">No reports yet.</p>
             <button
               onClick={handleGenerateReport}
               disabled={isGenerating}
               className="rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
             >
-              {isGenerating ? 'Generating...' : 'Generate your first report'}
+              {isGenerating ? 'Generating...' : 'Generate report'}
             </button>
           </div>
         </div>

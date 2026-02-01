@@ -172,7 +172,7 @@ export default function JobDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-semibold text-[var(--foreground)]">
-              Job Details
+              Job
             </h1>
             <p className="text-sm text-[var(--muted-foreground)] mt-1">
               {job.appointment?.customer_name} - {job.appointment?.service}

@@ -127,7 +127,7 @@ export default function SettingsPage() {
             Settings
           </h1>
           <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
-            Manage your business preferences and configuration
+            Business preferences and configuration.
           </p>
         </div>
 

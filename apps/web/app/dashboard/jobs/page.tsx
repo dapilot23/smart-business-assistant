@@ -62,10 +62,8 @@ export default function JobsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-[var(--border)]">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--foreground)]">Jobs Management</h1>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            Track and manage field service jobs
-          </p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-[var(--foreground)]">Jobs</h1>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">Track jobs in progress.</p>
         </div>
       </div>
 

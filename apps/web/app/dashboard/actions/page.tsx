@@ -63,44 +63,34 @@ export default function ActionsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
-            Decision queue
-          </span>
-          <span className="font-primary text-emerald-200/80">&gt; ./business-os --actions</span>
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Actions</h1>
+          <p className="text-sm text-slate-400">Approve or skip what the AI wants to do.</p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">AI Actions</h1>
-            <p className="text-sm text-slate-400">
-              Review, approve, and monitor the automations your AI wants to execute.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {FILTERS.map((item) => {
-              const isActive = filter === item.value;
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => setFilter(item.value)}
-                  className={`rounded-full border px-4 py-2 text-xs font-semibold ${
-                    isActive
-                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
-                      : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => loadActions(filter)}
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:border-white/20"
-            >
-              Refresh
-            </button>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {FILTERS.map((item) => {
+            const isActive = filter === item.value;
+            return (
+              <button
+                key={item.label}
+                onClick={() => setFilter(item.value)}
+                className={`rounded-full border px-4 py-2 text-xs font-semibold ${
+                  isActive
+                    ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
+                    : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => loadActions(filter)}
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:border-white/20"
+          >
+            Reload
+          </button>
         </div>
       </section>
 

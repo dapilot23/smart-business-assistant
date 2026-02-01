@@ -149,7 +149,7 @@ export default function NewQuotePage() {
               Create New Quote
             </h1>
             <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
-              Build a quote for your customer
+              Create a quote.
             </p>
           </div>
         </div>

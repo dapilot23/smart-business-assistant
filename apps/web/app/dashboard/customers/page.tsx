@@ -175,7 +175,7 @@ export default function CustomersPage() {
             Customers
           </h1>
           <p className="font-secondary text-[13px] sm:text-[14px] text-[var(--muted-foreground)]">
-            Manage your customer directory
+            Your customer list.
           </p>
         </div>
         <Button onClick={() => handleOpenModal()} className="self-start sm:self-auto">
@@ -211,7 +211,7 @@ export default function CustomersPage() {
                 {searchQuery ? 'No customers found' : 'No customers yet'}
               </p>
               <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
-                {searchQuery ? 'Try a different search term' : 'Add your first customer to get started'}
+                {searchQuery ? 'Try a different search.' : 'Add your first customer.'}
               </p>
             </div>
             {!searchQuery && (

@@ -207,7 +207,7 @@ function NewInvoiceContent() {
               {quoteId ? "Create Invoice from Quote" : "New Invoice"}
             </h1>
             <p className="font-secondary text-[14px] text-[var(--muted-foreground)]">
-              Fill in the details below
+              Create an invoice.
             </p>
           </div>
         </div>

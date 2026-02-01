@@ -107,28 +107,18 @@ export default function AppointmentsPage() {
   };
 
   const header = (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
-        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
-          Schedule ops
-        </span>
-        <span className="font-primary text-emerald-200/80">&gt; ./business-os --appointments</span>
+    <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Appointments</h1>
+        <p className="text-sm text-slate-400">View and add bookings.</p>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Appointments</h1>
-          <p className="text-sm text-slate-400">
-            Keep every booking, technician, and customer touchpoint in sync.
-          </p>
-        </div>
-        <button
-          onClick={() => handleSlotClick(new Date())}
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
-        >
-          <Plus className="h-4 w-4" />
-          New appointment
-        </button>
-      </div>
+      <button
+        onClick={() => handleSlotClick(new Date())}
+        className="inline-flex items-center gap-2 rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
+      >
+        <Plus className="h-4 w-4" />
+        New appointment
+      </button>
     </section>
   );
 

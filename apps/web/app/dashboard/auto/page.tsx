@@ -50,24 +50,16 @@ export default function AutopilotPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
-            Autonomy controls
-          </span>
-          <span className="font-primary text-emerald-200/80">&gt; ./business-os --autopilot</span>
-        </div>
-        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Autopilot governance</h1>
-        <p className="text-sm text-slate-400">
-          Decide how hands-off your AI employee should be and lock in safe guardrails.
-        </p>
+      <section className="flex flex-col gap-2">
+        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Autopilot</h1>
+        <p className="text-sm text-slate-400">Choose how hands-off the AI should be.</p>
       </section>
 
       <section className="glass-panel rounded-3xl p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Execution mode</p>
-            <h2 className="mt-2 font-display text-lg text-slate-100">Autopilot posture</h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Mode</p>
+            <h2 className="mt-2 font-display text-lg text-slate-100">Execution mode</h2>
           </div>
           {saving && <span className="text-xs text-slate-400">Saving...</span>}
         </div>
@@ -93,8 +85,8 @@ export default function AutopilotPage() {
         <div className="glass-panel rounded-3xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">AI departments</p>
-              <h2 className="mt-2 font-display text-lg text-slate-100">Department access</h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Teams</p>
+            <h2 className="mt-2 font-display text-lg text-slate-100">Agents on/off</h2>
             </div>
             <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] text-slate-400">
               {settings ? "Configured" : "Loading"}
@@ -133,7 +125,7 @@ export default function AutopilotPage() {
 
         <div className="glass-panel rounded-3xl p-6">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Guardrails</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Limits</p>
             <h2 className="mt-2 font-display text-lg text-slate-100">Risk controls</h2>
           </div>
           <div className="mt-4 grid gap-3 text-sm text-slate-400">

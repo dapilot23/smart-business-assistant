@@ -110,9 +110,9 @@ export default function AvailabilityPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 overflow-auto">
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Availability Management</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Availability</h1>
         <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-          Manage your weekly schedule and time off
+          Weekly schedule and time off.
         </p>
       </div>
 
