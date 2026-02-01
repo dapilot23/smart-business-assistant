@@ -1,7 +1,6 @@
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { WeeklyReport } from '@/lib/types/weekly-report';
 
 interface WeekSelectorProps {
@@ -49,28 +48,27 @@ export function WeekSelector({
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
+    <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2">
+      <button
         onClick={handlePrevious}
         disabled={currentIndex >= reports.length - 1}
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 hover:border-white/20 disabled:opacity-40"
       >
         <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <div className="min-w-[200px] text-center">
-        <span className="text-sm font-medium">
+      </button>
+      <div className="min-w-[220px] text-center">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Week of</p>
+        <span className="text-sm font-semibold text-slate-100">
           {formatWeekRange(currentReport.weekStart)}
         </span>
       </div>
-      <Button
-        variant="outline"
-        size="icon"
+      <button
         onClick={handleNext}
         disabled={currentIndex <= 0}
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 hover:border-white/20 disabled:opacity-40"
       >
         <ChevronRight className="h-4 w-4" />
-      </Button>
+      </button>
     </div>
   );
 }

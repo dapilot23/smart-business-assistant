@@ -110,12 +110,12 @@ export function getActionTypeLabel(actionType: ActionType): string {
 
 export function getActionStatusColor(status: ActionStatus): string {
   const colors: Record<ActionStatus, string> = {
-    PENDING: 'text-yellow-600 bg-yellow-100',
-    APPROVED: 'text-blue-600 bg-blue-100',
-    EXECUTING: 'text-purple-600 bg-purple-100',
-    COMPLETED: 'text-green-600 bg-green-100',
-    FAILED: 'text-red-600 bg-red-100',
-    CANCELLED: 'text-gray-600 bg-gray-100',
+    PENDING: 'border border-amber-400/40 bg-amber-400/10 text-amber-200',
+    APPROVED: 'border border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    EXECUTING: 'border border-sky-400/40 bg-sky-400/10 text-sky-200',
+    COMPLETED: 'border border-emerald-300/40 bg-emerald-300/10 text-emerald-100',
+    FAILED: 'border border-rose-400/40 bg-rose-400/10 text-rose-200',
+    CANCELLED: 'border border-white/10 bg-white/5 text-slate-300',
   };
-  return colors[status] || 'text-gray-600 bg-gray-100';
+  return colors[status] || 'border border-white/10 bg-white/5 text-slate-300';
 }

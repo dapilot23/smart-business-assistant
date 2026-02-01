@@ -10,7 +10,6 @@ import {
   type AIAction,
   type ActionStatus,
 } from "@/lib/api/ai-actions";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const FILTERS: Array<{ label: string; value?: ActionStatus }> = [
@@ -63,96 +62,119 @@ export default function ActionsPage() {
   };
 
   return (
-    <div className="container py-8 space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">AI Actions</h1>
-          <p className="text-muted-foreground mt-1">
-            Review, approve, and track automated actions.
-          </p>
+    <div className="flex flex-col gap-8">
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
+          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
+            Decision queue
+          </span>
+          <span className="font-primary text-emerald-200/80">&gt; ./business-os --actions</span>
         </div>
-        <div className="flex items-center gap-2">
-          {FILTERS.map((item) => (
-            <Button
-              key={item.label}
-              variant={filter === item.value ? "default" : "outline"}
-              onClick={() => setFilter(item.value)}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">AI Actions</h1>
+            <p className="text-sm text-slate-400">
+              Review, approve, and monitor the automations your AI wants to execute.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {FILTERS.map((item) => {
+              const isActive = filter === item.value;
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => setFilter(item.value)}
+                  className={`rounded-full border px-4 py-2 text-xs font-semibold ${
+                    isActive
+                      ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => loadActions(filter)}
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 hover:border-white/20"
             >
-              {item.label}
-            </Button>
-          ))}
-          <Button variant="ghost" onClick={() => loadActions(filter)}>
-            Refresh
-          </Button>
+              Refresh
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {loading ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-          Loading actions...
-        </div>
-      ) : actions.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-          No actions to show.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {actions.map((action) => (
-            <div
-              key={action.id}
-              className="rounded-xl border border-border bg-card p-5 shadow-sm"
-            >
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Badge className={getActionStatusColor(action.status)}>
-                      {action.status}
-                    </Badge>
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {getActionTypeLabel(action.actionType)}
-                    </span>
+      <section className="glass-panel rounded-3xl p-6">
+        {loading ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">
+            Loading actions...
+          </div>
+        ) : actions.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">
+            No actions to show.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {actions.map((action) => (
+              <div
+                key={action.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-5"
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className={`${getActionStatusColor(action.status)} text-[10px] uppercase tracking-[0.2em]`}>
+                        {action.status}
+                      </Badge>
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                        {getActionTypeLabel(action.actionType)}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-100">
+                      {action.title}
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      {action.description}
+                    </p>
+                    {action.estimatedImpact && (
+                      <p className="text-xs text-slate-500">
+                        Impact: {action.estimatedImpact}
+                      </p>
+                    )}
+                    {action.errorMessage && (
+                      <p className="text-xs text-rose-200">
+                        Error: {action.errorMessage}
+                      </p>
+                    )}
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {action.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {action.description}
-                  </p>
-                  {action.estimatedImpact && (
-                    <p className="text-xs text-muted-foreground">
-                      Impact: {action.estimatedImpact}
-                    </p>
-                  )}
-                  {action.errorMessage && (
-                    <p className="text-xs text-destructive">
-                      Error: {action.errorMessage}
-                    </p>
+                  {action.status === "PENDING" && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleApprove(action.id)}
+                        className="rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleCancel(action.id)}
+                        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-white/20"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   )}
                 </div>
-                {action.status === "PENDING" && (
-                  <div className="flex items-center gap-2">
-                    <Button onClick={() => handleApprove(action.id)}>
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleCancel(action.id)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                )}
+                <div className="mt-4 text-xs text-slate-500">
+                  Created {new Date(action.createdAt).toLocaleString()}
+                </div>
               </div>
-              <div className="mt-4 text-xs text-muted-foreground">
-                Created {new Date(action.createdAt).toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </section>
 
       {error && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="rounded-2xl border border-rose-400/40 bg-rose-400/10 p-4 text-sm text-rose-100">
           {error}
         </div>
       )}

@@ -190,16 +190,18 @@ export function ActionItems({ items, reportId }: ActionItemsProps) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6">
-        <h3 className="font-semibold">Action Items</h3>
-        <p className="mt-4 text-sm text-muted-foreground">No action items</p>
+      <div className="glass-panel rounded-3xl p-6">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Action items</p>
+        <h3 className="mt-2 font-display text-lg text-slate-100">Next-week focus</h3>
+        <p className="mt-4 text-sm text-slate-400">No action items.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
-      <h3 className="font-semibold">Action Items</h3>
+    <div className="glass-panel rounded-3xl p-6">
+      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Action items</p>
+      <h3 className="mt-2 font-display text-lg text-slate-100">Next-week focus</h3>
       <ul className="mt-4 space-y-3">
         {items.map((item, index) => {
           const isCompleted = completedItems.has(item);
@@ -209,17 +211,17 @@ export function ActionItems({ items, reportId }: ActionItemsProps) {
             <li key={index} className="flex items-start gap-3">
               <button
                 onClick={() => toggleItem(item)}
-                className="mt-0.5 shrink-0 text-primary hover:opacity-80"
+                className={`mt-0.5 shrink-0 rounded-full border p-1 ${
+                  isCompleted
+                    ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
+                    : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20'
+                }`}
                 aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
               >
-                {isCompleted ? (
-                  <CheckCircle2 className="h-5 w-5" />
-                ) : (
-                  <Circle className="h-5 w-5" />
-                )}
+                {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
               </button>
               <span
-                className={`text-sm ${isCompleted ? 'text-muted-foreground line-through' : ''}`}
+                className={`text-sm ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-200'}`}
               >
                 {item}
               </span>

@@ -2,8 +2,6 @@
 
 import { Appointment } from '@/lib/types/appointment';
 import { getStatusColor } from '@/lib/calendar-utils';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, User, Wrench, Phone, Mail, AlertTriangle } from 'lucide-react';
 
 function isHighRiskCustomer(noShowCount?: number): boolean {
@@ -45,116 +43,120 @@ export function AppointmentDetails({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Appointment Details</h2>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(appointment.status)}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Appointment</p>
+          <h2 className="font-display text-xl text-slate-100">Appointment details</h2>
+        </div>
+        <span
+          className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${getStatusColor(appointment.status)}`}
+        >
           {appointment.status.replace('_', ' ').toUpperCase()}
         </span>
       </div>
 
       {appointment.customer && isHighRiskCustomer(appointment.customer.noShowCount) && (
-        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-900/20">
-          <CardContent className="flex items-start gap-3 pt-4">
-            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-200" />
             <div>
-              <p className="font-medium text-amber-800 dark:text-amber-200">
+              <p className="text-sm font-semibold text-amber-100">
                 No-Show Risk Alert
               </p>
-              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+              <p className="mt-1 text-xs text-amber-200/80">
                 This customer has {appointment.customer.noShowCount} previous no-show
                 {appointment.customer.noShowCount === 1 ? '' : 's'}. Consider
                 requesting a deposit or sending extra reminders.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Customer Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center gap-2 text-slate-200">
+          <User className="h-4 w-4 text-emerald-200" />
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Customer</p>
+        </div>
+        <div className="mt-3 space-y-2 text-sm text-slate-300">
           {appointment.customer && (
             <>
-              <p className="font-medium">
+              <p className="text-base font-semibold text-slate-100">
                 {appointment.customer.first_name} {appointment.customer.last_name}
               </p>
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Phone className="h-4 w-4" />
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <Phone className="h-3.5 w-3.5" />
                 {appointment.customer.phone}
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Mail className="h-4 w-4" />
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <Mail className="h-3.5 w-3.5" />
                 {appointment.customer.email}
               </div>
               {(appointment.customer.noShowCount ?? 0) > 0 && (
-                <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 mt-1">
-                  <AlertTriangle className="h-4 w-4" />
+                <div className="flex items-center gap-2 text-xs text-amber-200">
+                  <AlertTriangle className="h-3.5 w-3.5" />
                   {appointment.customer.noShowCount} previous no-show
                   {appointment.customer.noShowCount === 1 ? '' : 's'}
                 </div>
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Schedule
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="font-medium">{formatDateTime(startTime)}</p>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Clock className="h-4 w-4" />
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center gap-2 text-slate-200">
+          <Calendar className="h-4 w-4 text-emerald-200" />
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Schedule</p>
+        </div>
+        <div className="mt-3 space-y-2">
+          <p className="text-sm font-semibold text-slate-100">{formatDateTime(startTime)}</p>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Clock className="h-3.5 w-3.5" />
             {formatTime(startTime)} - {formatTime(endTime)}
-            <span className="text-xs">({appointment.duration_minutes} min)</span>
+            <span className="text-xs text-slate-500">({appointment.duration_minutes} min)</span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {appointment.service && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5" />
-              Service
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{appointment.service.name}</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex items-center gap-2 text-slate-200">
+            <Wrench className="h-4 w-4 text-emerald-200" />
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Service</p>
+          </div>
+          <p className="mt-3 text-sm font-semibold text-slate-100">
+            {appointment.service.name}
+          </p>
+        </div>
       )}
 
       {appointment.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-600">{appointment.notes}</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Notes</p>
+          <p className="mt-3 text-sm text-slate-300">{appointment.notes}</p>
+        </div>
       )}
 
-      <div className="flex gap-2 pt-4">
-        <Button onClick={onEdit} className="flex-1">
+      <div className="flex flex-wrap gap-2 pt-4">
+        <button
+          onClick={onEdit}
+          className="flex-1 rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
+        >
           Edit
-        </Button>
-        <Button onClick={onDelete} variant="destructive" className="flex-1">
+        </button>
+        <button
+          onClick={onDelete}
+          className="flex-1 rounded-full border border-rose-400/40 bg-rose-400/10 px-4 py-2 text-xs font-semibold text-rose-100 hover:border-rose-300/60"
+        >
           Delete
-        </Button>
-        <Button onClick={onClose} variant="outline">
+        </button>
+        <button
+          onClick={onClose}
+          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-white/20"
+        >
           Close
-        </Button>
+        </button>
       </div>
     </div>
   );

@@ -66,11 +66,11 @@ export function isSameDay(date1: Date, date2: Date): boolean {
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    scheduled: 'bg-blue-100 text-blue-800 border-blue-200',
-    confirmed: 'bg-green-100 text-green-800 border-green-200',
-    in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    completed: 'bg-gray-100 text-gray-800 border-gray-200',
-    cancelled: 'bg-red-100 text-red-800 border-red-200',
+    scheduled: 'border border-sky-400/40 bg-sky-400/10 text-sky-200',
+    confirmed: 'border border-emerald-400/40 bg-emerald-400/10 text-emerald-200',
+    in_progress: 'border border-amber-400/40 bg-amber-400/10 text-amber-200',
+    completed: 'border border-white/10 bg-white/5 text-slate-300',
+    cancelled: 'border border-rose-400/40 bg-rose-400/10 text-rose-200',
   };
   return colors[status] || colors.scheduled;
 }

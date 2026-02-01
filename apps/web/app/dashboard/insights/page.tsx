@@ -32,11 +32,50 @@ export default function InsightsPage() {
     }
   };
 
+  const header = (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
+        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
+          Weekly intel
+        </span>
+        <span className="font-primary text-emerald-200/80">&gt; ./business-os --insights</span>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Business insights</h1>
+          <p className="text-sm text-slate-400">
+            AI-powered weekly analysis of revenue, operations, and customer momentum.
+          </p>
+        </div>
+        {currentReport && (
+          <Button
+            onClick={handleGenerateReport}
+            disabled={isGenerating}
+            className="rounded-full bg-emerald-400 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
+          >
+            {isGenerating ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Generate new report
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+    </section>
+  );
+
   if (isLoading && reports.length === 0) {
     return (
-      <div className="container py-8">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Loading insights...</p>
+      <div className="flex flex-col gap-8">
+        {header}
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="text-sm text-slate-400">Loading insights...</div>
         </div>
       </div>
     );
@@ -44,10 +83,16 @@ export default function InsightsPage() {
 
   if (error && reports.length === 0) {
     return (
-      <div className="container py-8">
-        <div className="flex flex-col items-center justify-center h-64 gap-4">
-          <p className="text-destructive">Error: {error}</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
+      <div className="flex flex-col gap-8">
+        {header}
+        <div className="glass-panel rounded-3xl p-6 text-center">
+          <p className="text-sm text-rose-200">Error: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-full border border-rose-400/40 bg-rose-400/10 px-4 py-2 text-xs font-semibold text-rose-100 hover:border-rose-300/60"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -55,27 +100,22 @@ export default function InsightsPage() {
 
   if (!currentReport) {
     return (
-      <div className="container py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Business Insights</h1>
-          <p className="text-muted-foreground mt-1">
-            AI-powered weekly analysis of your business performance
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center justify-center h-64 gap-4 rounded-xl border border-border bg-card">
-          <BarChart3 className="h-12 w-12 text-muted-foreground" />
-          <p className="text-muted-foreground">No reports generated yet</p>
-          <Button onClick={handleGenerateReport} disabled={isGenerating}>
-            {isGenerating ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              'Generate Your First Report'
-            )}
-          </Button>
+      <div className="flex flex-col gap-8">
+        {header}
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+            <div className="rounded-full border border-white/10 bg-white/5 p-3">
+              <BarChart3 className="h-6 w-6 text-emerald-200" />
+            </div>
+            <p className="text-sm text-slate-400">No reports generated yet</p>
+            <button
+              onClick={handleGenerateReport}
+              disabled={isGenerating}
+              className="rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
+            >
+              {isGenerating ? 'Generating...' : 'Generate your first report'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -85,30 +125,10 @@ export default function InsightsPage() {
     currentReport.report;
 
   return (
-    <div className="container py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Business Insights</h1>
-          <p className="text-muted-foreground mt-1">
-            AI-powered weekly analysis of your business performance
-          </p>
-        </div>
-        <Button onClick={handleGenerateReport} disabled={isGenerating}>
-          {isGenerating ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Generate New Report
-            </>
-          )}
-        </Button>
-      </div>
+    <div className="flex flex-col gap-8">
+      {header}
 
-      <div className="mb-6 flex justify-center">
+      <div className="flex justify-center">
         <WeekSelector
           reports={reports}
           currentReport={currentReport}
@@ -118,19 +138,17 @@ export default function InsightsPage() {
 
       <MetricsGrid metrics={keyMetrics} />
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         <WinsList wins={topWins} />
         <AttentionList items={areasNeedingAttention} />
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         <ActionItems items={actionItems} reportId={currentReport.id} />
         <ForecastSection forecast={forecast} />
       </div>
 
-      <div className="mt-6">
-        <ReviewPipeline />
-      </div>
+      <ReviewPipeline />
     </div>
   );
 }

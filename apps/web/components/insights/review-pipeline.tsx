@@ -9,7 +9,6 @@ import {
   ExternalLink,
   RefreshCw,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   getReputationDashboard,
   ReputationDashboard,
@@ -46,14 +45,16 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/50">
-      <div className="rounded-lg bg-primary/10 p-2 text-primary">{icon}</div>
-      <div>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        {subValue && (
-          <p className="text-xs text-muted-foreground mt-0.5">{subValue}</p>
-        )}
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="flex items-center gap-3">
+        <div className="rounded-full border border-white/10 bg-white/5 p-2 text-emerald-200">
+          {icon}
+        </div>
+        <div>
+          <p className="text-xl font-semibold text-slate-100">{value}</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{label}</p>
+          {subValue && <p className="text-xs text-slate-500">{subValue}</p>}
+        </div>
       </div>
     </div>
   );
@@ -70,15 +71,15 @@ function formatDate(dateStr: string | null): string {
 function getStatusColor(status: string): string {
   switch (status) {
     case 'CLICKED':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200';
+      return 'border border-emerald-400/40 bg-emerald-400/10 text-emerald-200';
     case 'SENT':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200';
+      return 'border border-sky-400/40 bg-sky-400/10 text-sky-200';
     case 'PENDING':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200';
+      return 'border border-amber-400/40 bg-amber-400/10 text-amber-200';
     case 'SKIPPED':
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200';
+      return 'border border-white/10 bg-white/5 text-slate-300';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'border border-white/10 bg-white/5 text-slate-300';
   }
 }
 
@@ -105,180 +106,171 @@ export function ReviewPipeline({ className }: ReviewPipelineProps) {
     loadData();
   }, []);
 
+  const containerClass = cn('glass-panel rounded-3xl p-6', className);
+
   if (loading) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5" />
-            Review Pipeline
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-20 bg-secondary rounded-lg" />
-              ))}
-            </div>
-            <div className="h-32 bg-secondary rounded-lg" />
+      <div className={containerClass}>
+        <div className="flex items-center gap-2">
+          <Star className="h-4 w-4 text-emerald-200" />
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Reputation</p>
+            <h3 className="mt-2 font-display text-lg text-slate-100">Review pipeline</h3>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="mt-5 animate-pulse space-y-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 rounded-2xl border border-white/10 bg-white/5" />
+            ))}
+          </div>
+          <div className="h-32 rounded-2xl border border-white/10 bg-white/5" />
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5" />
-            Review Pipeline
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <button
-              onClick={loadData}
-              className="inline-flex items-center gap-2 text-primary hover:underline"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Retry
-            </button>
+      <div className={containerClass}>
+        <div className="flex items-center gap-2">
+          <Star className="h-4 w-4 text-emerald-200" />
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Reputation</p>
+            <h3 className="mt-2 font-display text-lg text-slate-100">Review pipeline</h3>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="mt-6 text-center">
+          <p className="text-sm text-rose-200">{error}</p>
+          <button
+            onClick={loadData}
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-400/10 px-4 py-2 text-xs font-semibold text-rose-100 hover:border-rose-300/60"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retry
+          </button>
+        </div>
+      </div>
     );
   }
 
   if (!data) return null;
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Star className="h-5 w-5" />
-          Review Pipeline
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Key Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <StatCard
-            label="Requests Sent"
-            value={data.sentCount}
-            icon={<Send className="h-5 w-5" />}
-          />
-          <StatCard
-            label="Reviews Clicked"
-            value={data.clickedCount}
-            icon={<MousePointer className="h-5 w-5" />}
-          />
-          <StatCard
-            label="Click Rate"
-            value={`${data.clickRate}%`}
-            icon={<TrendingUp className="h-5 w-5" />}
-          />
-        </div>
-
-        {/* NPS Gated Stats */}
-        {data.npsGatedStats.sent > 0 && (
-          <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                NPS-Gated Reviews
-              </span>
-            </div>
-            <p className="text-sm text-green-700 dark:text-green-300">
-              {data.npsGatedStats.clicked} of {data.npsGatedStats.sent} happy
-              customers clicked through ({data.npsGatedStats.conversionRate}%
-              conversion)
-            </p>
-          </div>
-        )}
-
-        {/* Platform Breakdown */}
-        {data.platformBreakdown.length > 0 && (
+    <div className={containerClass}>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Star className="h-4 w-4 text-emerald-200" />
           <div>
-            <h4 className="text-sm font-medium mb-3">Platform Clicks</h4>
-            <div className="flex gap-3">
-              {data.platformBreakdown.map((platform) => (
-                <div
-                  key={platform.platform}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50"
-                >
-                  <span
-                    className={cn(
-                      'w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold',
-                      platformColors[platform.platform] || platformColors.unknown
-                    )}
-                  >
-                    {platformIcons[platform.platform] ||
-                      platform.platform.charAt(0).toUpperCase()}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium capitalize">
-                      {platform.platform}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {platform.clickCount} clicks
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Reputation</p>
+            <h3 className="mt-2 font-display text-lg text-slate-100">Review pipeline</h3>
           </div>
-        )}
+        </div>
+        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
+          {data.sentCount} requests
+        </span>
+      </div>
 
-        {/* Recent Activity */}
-        <div>
-          <h4 className="text-sm font-medium mb-3">Recent Review Requests</h4>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {data.recentRequests.slice(0, 8).map((request) => (
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <StatCard
+          label="Requests sent"
+          value={data.sentCount}
+          icon={<Send className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Reviews clicked"
+          value={data.clickedCount}
+          icon={<MousePointer className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Click rate"
+          value={`${data.clickRate}%`}
+          icon={<TrendingUp className="h-4 w-4" />}
+        />
+      </div>
+
+      {data.npsGatedStats.sent > 0 && (
+        <div className="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-emerald-200" />
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-100">
+              NPS gated reviews
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-emerald-100/80">
+            {data.npsGatedStats.clicked} of {data.npsGatedStats.sent} happy customers clicked through
+            ({data.npsGatedStats.conversionRate}% conversion)
+          </p>
+        </div>
+      )}
+
+      {data.platformBreakdown.length > 0 && (
+        <div className="mt-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Platform clicks</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {data.platformBreakdown.map((platform) => (
               <div
-                key={request.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                key={platform.platform}
+                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2"
               >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'px-2 py-0.5 rounded text-xs font-medium',
-                      getStatusColor(request.status)
-                    )}
-                  >
-                    {request.status}
-                  </span>
-                  <span className="text-sm font-medium">
-                    {request.customer.name}
-                  </span>
-                  {request.npsGated && request.npsScore && (
-                    <span className="text-xs text-muted-foreground">
-                      NPS: {request.npsScore}
-                    </span>
+                <span
+                  className={cn(
+                    'flex h-6 w-6 items-center justify-center rounded text-xs font-bold text-white',
+                    platformColors[platform.platform] || platformColors.unknown
                   )}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  {request.platform && (
-                    <span className="flex items-center gap-1">
-                      <ExternalLink className="h-3 w-3" />
-                      {request.platform}
-                    </span>
-                  )}
-                  <span>{formatDate(request.sentAt || request.createdAt)}</span>
+                >
+                  {platformIcons[platform.platform] || platform.platform.charAt(0).toUpperCase()}
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-slate-100 capitalize">{platform.platform}</p>
+                  <p className="text-xs text-slate-500">{platform.clickCount} clicks</p>
                 </div>
               </div>
             ))}
-            {data.recentRequests.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No review requests yet
-              </p>
-            )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      <div className="mt-5">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Recent requests</p>
+        <div className="mt-3 max-h-60 space-y-2 overflow-y-auto">
+          {data.recentRequests.slice(0, 8).map((request) => (
+            <div
+              key={request.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]',
+                    getStatusColor(request.status)
+                  )}
+                >
+                  {request.status}
+                </span>
+                <span className="text-sm font-medium text-slate-100">
+                  {request.customer.name}
+                </span>
+                {request.npsGated && request.npsScore && (
+                  <span className="text-xs text-slate-500">NPS: {request.npsScore}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-xs text-slate-500">
+                {request.platform && (
+                  <span className="flex items-center gap-1">
+                    <ExternalLink className="h-3 w-3" />
+                    {request.platform}
+                  </span>
+                )}
+                <span>{formatDate(request.sentAt || request.createdAt)}</span>
+              </div>
+            </div>
+          ))}
+          {data.recentRequests.length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-4">No review requests yet</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

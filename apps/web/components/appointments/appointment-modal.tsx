@@ -118,9 +118,9 @@ export function AppointmentModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/90 text-slate-100 shadow-none backdrop-blur-xl">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="font-display text-lg text-slate-100">
             {appointment ? 'Edit Appointment' : 'New Appointment'}
           </DialogTitle>
         </DialogHeader>
@@ -135,7 +135,11 @@ export function AppointmentModal({
           />
 
           <div className="flex gap-2 pt-4">
-            <Button type="submit" disabled={loading} className="flex-1">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="flex-1 rounded-full bg-emerald-400 text-xs font-semibold text-slate-950 hover:bg-emerald-300"
+            >
               {loading ? 'Saving...' : 'Save'}
             </Button>
             <Button
@@ -143,6 +147,7 @@ export function AppointmentModal({
               variant="outline"
               onClick={onClose}
               disabled={loading}
+              className="rounded-full border border-white/10 bg-white/5 text-xs font-semibold text-slate-200 hover:border-white/20"
             >
               Cancel
             </Button>
