@@ -1,81 +1,29 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Icon } from "../components/Icon";
+import Link from "next/link";
 import { getAgentTasks, updateAgentTask } from "@/lib/api/agent-tasks";
 import { approveAction, cancelAction, getActions, type AIAction } from "@/lib/api/ai-actions";
-import { triggerAllAgents } from "@/lib/api/insights";
 import { getDashboardStats, type DashboardStats } from "@/lib/api/reports";
 import type { AgentTask } from "@/lib/types/agent-task";
 
-type ActionItem = {
-  id?: string;
-  source?: "action" | "task" | "fallback";
-  title: string;
-  description?: string;
-  priority?: string;
-};
+function formatWeekRange(date = new Date()) {
+  const start = new Date(date);
+  start.setDate(start.getDate() - start.getDay());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
 
-const systemModules = [
-  { label: "Sales Pipeline", icon: "trending-up", tone: "text-emerald-200" },
-  { label: "Lead Capture", icon: "target", tone: "text-lime-200" },
-  { label: "Bookings", icon: "calendar", tone: "text-sky-200" },
-  { label: "Dispatch", icon: "briefcase", tone: "text-indigo-200" },
-  { label: "Quotes", icon: "quote", tone: "text-amber-200" },
-  { label: "Invoices", icon: "file-text", tone: "text-orange-200" },
-  { label: "Payments", icon: "credit-card", tone: "text-emerald-300" },
-  { label: "Support", icon: "inbox", tone: "text-cyan-200" },
-  { label: "Messaging", icon: "message-square", tone: "text-sky-300" },
-  { label: "Calls", icon: "phone", tone: "text-rose-200" },
-  { label: "Email", icon: "mail", tone: "text-blue-200" },
-  { label: "Customers", icon: "users", tone: "text-teal-200" },
-  { label: "Reporting", icon: "bar-chart-3", tone: "text-emerald-200" },
-  { label: "Campaigns", icon: "megaphone", tone: "text-yellow-200" },
-  { label: "Retention", icon: "gift", tone: "text-pink-200" },
-  { label: "Ops Stack", icon: "settings", tone: "text-slate-200" },
-] as const;
+  const format = (value: Date) =>
+    value.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
 
-const platformCards = [
-  { title: "Stripe", description: "Payments sync", icon: "credit-card", tone: "text-emerald-200" },
-  { title: "Twilio", description: "Voice + SMS", icon: "phone-call", tone: "text-cyan-200" },
-  { title: "Google", description: "Calendar + Maps", icon: "calendar-days", tone: "text-sky-200" },
-  { title: "Resend", description: "Transactional email", icon: "mail", tone: "text-amber-200" },
-  { title: "Clerk", description: "Identity layer", icon: "user-check", tone: "text-lime-200" },
-  { title: "Vapi", description: "AI voice agent", icon: "mic", tone: "text-rose-200" },
-] as const;
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  return `${format(start)} - ${format(end)}`;
 }
 
-function formatDate() {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-const fallbackTasks: ActionItem[] = [
-  {
-    title: "Confirm 3 appointments",
-    description: "Auto-send confirmations for tomorrow's schedule.",
-    priority: "HIGH",
-  },
-  {
-    title: "Follow up on 6 warm leads",
-    description: "AI drafted replies ready to approve.",
-    priority: "MEDIUM",
-  },
-  {
-    title: "Send 4 late payment reminders",
-    description: "Projected $1.8k collection if sent today.",
-    priority: "HIGH",
-  },
-];
+const formatCurrency = (value?: number) =>
+  typeof value === "number" ? value.toLocaleString() : "--";
 
 export default function TodayPage() {
   const [tasks, setTasks] = useState<AgentTask[]>([]);
@@ -83,14 +31,13 @@ export default function TodayPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
-  const [runningAgents, setRunningAgents] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
         const [taskData, statsData, actionData] = await Promise.all([
-          getAgentTasks({ status: "PENDING", limit: 6 }),
+          getAgentTasks({ status: "PENDING", limit: 8 }),
           getDashboardStats(),
           getActions("PENDING"),
         ]);
@@ -107,258 +54,217 @@ export default function TodayPage() {
     load();
   }, []);
 
-  const displayTasks = useMemo<ActionItem[]>(() => {
-    if (actions.length > 0) {
-      return actions.map((action) => ({
-        id: action.id,
-        source: "action",
-        title: action.title,
-        description: action.description,
-        priority: action.riskLevel ?? "MEDIUM",
-      }));
-    }
-    if (tasks.length > 0) {
-      return tasks.map((task) => ({
-        id: task.id,
-        source: "task",
-        title: task.title,
-        description: task.description ?? "",
-        priority: task.priority,
-      }));
-    }
-    return fallbackTasks.map((task) => ({ ...task, source: "fallback" }));
-  }, [actions, tasks]);
-
   const refreshQueues = async () => {
     const [taskData, actionData] = await Promise.all([
-      getAgentTasks({ status: "PENDING", limit: 6 }),
+      getAgentTasks({ status: "PENDING", limit: 8 }),
       getActions("PENDING"),
     ]);
     setTasks(taskData ?? []);
     setActions(actionData ?? []);
   };
 
-  const handleApprove = async (item: ActionItem) => {
-    if (!item.id || !item.source) return;
+  const handleApproveAction = async (actionId: string) => {
     try {
-      setWorkingId(item.id);
-      if (item.source === "action") {
-        await approveAction(item.id);
-      } else if (item.source === "task") {
-        await updateAgentTask(item.id, { status: "COMPLETED" });
-      }
+      setWorkingId(actionId);
+      await approveAction(actionId);
       await refreshQueues();
     } catch (error) {
-      console.error("Failed to approve item", error);
+      console.error("Failed to approve action", error);
     } finally {
       setWorkingId(null);
     }
   };
 
-  const handleSkip = async (item: ActionItem) => {
-    if (!item.id || !item.source) return;
+  const handleDeclineAction = async (actionId: string) => {
     try {
-      setWorkingId(item.id);
-      if (item.source === "action") {
-        await cancelAction(item.id);
-      } else if (item.source === "task") {
-        await updateAgentTask(item.id, { status: "CANCELLED" });
-      }
+      setWorkingId(actionId);
+      await cancelAction(actionId);
       await refreshQueues();
     } catch (error) {
-      console.error("Failed to skip item", error);
+      console.error("Failed to decline action", error);
     } finally {
       setWorkingId(null);
     }
   };
 
-  const handleApproveAll = async () => {
-    if (displayTasks.length === 0) return;
+  const handleCompleteTask = async (taskId: string) => {
     try {
-      setWorkingId("bulk");
-      await Promise.all(
-        displayTasks.map((item) => {
-          if (!item.id || !item.source) return Promise.resolve();
-          if (item.source === "action") {
-            return approveAction(item.id);
-          }
-          if (item.source === "task") {
-            return updateAgentTask(item.id, { status: "COMPLETED" });
-          }
-          return Promise.resolve();
-        }),
-      );
+      setWorkingId(taskId);
+      await updateAgentTask(taskId, { status: "COMPLETED" });
       await refreshQueues();
     } catch (error) {
-      console.error("Failed to approve all items", error);
+      console.error("Failed to complete task", error);
     } finally {
       setWorkingId(null);
     }
   };
 
-  const handleRunAgents = async () => {
+  const handleSkipTask = async (taskId: string) => {
     try {
-      setRunningAgents(true);
-      await triggerAllAgents();
+      setWorkingId(taskId);
+      await updateAgentTask(taskId, { status: "CANCELLED" });
       await refreshQueues();
     } catch (error) {
-      console.error("Failed to run agents", error);
+      console.error("Failed to skip task", error);
     } finally {
-      setRunningAgents(false);
+      setWorkingId(null);
     }
   };
 
-  const formatCurrency = (value?: number) =>
-    typeof value === "number" ? value.toLocaleString() : "--";
+  const primaryActions = useMemo(() => actions.slice(0, 3), [actions]);
+  const secondaryTasks = useMemo(() => tasks.slice(0, 5), [tasks]);
+
+  const statusText = loading ? "Loading..." : `${actions.length} actions waiting`;
+  const weekRange = formatWeekRange();
+
+  const revenueChange =
+    typeof stats?.revenue?.change === "number"
+      ? `${stats.revenue.change}% vs last month`
+      : "No trend yet";
 
   return (
-    <div className="flex flex-col gap-10">
-      <section className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-emerald-200">
-            System online
-          </span>
-          <span className="font-primary text-emerald-200/80">
-            &gt; ./business-os --run-agent
-          </span>
+    <div className="flex flex-col gap-8">
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-400">
+          <span className="text-slate-200">Status:</span>
+          <span>{statusText}</span>
+          <span className="text-slate-600">|</span>
+          <span className="text-slate-200">This week:</span>
+          <span>{weekRange}</span>
         </div>
-        <div className="flex flex-col gap-4">
-          <h1 className="font-display text-4xl font-semibold text-slate-100 sm:text-5xl">
-            Build Your{" "}
-            <span className="bg-gradient-to-r from-violet-300 via-sky-200 to-emerald-200 bg-clip-text text-transparent">
-              Business OS
-            </span>
-          </h1>
-          <p className="max-w-2xl text-sm text-slate-400">
-            Track every lead, booking, invoice, and customer signal in one place.
-            Your AI employee orchestrates the work while you stay in control.
-          </p>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-            {getGreeting()} - {formatDate()}
+        <div>
+          <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Today</h1>
+          <p className="text-sm text-slate-400">
+            Review what needs your approval, then move on.
           </p>
         </div>
       </section>
 
-      <section className="glass-panel rounded-3xl p-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Command matrix</p>
-            <h2 className="mt-2 font-display text-lg text-slate-100">Departments online</h2>
-          </div>
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-slate-400">
-            {systemModules.length} modules active
-          </span>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {systemModules.map((module) => (
-            <div key={module.label} className="icon-tile rounded-2xl px-3 py-4 text-center">
-              <div
-                className={`mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 ${module.tone}`}
-              >
-                <Icon name={module.icon} size={18} />
-              </div>
-              <p className="mt-3 text-xs font-semibold text-slate-200">{module.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        {platformCards.map((card) => (
-          <div key={card.title} className="glass-panel rounded-2xl px-4 py-4">
-            <div className="flex items-center gap-3">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 ${card.tone}`}>
-                <Icon name={card.icon} size={16} />
-              </div>
+      <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+        <div className="space-y-6">
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-100">{card.title}</p>
-                <p className="text-xs text-slate-400">{card.description}</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Primary queue</p>
+                <h2 className="mt-2 font-display text-lg text-slate-100">Actions to approve</h2>
               </div>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                {primaryActions.length}
+              </span>
             </div>
-          </div>
-        ))}
-      </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.6fr_0.9fr]">
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Priority queue</p>
-              <h2 className="mt-2 font-display text-lg text-slate-100">AI-ready actions</h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={handleApproveAll}
-                disabled={workingId === "bulk"}
-                className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold text-emerald-100 hover:border-emerald-400/60 disabled:opacity-60"
-              >
-                {workingId === "bulk" ? "Approving..." : "Approve all"}
-              </button>
-              <button
-                onClick={handleRunAgents}
-                disabled={runningAgents}
-                className="rounded-full bg-emerald-400 px-4 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
-              >
-                {runningAgents ? "Running AI..." : "Run AI now"}
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3">
-            {loading ? (
-              <div className="flex items-center gap-2 text-sm text-slate-400">
-                <Icon name="loader-2" size={16} className="animate-spin" />
-                Loading today&apos;s queue...
-              </div>
-            ) : (
-              displayTasks.map((item, index) => (
-                <div
-                  key={item.id ?? `${item.title}-${index}`}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-100">{item.title}</p>
-                      <p className="mt-1 text-xs text-slate-400">{item.description}</p>
-                    </div>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
-                      {item.priority ?? "MEDIUM"}
-                    </span>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleApprove(item)}
-                      disabled={workingId === item.id}
-                      className="rounded-full bg-emerald-400 px-4 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
-                    >
-                      {workingId === item.id ? "Working..." : "Approve"}
-                    </button>
-                    <button
-                      onClick={() => handleSkip(item)}
-                      disabled={workingId === item.id}
-                      className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-slate-200 hover:border-white/30 disabled:opacity-60"
-                    >
-                      Skip
-                    </button>
-                  </div>
+            <div className="mt-4 grid gap-3">
+              {loading ? (
+                <div className="text-sm text-slate-400">Loading actions...</div>
+              ) : primaryActions.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
+                  No actions waiting.
                 </div>
-              ))
-            )}
+              ) : (
+                primaryActions.map((action) => (
+                  <div
+                    key={action.id}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
+                  >
+                    <p className="text-sm font-semibold text-slate-100">{action.title}</p>
+                    <p className="mt-1 text-xs text-slate-400">{action.description}</p>
+                    {action.estimatedImpact && (
+                      <p className="mt-2 text-xs text-slate-500">Impact: {action.estimatedImpact}</p>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleApproveAction(action.id)}
+                        disabled={workingId === action.id}
+                        className="rounded-full bg-emerald-400 px-4 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
+                      >
+                        {workingId === action.id ? "Working..." : "Approve"}
+                      </button>
+                      <button
+                        onClick={() => handleDeclineAction(action.id)}
+                        disabled={workingId === action.id}
+                        className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-slate-200 hover:border-white/30 disabled:opacity-60"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Secondary queue</p>
+                <h2 className="mt-2 font-display text-lg text-slate-100">Other tasks</h2>
+              </div>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                {secondaryTasks.length}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {loading ? (
+                <div className="text-sm text-slate-400">Loading tasks...</div>
+              ) : secondaryTasks.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
+                  No tasks right now.
+                </div>
+              ) : (
+                secondaryTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
+                  >
+                    <p className="text-sm font-semibold text-slate-100">{task.title}</p>
+                    {task.description && (
+                      <p className="mt-1 text-xs text-slate-400">{task.description}</p>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleCompleteTask(task.id)}
+                        disabled={workingId === task.id}
+                        className="rounded-full bg-emerald-400 px-4 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
+                      >
+                        {workingId === task.id ? "Working..." : "Done"}
+                      </button>
+                      <button
+                        onClick={() => handleSkipTask(task.id)}
+                        disabled={workingId === task.id}
+                        className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-slate-200 hover:border-white/30 disabled:opacity-60"
+                      >
+                        Skip
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
         <div className="glass-panel rounded-3xl p-6">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Business pulse</p>
-            <h2 className="mt-2 font-display text-lg text-slate-100">Signal summary</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Insights</p>
+              <h2 className="mt-2 font-display text-lg text-slate-100">Key signals</h2>
+            </div>
+            <Link
+              href="/dashboard/insights"
+              className="text-xs font-semibold text-emerald-200 hover:text-emerald-100"
+            >
+              View report
+            </Link>
           </div>
+
           <div className="mt-4 grid gap-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Revenue</p>
               <p className="mt-2 text-xl font-semibold text-slate-100">
                 ${formatCurrency(stats?.revenue?.current)}
               </p>
-              <p className="text-xs text-emerald-200">{stats?.revenue?.change ?? 0}% vs last month</p>
+              <p className="text-xs text-slate-400">{revenueChange}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Appointments</p>
@@ -368,25 +274,12 @@ export default function TodayPage() {
               <p className="text-xs text-slate-400">This month</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Quotes pending</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Quotes waiting</p>
               <p className="mt-2 text-xl font-semibold text-slate-100">
                 {stats?.quotes?.pending ?? "--"}
               </p>
-              <p className="text-xs text-slate-400">Ready for follow-up</p>
+              <p className="text-xs text-slate-400">Need follow-up</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Jobs active</p>
-              <p className="mt-2 text-xl font-semibold text-slate-100">
-                {stats?.jobs?.inProgress ?? "--"}
-              </p>
-              <p className="text-xs text-slate-400">Running today</p>
-            </div>
-          </div>
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Next focus</p>
-            <p className="mt-2 text-sm text-slate-200">
-              Keep collections warm, tighten booking gaps, and ship five-star review requests.
-            </p>
           </div>
         </div>
       </section>
