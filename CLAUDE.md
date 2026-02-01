@@ -48,9 +48,19 @@ Build a simple, reliable AI employee OS for small service and product businesses
 
 ### System Overview
 - **Command Center (Dashboard)**: status line, approvals, tasks, and signals.
-- **Action Engine**: approvals, automation, and guardrails for AI actions.
+- **Task Ledger**: unified queue for AI actions, system tasks, and human tasks.
+- **Action Engine**: idempotent execution, guardrails, undo windows, and audit logs.
 - **Engagement Hub**: inbox, SMS, voice, and reviews in one place.
 - **Money Control**: quotes, invoices, payments, and collections workflow.
+- **Insights + Goals**: weekly reports and mission tracking.
+
+### Architecture and Reliability Upgrades
+- Unified Task Ledger with a clear state machine and trace IDs.
+- Idempotent action execution with retry safety.
+- Event-sourced activity timeline for audit and analytics.
+- Read model cache for dashboards (short TTL with write-through invalidation).
+- Queue isolation by priority (critical vs bulk workloads).
+- Centralized error reporting with clear recovery paths.
 
 ### Daily Experience Blueprint
 1. Open Command Center.
@@ -58,74 +68,108 @@ Build a simple, reliable AI employee OS for small service and product businesses
 3. Complete or skip the next 5 tasks.
 4. Review 2-3 signals and click into detail only if needed.
 
-### Automation Model
+### Automation Model and Trust
 - **Suggest mode**: AI drafts; user approves.
 - **Assist mode**: AI executes low-risk tasks with undo where possible.
 - **Autopilot mode**: AI executes within guardrails and logs everything.
-- Guardrails: discount limits, message windows, high-risk approval required, audit log.
+- Trust settings per category (billing, messaging, scheduling, marketing).
+- Undo windows for risky actions and optional action previews for high risk.
 
 ### UX and Language Guidelines
 - Use short, direct labels: "Approve", "Decline", "Done", "Skip".
 - Keep screens under three core sections.
 - Default to a single primary action per card.
-- Use consistent status colors and small badge labels.
+- Every metric must map to a next step.
+- All visible buttons must do real work.
 
 ### MVP Scope (Must Ship)
-- Command Center with real approvals + tasks
-- Appointments, quotes, invoices, and inbox
-- Autopilot settings with guardrails
-- Insights summary with weekly report generation
-- SMS and email sending, review requests
+- Command Center with unified Task Ledger, approvals, and undo window.
+- Appointments with smart confirmations and no-show prompts.
+- Quotes and invoices with follow-up actions and payment reminders.
+- Inbox with draft-first responses and one-click approve.
+- Autopilot settings with per-category trust and guardrails.
+- Insights summary with action buttons and weekly report generation.
+- SMS and email sending, review requests.
+- Observability: logs, queue health, and error recovery UI.
 
 ### Next Scope (After MVP)
-- Advanced dispatch optimization
-- Voice AI configuration improvements
-- Predictive maintenance and dynamic pricing
-- Deeper reporting and forecasting
+- Mission Mode (goal-based automation).
+- Owner Clone memory and preference learning.
+- Predictive cashflow and auto-collections routing.
+- Customer health score with next best action.
+- Inactivity rescue playbooks (weekly summary with approvals).
+- Advanced dispatch optimization.
+- Voice AI improvements (testing, transfers, scripts).
+- Marketing playbooks (win-back, review boost, refill reminders).
+- Deeper reporting and forecasting.
+
+### Deferred or Removed from Near Term
+- Dynamic pricing (high trust risk, low early value).
+- Predictive maintenance (niche, not core to daily ops).
+- Complex multi-tab settings (hide advanced until needed).
 
 ### Delivery Plan
 **Phase 0: Foundation (1-2 weeks)**
-- Stabilize API flows and remove non-functional UI
-- Ensure critical endpoints and auth are reliable
-- Instrument core events and errors
+- Implement Task Ledger with state machine.
+- Add idempotency keys and retry safety.
+- Queue isolation and priority handling.
+- Remove non-functional UI.
+- Basic observability (errors, queue health, dashboards).
 
 **Phase 1: Command Center (2-3 weeks)**
-- Finalize dashboard layout and real actions
-- Ship approvals for quotes, invoices, and messaging
-- Onboarding flow to seed a working demo environment
+- Unified approvals and tasks.
+- Undo window and action preview for high risk.
+- Draft-first inbox.
+- Onboarding flow to seed a working demo environment.
 
 **Phase 2: Automation (2-3 weeks)**
-- Autopilot modes and guardrails
-- Action history and audit logs
-- AI suggestion improvements and confidence scoring
+- Trust settings per category.
+- Autopilot guardrails.
+- Action history and audit timeline.
+- AI suggestion improvements with confidence scoring.
 
 **Phase 3: Growth (2-4 weeks)**
-- Marketing campaigns
-- Referral program
-- Revenue expansion workflows
+- Mission Mode.
+- Predictive cashflow and collections routing.
+- Marketing playbooks.
+- Deeper insights and forecasting.
+
+### Performance and Safety Guardrails
+- Rate limits on high-impact operations.
+- Fail-closed for payments and refunds.
+- Action previews for high-risk tasks.
+- Automatic rollback where possible.
+- Human approval required over thresholds.
 
 ### Operational Readiness
-- Centralized logging for API and worker queues
-- Queue retry and dead-letter handling
-- Clear error states in the UI with recovery actions
-- Alerting on failed jobs and sync errors
+- Centralized logging for API and worker queues.
+- Dead-letter handling and replay tools.
+- Queue retry strategy with backoff.
+- Clear error states with recovery actions.
+- Alerting on failed jobs and sync errors.
 
 ### Security and Compliance
-- Strict tenant isolation everywhere
-- Role-based access for team features
-- Audit logging for AI actions and money movement
+- Strict tenant isolation everywhere.
+- Role-based access for team features.
+- Audit logging for AI actions and money movement.
+- Secure storage for PII and payment metadata.
 
 ### Analytics and KPIs
-- Daily active owners
-- Approval time and approval rate
-- Automation rate and time saved
-- Revenue collected and invoices closed
+- Daily active owners.
+- Time-to-first-value (first action approved).
+- Approval time and approval rate.
+- Trust index (auto-approve rate).
+- Automation rate and time saved.
+- Recovery rate for failed workflows.
+- Revenue collected and invoices closed.
 
 ### Launch Readiness Checklist
-- All core screens have working controls
-- Empty states and error states are clear and safe
-- Lint and critical tests pass
-- Demo data path works for new tenants
+- All core screens have working controls.
+- Every action is idempotent and logged.
+- Undo and preview for risky actions.
+- Empty states and error states are clear and safe.
+- Lint and critical tests pass.
+- Demo data path works for new tenants.
 
 ## Development Rules
 1. **Max 50 lines per function** - break larger logic into composable pieces
