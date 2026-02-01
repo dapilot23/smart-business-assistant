@@ -16,6 +16,117 @@
 - **Testing**: Jest (unit), Playwright (E2E)
 - **Dev Workflow**: Ralph for AI assistant development workflows
 
+## Product and Launch Plan (Enhanced)
+
+### Vision
+Build a simple, reliable AI employee OS for small service and product businesses that runs day-to-day work while keeping the owner in control.
+
+### Target Users
+- Owner-operators and small teams (1-20 people)
+- Service businesses with appointments, dispatch, and follow-up work
+- Product or hybrid businesses with quotes, invoices, and customer messaging
+
+### Core Problems to Solve
+- Too much manual follow-up (quotes, invoices, appointments)
+- Fragmented tools and no single source of truth
+- Hard to see what matters today
+- Automation without trust or clear control
+
+### Success Definition
+- A user can complete their daily work in under 10 minutes on the Command Center
+- At least 30 percent of routine tasks are auto-completed within 30 days
+- Owners trust the system enough to approve actions quickly
+- All visible buttons and controls do real work
+
+### Product Principles (Best of All Worlds)
+1. **Simple first, powerful when needed**: the default view is minimal; depth exists one click away.
+2. **Human control with AI speed**: AI drafts and proposes; the user approves or automates with clear guardrails.
+3. **One screen that matters**: the Command Center is the daily home for the business.
+4. **No fake affordances**: remove or hide anything that cannot be executed today.
+5. **Clear language**: use plain words, short sentences, no jargon.
+6. **Data you can act on**: every metric must map to a next step.
+
+### System Overview
+- **Command Center (Dashboard)**: status line, approvals, tasks, and signals.
+- **Action Engine**: approvals, automation, and guardrails for AI actions.
+- **Engagement Hub**: inbox, SMS, voice, and reviews in one place.
+- **Money Control**: quotes, invoices, payments, and collections workflow.
+
+### Daily Experience Blueprint
+1. Open Command Center.
+2. Approve or decline the top 3 actions.
+3. Complete or skip the next 5 tasks.
+4. Review 2-3 signals and click into detail only if needed.
+
+### Automation Model
+- **Suggest mode**: AI drafts; user approves.
+- **Assist mode**: AI executes low-risk tasks with undo where possible.
+- **Autopilot mode**: AI executes within guardrails and logs everything.
+- Guardrails: discount limits, message windows, high-risk approval required, audit log.
+
+### UX and Language Guidelines
+- Use short, direct labels: "Approve", "Decline", "Done", "Skip".
+- Keep screens under three core sections.
+- Default to a single primary action per card.
+- Use consistent status colors and small badge labels.
+
+### MVP Scope (Must Ship)
+- Command Center with real approvals + tasks
+- Appointments, quotes, invoices, and inbox
+- Autopilot settings with guardrails
+- Insights summary with weekly report generation
+- SMS and email sending, review requests
+
+### Next Scope (After MVP)
+- Advanced dispatch optimization
+- Voice AI configuration improvements
+- Predictive maintenance and dynamic pricing
+- Deeper reporting and forecasting
+
+### Delivery Plan
+**Phase 0: Foundation (1-2 weeks)**
+- Stabilize API flows and remove non-functional UI
+- Ensure critical endpoints and auth are reliable
+- Instrument core events and errors
+
+**Phase 1: Command Center (2-3 weeks)**
+- Finalize dashboard layout and real actions
+- Ship approvals for quotes, invoices, and messaging
+- Onboarding flow to seed a working demo environment
+
+**Phase 2: Automation (2-3 weeks)**
+- Autopilot modes and guardrails
+- Action history and audit logs
+- AI suggestion improvements and confidence scoring
+
+**Phase 3: Growth (2-4 weeks)**
+- Marketing campaigns
+- Referral program
+- Revenue expansion workflows
+
+### Operational Readiness
+- Centralized logging for API and worker queues
+- Queue retry and dead-letter handling
+- Clear error states in the UI with recovery actions
+- Alerting on failed jobs and sync errors
+
+### Security and Compliance
+- Strict tenant isolation everywhere
+- Role-based access for team features
+- Audit logging for AI actions and money movement
+
+### Analytics and KPIs
+- Daily active owners
+- Approval time and approval rate
+- Automation rate and time saved
+- Revenue collected and invoices closed
+
+### Launch Readiness Checklist
+- All core screens have working controls
+- Empty states and error states are clear and safe
+- Lint and critical tests pass
+- Demo data path works for new tenants
+
 ## Development Rules
 1. **Max 50 lines per function** - break larger logic into composable pieces
 2. **Max 200 lines per file** - split into services/helpers if needed
