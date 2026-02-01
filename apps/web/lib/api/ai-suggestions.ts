@@ -42,11 +42,11 @@ export async function invalidateAllSuggestions(): Promise<void> {
 
 export function getPriorityColor(priority: Suggestion['priority']): string {
   const colors: Record<Suggestion['priority'], string> = {
-    HIGH: 'border-l-red-500 bg-red-50',
-    MEDIUM: 'border-l-yellow-500 bg-yellow-50',
-    LOW: 'border-l-blue-500 bg-blue-50',
+    HIGH: 'border-l-rose-400/70',
+    MEDIUM: 'border-l-amber-300/70',
+    LOW: 'border-l-sky-300/70',
   };
-  return colors[priority] || 'border-l-gray-500 bg-gray-50';
+  return colors[priority] || 'border-l-slate-400/70';
 }
 
 export function getSuggestionIcon(icon?: string): string {

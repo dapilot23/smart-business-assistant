@@ -58,218 +58,209 @@ export default function NewCampaignPage() {
     }
   };
 
-  // Filter suggestions to only show campaign-related ones
-  const campaignSuggestions = suggestions.filter(s => s.actionType === "CREATE_CAMPAIGN");
+  const campaignSuggestions = suggestions.filter((s) => s.actionType === "CREATE_CAMPAIGN");
 
   return (
-    <main className="flex flex-col h-full w-full">
-      {/* Header */}
-      <header className="flex items-center gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:h-20 border-b border-border">
-        <Link
-          href="/dashboard/marketing"
-          className="p-2 hover:bg-muted rounded-lg transition-colors"
-        >
-          <Icon name="chevron-right" size={20} className="text-muted-foreground rotate-180" />
-        </Link>
-        <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-foreground">New Campaign</h1>
-          <p className="text-sm text-muted-foreground">Let AI help you create the perfect campaign</p>
+    <div className="flex flex-col gap-8">
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-slate-400">
+          <Link
+            href="/dashboard/marketing"
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-emerald-200 hover:border-white/30"
+          >
+            <Icon name="chevron-right" size={14} className="rotate-180" />
+            Back
+          </Link>
+          <span className="font-primary text-emerald-200/80">&gt; ./business-os --new-campaign</span>
         </div>
-      </header>
+        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">New campaign</h1>
+        <p className="text-sm text-slate-400">
+          Let AI assemble the messaging or craft your own campaign manually.
+        </p>
+      </section>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-        <div className="max-w-3xl mx-auto">
-          {/* AI Suggestions Section */}
-          {!showManualForm && (
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Icon name="sparkles" size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-semibold text-foreground">AI-Recommended Campaigns</h2>
-                    <p className="text-sm text-muted-foreground">Based on your business data</p>
-                  </div>
-                </div>
-                <button
-                  onClick={refresh}
-                  disabled={suggestionsLoading}
-                  className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-                >
-                  <Icon name="refresh-cw" size={14} className={suggestionsLoading ? "animate-spin" : ""} />
-                  Refresh
-                </button>
+      {!showManualForm && (
+        <section className="glass-panel rounded-3xl p-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-emerald-200">
+                <Icon name="sparkles" size={18} />
               </div>
-
-              {suggestionsLoading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
-                  ))}
-                </div>
-              ) : campaignSuggestions.length > 0 ? (
-                <div className="space-y-4">
-                  {campaignSuggestions.map((suggestion) => (
-                    <AiSuggestionCard
-                      key={suggestion.id}
-                      suggestion={suggestion}
-                      onAccept={() => {
-                        // Redirect to marketing page after action is created
-                        setTimeout(() => router.push("/dashboard/marketing"), 1500);
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-muted/50 rounded-lg p-8 text-center">
-                  <Icon name="inbox" size={32} className="text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    No AI suggestions available right now. Try creating a campaign manually.
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-6 pt-6 border-t border-border">
-                <button
-                  onClick={() => setShowManualForm(true)}
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <Icon name="edit" size={14} />
-                  Or create a campaign manually
-                </button>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">AI recommended</p>
+                <h2 className="mt-1 font-display text-lg text-slate-100">Campaign starters</h2>
+                <p className="text-xs text-slate-400">Based on your business data</p>
               </div>
             </div>
-          )}
+            <button
+              onClick={refresh}
+              disabled={suggestionsLoading}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 hover:border-white/30"
+            >
+              <Icon name="refresh-cw" size={14} className={suggestionsLoading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+          </div>
 
-          {/* Manual Form */}
-          {showManualForm && (
+          <div className="mt-4">
+            {suggestionsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-28 rounded-2xl border border-white/10 bg-white/5 animate-pulse" />
+                ))}
+              </div>
+            ) : campaignSuggestions.length > 0 ? (
+              <div className="space-y-4">
+                {campaignSuggestions.map((suggestion) => (
+                  <AiSuggestionCard
+                    key={suggestion.id}
+                    suggestion={suggestion}
+                    onAccept={() => {
+                      setTimeout(() => router.push("/dashboard/marketing"), 1500);
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+                <Icon name="inbox" size={32} className="text-slate-500 mx-auto mb-3" />
+                <p className="text-sm text-slate-400">
+                  No AI suggestions available right now. Try creating a campaign manually.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 border-t border-white/10 pt-6">
+            <button
+              onClick={() => setShowManualForm(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold text-emerald-200"
+            >
+              <Icon name="edit" size={14} />
+              Create a campaign manually
+            </button>
+          </div>
+        </section>
+      )}
+
+      {showManualForm && (
+        <section className="glass-panel rounded-3xl p-6">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-base font-semibold text-foreground">Create Campaign Manually</h2>
-                <button
-                  onClick={() => setShowManualForm(false)}
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <Icon name="sparkles" size={14} />
-                  Back to AI suggestions
-                </button>
-              </div>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Manual build</p>
+              <h2 className="mt-1 font-display text-lg text-slate-100">Create campaign</h2>
+            </div>
+            <button
+              onClick={() => setShowManualForm(false)}
+              className="text-xs uppercase tracking-[0.2em] text-emerald-200"
+            >
+              Back to AI
+            </button>
+          </div>
 
-              {error && (
-                <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700 text-sm">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Campaign Name */}
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-                    Campaign Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., Summer Sale 2026"
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                {/* Campaign Type */}
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Campaign Type
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as CampaignType })}
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="SMS_BLAST">SMS Blast</option>
-                    <option value="EMAIL_BLAST">Email Blast</option>
-                    <option value="DRIP_SEQUENCE">Drip Sequence</option>
-                    <option value="REFERRAL">Referral Program</option>
-                    <option value="SEASONAL">Seasonal Promotion</option>
-                  </select>
-                </div>
-
-                {/* Email Subject */}
-                {formData.type === "EMAIL_BLAST" && (
-                  <div>
-                    <label htmlFor="subject" className="block text-sm font-medium text-foreground mb-2">
-                      Email Subject
-                    </label>
-                    <input
-                      type="text"
-                      id="subject"
-                      value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      placeholder="e.g., Don't miss our summer sale!"
-                      className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                )}
-
-                {/* Message Content */}
-                <div>
-                  <label htmlFor="content" className="block text-sm font-medium text-foreground mb-2">
-                    Message Content
-                  </label>
-                  <textarea
-                    id="content"
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    rows={5}
-                    placeholder="Write your message here..."
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                  />
-                  {formData.type === "SMS_BLAST" && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {formData.content.length}/160 characters
-                    </p>
-                  )}
-                </div>
-
-                {/* Schedule */}
-                <div>
-                  <label htmlFor="scheduledAt" className="block text-sm font-medium text-foreground mb-2">
-                    Schedule (optional)
-                  </label>
-                  <input
-                    type="datetime-local"
-                    id="scheduledAt"
-                    value={formData.scheduledAt}
-                    onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                  <Link
-                    href="/dashboard/marketing"
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Cancel
-                  </Link>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-2"
-                  >
-                    {loading && <Icon name="loader-2" size={16} className="animate-spin" />}
-                    {loading ? "Creating..." : "Create Campaign"}
-                  </button>
-                </div>
-              </form>
+          {error && (
+            <div className="mt-4 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">
+              {error}
             </div>
           )}
-        </div>
-      </div>
-    </main>
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-slate-200 mb-2">
+                Campaign name
+              </label>
+              <input
+                type="text"
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Summer Sale 2026"
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-200 mb-2">Campaign type</label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as CampaignType })}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 focus:border-emerald-400/60 focus:outline-none"
+              >
+                <option value="SMS_BLAST">SMS Blast</option>
+                <option value="EMAIL_BLAST">Email Blast</option>
+                <option value="DRIP_SEQUENCE">Drip Sequence</option>
+                <option value="REFERRAL">Referral Program</option>
+                <option value="SEASONAL">Seasonal Promotion</option>
+              </select>
+            </div>
+
+            {formData.type === "EMAIL_BLAST" && (
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-slate-200 mb-2">
+                  Email subject
+                </label>
+                <input
+                  type="text"
+                  id="subject"
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  placeholder="e.g., Do not miss our summer sale"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
+                />
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="content" className="block text-sm font-medium text-slate-200 mb-2">
+                Message content
+              </label>
+              <textarea
+                id="content"
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                rows={5}
+                placeholder="Write your message here..."
+                className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
+              />
+              {formData.type === "SMS_BLAST" && (
+                <p className="mt-1 text-xs text-slate-500">
+                  {formData.content.length}/160 characters
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="scheduledAt" className="block text-sm font-medium text-slate-200 mb-2">
+                Schedule (optional)
+              </label>
+              <input
+                type="datetime-local"
+                id="scheduledAt"
+                value={formData.scheduledAt}
+                onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 focus:border-emerald-400/60 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-white/10 pt-4">
+              <Link
+                href="/dashboard/marketing"
+                className="text-xs uppercase tracking-[0.2em] text-slate-400 hover:text-slate-200"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-400 px-6 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-50"
+              >
+                {loading && <Icon name="loader-2" size={16} className="animate-spin" />}
+                {loading ? "Creating..." : "Create campaign"}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+    </div>
   );
 }
