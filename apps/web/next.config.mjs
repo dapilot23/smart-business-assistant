@@ -17,6 +17,12 @@ const nextConfig = {
     "http://154.12.239.51:3000",
     "http://154-12-239-51.nip.io:3000",
   ],
+  webpack: (config) => {
+    if (config.mode === "production") {
+      config.cache = false;
+    }
+    return config;
+  },
 };
 
 export default withPWA(nextConfig);
