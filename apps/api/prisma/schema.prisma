@@ -19,45 +19,46 @@ model Tenant {
   updatedAt DateTime @updatedAt
 
   // Relations
-  users        User[]
-  customers    Customer[]
-  communicationOptOuts CommunicationOptOut[]
-  services     Service[]
-  appointments Appointment[]
-  quotes       Quote[]
-  invoices     Invoice[]
-  availability TechnicianAvailability[]
-  timeOff      TimeOff[]
-  callLogs     CallLog[]
-  invitations  TeamInvitation[]
-  jobs         Job[]
-  smsBroadcasts SmsBroadcast[]
-  settings     TenantSettings?
-  reviewRequests ReviewRequest[]
-  quoteFollowUps QuoteFollowUp[]
-  paymentReminders PaymentReminder[]
-  appointmentReminders AppointmentReminder[]
-  waitlistEntries Waitlist[]
-  aiUsageLogs     AiUsageLog[]
-  aiFeedback      AiFeedback[]
-  retentionCampaigns RetentionCampaign[]
-  serviceIntervals   ServiceInterval[]
-  technicianSkills   TechnicianSkill[]
+  users                  User[]
+  customers              Customer[]
+  communicationOptOuts   CommunicationOptOut[]
+  services               Service[]
+  appointments           Appointment[]
+  quotes                 Quote[]
+  invoices               Invoice[]
+  availability           TechnicianAvailability[]
+  timeOff                TimeOff[]
+  callLogs               CallLog[]
+  invitations            TeamInvitation[]
+  jobs                   Job[]
+  smsBroadcasts          SmsBroadcast[]
+  settings               TenantSettings?
+  reviewRequests         ReviewRequest[]
+  quoteFollowUps         QuoteFollowUp[]
+  paymentReminders       PaymentReminder[]
+  appointmentReminders   AppointmentReminder[]
+  waitlistEntries        Waitlist[]
+  aiUsageLogs            AiUsageLog[]
+  aiFeedback             AiFeedback[]
+  retentionCampaigns     RetentionCampaign[]
+  serviceIntervals       ServiceInterval[]
+  technicianSkills       TechnicianSkill[]
   messageClassifications MessageClassification[]
-  suggestedResponses SuggestedResponse[]
-  autoResponderRules AutoResponderRule[]
-  copilotConversations CopilotConversation[]
-  weeklyReports WeeklyReport[]
-  businessAnomalies BusinessAnomaly[]
-  agentInsights AgentInsight[]
-  aiActions     AIAction[]
-  agentTasks    AgentTask[]
-  contextualSuggestions ContextualSuggestion[]
-  marketingCampaigns MarketingCampaign[]
-  audienceSegments   AudienceSegment[]
-  referrals          Referral[]
-  seasonalDemand     SeasonalDemand[]
-  businessProfile    BusinessProfile?
+  suggestedResponses     SuggestedResponse[]
+  autoResponderRules     AutoResponderRule[]
+  copilotConversations   CopilotConversation[]
+  weeklyReports          WeeklyReport[]
+  businessAnomalies      BusinessAnomaly[]
+  agentInsights          AgentInsight[]
+  aiActions              AIAction[]
+  agentTasks             AgentTask[]
+  contextualSuggestions  ContextualSuggestion[]
+  marketingCampaigns     MarketingCampaign[]
+  audienceSegments       AudienceSegment[]
+  referrals              Referral[]
+  seasonalDemand         SeasonalDemand[]
+  businessProfile        BusinessProfile?
+  taskLedgerEntries      TaskLedgerEntry[]
 
   @@map("tenants")
 }
@@ -79,15 +80,15 @@ model User {
   updatedAt DateTime   @updatedAt
 
   // Relations
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  availability TechnicianAvailability[]
-  timeOff      TimeOff[]
-  jobs         Job[]
-  locations    TechnicianLocation[]
-  skills       TechnicianSkill[]
-  agentTasksOwned   AgentTask[] @relation("AgentTaskOwner")
-  agentTasksCreated AgentTask[] @relation("AgentTaskCreator")
+  tenant            Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments      Appointment[]
+  availability      TechnicianAvailability[]
+  timeOff           TimeOff[]
+  jobs              Job[]
+  locations         TechnicianLocation[]
+  skills            TechnicianSkill[]
+  agentTasksOwned   AgentTask[]              @relation("AgentTaskOwner")
+  agentTasksCreated AgentTask[]              @relation("AgentTaskCreator")
 
   @@index([tenantId])
   @@index([clerkId])
@@ -96,15 +97,15 @@ model User {
 }
 
 enum UserRole {
-  OWNER      // Business owner, full access
-  ADMIN      // Admin access, can manage team
+  OWNER // Business owner, full access
+  ADMIN // Admin access, can manage team
   DISPATCHER // Can manage appointments and customers
   TECHNICIAN // Field worker, limited access
 }
 
 enum UserStatus {
-  PENDING    // Invited but not yet joined
-  ACTIVE     // Active team member
+  PENDING // Invited but not yet joined
+  ACTIVE // Active team member
   DEACTIVATED // Removed from team
 }
 
@@ -162,26 +163,26 @@ model Customer {
   updatedAt DateTime @updatedAt
 
   // Relations
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  quotes       Quote[]
-  invoices     Invoice[]
-  reviewRequests ReviewRequest[]
-  context      CustomerContext?
-  preferences  CustomerPreference?
-  location     CustomerLocation?
-  auth         CustomerAuth?
-  equipment    CustomerEquipment[]
-  riskProfile  CustomerRiskProfile?
-  noShowCount  Int               @default(0)
-  healthScore    Int             @default(50)
-  churnRisk      Float           @default(0)
-  lifecycleStage String          @default("NEW")
-  waitlistEntries Waitlist[]
+  tenant             Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments       Appointment[]
+  quotes             Quote[]
+  invoices           Invoice[]
+  reviewRequests     ReviewRequest[]
+  context            CustomerContext?
+  preferences        CustomerPreference?
+  location           CustomerLocation?
+  auth               CustomerAuth?
+  equipment          CustomerEquipment[]
+  riskProfile        CustomerRiskProfile?
+  noShowCount        Int                  @default(0)
+  healthScore        Int                  @default(50)
+  churnRisk          Float                @default(0)
+  lifecycleStage     String               @default("NEW")
+  waitlistEntries    Waitlist[]
   retentionCampaigns RetentionCampaign[]
   campaignRecipients CampaignRecipient[]
-  referralsMade      Referral[] @relation("ReferralsMade")
-  referralsReceived  Referral[] @relation("ReferralsReceived")
+  referralsMade      Referral[]           @relation("ReferralsMade")
+  referralsReceived  Referral[]           @relation("ReferralsReceived")
 
   @@index([tenantId])
   @@index([phone])
@@ -194,7 +195,7 @@ model CommunicationOptOut {
   channel   CommunicationChannel
   value     String
   source    String?
-  createdAt DateTime @default(now())
+  createdAt DateTime             @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -206,26 +207,26 @@ model CommunicationOptOut {
 
 // Services catalog
 model Service {
-  id              String        @id @default(cuid())
+  id              String   @id @default(cuid())
   name            String
   description     String?
-  durationMinutes Int           @default(60)
-  price           Decimal?  @db.Decimal(10, 2)
+  durationMinutes Int      @default(60)
+  price           Decimal? @db.Decimal(10, 2)
   tenantId        String
   // Availability settings
-  bufferMinutes   Int           @default(0)      // Buffer time after appointment
-  maxPerDay       Int?                            // Max appointments per day (null = unlimited)
-  leadTimeHours   Int           @default(24)     // Minimum hours before appointment can be booked
-  isActive        Boolean       @default(true)   // Whether service accepts bookings
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  bufferMinutes   Int      @default(0) // Buffer time after appointment
+  maxPerDay       Int? // Max appointments per day (null = unlimited)
+  leadTimeHours   Int      @default(24) // Minimum hours before appointment can be booked
+  isActive        Boolean  @default(true) // Whether service accepts bookings
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-  availability ServiceAvailability[]
-  waitlistEntries Waitlist[]
-  serviceInterval ServiceInterval?
+  tenant           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments     Appointment[]
+  availability     ServiceAvailability[]
+  waitlistEntries  Waitlist[]
+  serviceInterval  ServiceInterval?
   technicianSkills TechnicianSkill[]
 
   @@index([tenantId])
@@ -234,14 +235,14 @@ model Service {
 
 // Service-specific availability windows
 model ServiceAvailability {
-  id         String   @id @default(cuid())
-  serviceId  String
-  dayOfWeek  Int      // 0 = Sunday, 6 = Saturday
-  startTime  String   // Format: "HH:mm" (e.g., "09:00")
-  endTime    String   // Format: "HH:mm" (e.g., "17:00")
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  serviceId String
+  dayOfWeek Int // 0 = Sunday, 6 = Saturday
+  startTime String // Format: "HH:mm" (e.g., "09:00")
+  endTime   String // Format: "HH:mm" (e.g., "17:00")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
@@ -253,29 +254,29 @@ model ServiceAvailability {
 
 // Appointments for services
 model Appointment {
-  id                String            @id @default(cuid())
-  customerId        String
-  serviceId         String?
-  assignedTo        String?
-  scheduledAt       DateTime
-  duration          Int               @default(60)
-  status            AppointmentStatus @default(SCHEDULED)
-  notes             String?
-  tenantId          String
-  confirmationCode  String?           @unique
-  manageToken       String?           @unique  // Token for customer to manage their booking
-  confirmedAt       DateTime?
-  cancelledAt       DateTime?
-  cancelReason      String?
-  googleCalendarEventId String?       // Google Calendar event ID for sync
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id                    String            @id @default(cuid())
+  customerId            String
+  serviceId             String?
+  assignedTo            String?
+  scheduledAt           DateTime
+  duration              Int               @default(60)
+  status                AppointmentStatus @default(SCHEDULED)
+  notes                 String?
+  tenantId              String
+  confirmationCode      String?           @unique
+  manageToken           String?           @unique // Token for customer to manage their booking
+  confirmedAt           DateTime?
+  cancelledAt           DateTime?
+  cancelReason          String?
+  googleCalendarEventId String? // Google Calendar event ID for sync
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   // Relations
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  service      Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  assignedUser User?    @relation(fields: [assignedTo], references: [id], onDelete: SetNull)
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  service      Service?              @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  assignedUser User?                 @relation(fields: [assignedTo], references: [id], onDelete: SetNull)
   job          Job?
   reminders    AppointmentReminder[]
 
@@ -298,15 +299,15 @@ enum AppointmentStatus {
 }
 
 model AppointmentReminder {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   tenantId      String
   appointmentId String
-  step          Int      // 1=48h email, 2=24h SMS, 3=2h SMS
-  channel       String   // SMS, EMAIL
+  step          Int // 1=48h email, 2=24h SMS, 3=2h SMS
+  channel       String // SMS, EMAIL
   scheduledAt   DateTime
   sentAt        DateTime?
-  status        String   @default("PENDING") // PENDING, SENT, CANCELLED
-  createdAt     DateTime @default(now())
+  status        String    @default("PENDING") // PENDING, SENT, CANCELLED
+  createdAt     DateTime  @default(now())
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
@@ -323,8 +324,8 @@ model Waitlist {
   customerId     String
   serviceId      String?
   preferredDate  DateTime?
-  preferredStart String?   // "HH:mm"
-  preferredEnd   String?   // "HH:mm"
+  preferredStart String? // "HH:mm"
+  preferredEnd   String? // "HH:mm"
   status         String    @default("WAITING") // WAITING, OFFERED, BOOKED, EXPIRED, CANCELLED
   notifiedAt     DateTime?
   expiresAt      DateTime
@@ -346,7 +347,7 @@ model Quote {
   id          String      @id @default(cuid())
   quoteNumber String      @unique
   description String
-  amount      Decimal   @db.Decimal(10, 2)
+  amount      Decimal     @db.Decimal(10, 2)
   validUntil  DateTime
   status      QuoteStatus @default(DRAFT)
   customerId  String
@@ -359,9 +360,9 @@ model Quote {
   convertedAt DateTime?
 
   // Relations
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  items    QuoteItem[]
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer  Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items     QuoteItem[]
   followUps QuoteFollowUp[]
 
   @@index([tenantId])
@@ -395,15 +396,15 @@ model QuoteItem {
 }
 
 model QuoteFollowUp {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   tenantId    String
   quoteId     String
   step        Int
-  channel     String   // SMS or EMAIL
+  channel     String // SMS or EMAIL
   scheduledAt DateTime
   sentAt      DateTime?
-  status      String   @default("PENDING") // PENDING, SENT, CANCELLED
-  createdAt   DateTime @default(now())
+  status      String    @default("PENDING") // PENDING, SENT, CANCELLED
+  createdAt   DateTime  @default(now())
 
   quote  Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -416,30 +417,30 @@ model QuoteFollowUp {
 
 // Invoices
 model Invoice {
-  id            String        @id @default(cuid())
-  invoiceNumber String        @unique
-  description   String
-  amount        Decimal       @db.Decimal(10, 2)
-  paidAmount    Decimal       @default(0) @db.Decimal(10, 2)
-  status        InvoiceStatus @default(DRAFT)
-  dueDate       DateTime
-  paidAt        DateTime?
-  sentAt        DateTime?
-  customerId    String
-  quoteId       String?
-  tenantId      String
+  id                    String        @id @default(cuid())
+  invoiceNumber         String        @unique
+  description           String
+  amount                Decimal       @db.Decimal(10, 2)
+  paidAmount            Decimal       @default(0) @db.Decimal(10, 2)
+  status                InvoiceStatus @default(DRAFT)
+  dueDate               DateTime
+  paidAt                DateTime?
+  sentAt                DateTime?
+  customerId            String
+  quoteId               String?
+  tenantId              String
   stripePaymentIntentId String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
-  depositAmount     Decimal?      @db.Decimal(10, 2)
-  lateFeeApplied    Boolean       @default(false)
-  lateFeeAmount     Decimal?      @db.Decimal(10, 2)
+  depositAmount  Decimal? @db.Decimal(10, 2)
+  lateFeeApplied Boolean  @default(false)
+  lateFeeAmount  Decimal? @db.Decimal(10, 2)
 
   // Relations
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  items    InvoiceItem[]
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer  Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items     InvoiceItem[]
   reminders PaymentReminder[]
 
   @@index([tenantId])
@@ -474,15 +475,15 @@ model InvoiceItem {
 }
 
 model PaymentReminder {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   tenantId    String
   invoiceId   String
   step        Int
-  channel     String   // SMS, EMAIL, BOTH
+  channel     String // SMS, EMAIL, BOTH
   scheduledAt DateTime
   sentAt      DateTime?
-  status      String   @default("PENDING") // PENDING, SENT, CANCELLED
-  createdAt   DateTime @default(now())
+  status      String    @default("PENDING") // PENDING, SENT, CANCELLED
+  createdAt   DateTime  @default(now())
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -495,24 +496,24 @@ model PaymentReminder {
 
 // Technician regular availability schedule
 model TechnicianAvailability {
-  id         String   @id @default(cuid())
-  tenantId   String
-  userId     String
-  dayOfWeek  Int      // 0 = Sunday, 6 = Saturday
-  startTime  String   // Format: "HH:mm" (e.g., "09:00")
-  endTime    String   // Format: "HH:mm" (e.g., "17:00")
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  dayOfWeek Int // 0 = Sunday, 6 = Saturday
+  startTime String // Format: "HH:mm" (e.g., "09:00")
+  endTime   String // Format: "HH:mm" (e.g., "17:00")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, userId, dayOfWeek])
   @@index([tenantId])
   @@index([userId])
   @@index([dayOfWeek])
-  @@unique([tenantId, userId, dayOfWeek])
   @@map("technician_availability")
 }
 
@@ -539,18 +540,18 @@ model TimeOff {
 
 // Voice AI call logs
 model CallLog {
-  id          String         @id @default(cuid())
+  id          String        @id @default(cuid())
   tenantId    String
-  vapiCallId  String         @unique
+  vapiCallId  String        @unique
   callerPhone String
-  direction   CallDirection  @default(INBOUND)
-  status      CallStatus     @default(QUEUED)
-  duration    Int?           // Duration in seconds
-  transcript  String?        @db.Text
+  direction   CallDirection @default(INBOUND)
+  status      CallStatus    @default(QUEUED)
+  duration    Int? // Duration in seconds
+  transcript  String?       @db.Text
   summary     String?
-  metadata    Json?          // Store additional call data
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  metadata    Json? // Store additional call data
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   // Relations
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -583,7 +584,7 @@ model CalendarIntegration {
   accessToken  String   @db.Text
   refreshToken String   @db.Text
   expiresAt    DateTime
-  calendarId   String?  // Primary calendar ID to sync to
+  calendarId   String? // Primary calendar ID to sync to
   syncEnabled  Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -601,18 +602,18 @@ model Job {
   startedAt     DateTime?
   completedAt   DateTime?
   notes         String?   @db.Text
-  workSummary   String?   @db.Text  // Summary of work performed
-  materialsUsed String?   @db.Text  // Materials/parts used
+  workSummary   String?   @db.Text // Summary of work performed
+  materialsUsed String?   @db.Text // Materials/parts used
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  technician  User?      @relation(fields: [technicianId], references: [id], onDelete: SetNull)
-  photos      JobPhoto[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment   Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  technician    User?          @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  photos        JobPhoto[]
   reviewRequest ReviewRequest?
-  npsSurvey   NpsSurvey?
+  npsSurvey     NpsSurvey?
 
   @@index([tenantId])
   @@index([appointmentId])
@@ -632,17 +633,17 @@ enum JobStatus {
 
 // Photos attached to jobs
 model JobPhoto {
-  id          String        @id @default(cuid())
-  jobId       String
-  url         String        // S3 or storage URL
-  key         String        // Storage key for deletion
-  filename    String
-  mimeType    String
-  size        Int           // File size in bytes
-  type        JobPhotoType  @default(DURING)
-  caption     String?
-  uploadedBy  String?       // User ID who uploaded
-  createdAt   DateTime      @default(now())
+  id         String       @id @default(cuid())
+  jobId      String
+  url        String // S3 or storage URL
+  key        String // Storage key for deletion
+  filename   String
+  mimeType   String
+  size       Int // File size in bytes
+  type       JobPhotoType @default(DURING)
+  caption    String?
+  uploadedBy String? // User ID who uploaded
+  createdAt  DateTime     @default(now())
 
   // Relations
   job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
@@ -659,20 +660,20 @@ enum JobPhotoType {
 
 // SMS Broadcast messages
 model SmsBroadcast {
-  id          String              @id @default(cuid())
-  tenantId    String
-  message     String              @db.Text
-  sentBy      String              // User ID who sent
+  id             String          @id @default(cuid())
+  tenantId       String
+  message        String          @db.Text
+  sentBy         String // User ID who sent
   recipientCount Int
-  successCount   Int              @default(0)
-  failureCount   Int              @default(0)
-  status      BroadcastStatus     @default(PENDING)
-  targetRoles UserRole[]          // Which roles to send to (empty = all)
-  createdAt   DateTime            @default(now())
-  completedAt DateTime?
+  successCount   Int             @default(0)
+  failureCount   Int             @default(0)
+  status         BroadcastStatus @default(PENDING)
+  targetRoles    UserRole[] // Which roles to send to (empty = all)
+  createdAt      DateTime        @default(now())
+  completedAt    DateTime?
 
   // Relations
-  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   recipients SmsBroadcastRecipient[]
 
   @@index([tenantId])
@@ -681,11 +682,11 @@ model SmsBroadcast {
 }
 
 model SmsBroadcastRecipient {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   broadcastId String
   userId      String
   phone       String
-  status      String   @default("pending") // pending, sent, failed
+  status      String    @default("pending") // pending, sent, failed
   error       String?
   sentAt      DateTime?
 
@@ -705,48 +706,49 @@ enum BroadcastStatus {
 
 // Tenant Settings
 model TenantSettings {
-  id                String   @id @default(cuid())
-  tenantId          String   @unique
-  businessHours     Json?    // { monday: { start: "09:00", end: "17:00" }, ... }
-  timezone          String   @default("America/New_York")
-  appointmentReminders Boolean @default(true)
-  reminderHoursBefore Int     @default(24)
-  autoConfirmBookings Boolean @default(false)
-  reviewRequestEnabled Boolean @default(true)
-  reviewRequestDelay  Int     @default(24) // Hours after job completion
-  quoteFollowUpEnabled Boolean @default(true)
-  depositRequired      Boolean @default(false)
-  depositPercentage    Int     @default(50)
-  lateFeeEnabled       Boolean @default(false)
-  lateFeePercentage    Int     @default(5)
-  paymentReminderEnabled Boolean @default(true)
-  retentionEnabled       Boolean @default(true)
-  retentionDormantDays   Int     @default(90)
-  googleReviewUrl     String?
-  yelpReviewUrl       String?
-  facebookReviewUrl   String?
-  reviewTimingHours   Int     @default(3)   // Hours after NPS to send review request
-  reviewMaxPerDay     Int     @default(2)   // Max NPS-gated review requests per day
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                     String   @id @default(cuid())
+  tenantId               String   @unique
+  businessHours          Json? // { monday: { start: "09:00", end: "17:00" }, ... }
+  timezone               String   @default("America/New_York")
+  appointmentReminders   Boolean  @default(true)
+  reminderHoursBefore    Int      @default(24)
+  autoConfirmBookings    Boolean  @default(false)
+  reviewRequestEnabled   Boolean  @default(true)
+  reviewRequestDelay     Int      @default(24) // Hours after job completion
+  quoteFollowUpEnabled   Boolean  @default(true)
+  depositRequired        Boolean  @default(false)
+  depositPercentage      Int      @default(50)
+  lateFeeEnabled         Boolean  @default(false)
+  lateFeePercentage      Int      @default(5)
+  paymentReminderEnabled Boolean  @default(true)
+  retentionEnabled       Boolean  @default(true)
+  retentionDormantDays   Int      @default(90)
+  googleReviewUrl        String?
+  yelpReviewUrl          String?
+  facebookReviewUrl      String?
+  reviewTimingHours      Int      @default(3) // Hours after NPS to send review request
+  reviewMaxPerDay        Int      @default(2) // Max NPS-gated review requests per day
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@map("tenant_settings")
 }
 
 // Review Requests
 model ReviewRequest {
-  id          String   @id @default(cuid())
-  tenantId    String
-  jobId       String   @unique
-  customerId  String
-  status      ReviewRequestStatus @default(PENDING)
-  sentAt      DateTime?
-  clickedAt   DateTime?
-  platform    String?  // "google", "yelp", or "facebook"
-  npsScore    Int?
-  npsGated    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id         String              @id @default(cuid())
+  tenantId   String
+  jobId      String              @unique
+  customerId String
+  status     ReviewRequestStatus @default(PENDING)
+  sentAt     DateTime?
+  clickedAt  DateTime?
+  platform   String? // "google", "yelp", or "facebook"
+  npsScore   Int?
+  npsGated   Boolean             @default(false)
+  createdAt  DateTime            @default(now())
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   job      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
@@ -770,18 +772,18 @@ enum ReviewRequestStatus {
 
 // Customer context for AI personalization
 model CustomerContext {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   tenantId        String
-  customerId      String   @unique
+  customerId      String    @unique
   lastServiceType String?
-  preferredTime   String?  // e.g., "morning", "afternoon", "evening"
-  totalVisits     Int      @default(0)
-  totalSpent      Decimal  @default(0) @db.Decimal(10, 2)
-  aiSummary       String?  @db.Text  // AI-generated summary of customer history
-  preferences     Json?    // Additional preferences (e.g., specific technician, communication style)
+  preferredTime   String? // e.g., "morning", "afternoon", "evening"
+  totalVisits     Int       @default(0)
+  totalSpent      Decimal   @default(0) @db.Decimal(10, 2)
+  aiSummary       String?   @db.Text // AI-generated summary of customer history
+  preferences     Json? // Additional preferences (e.g., specific technician, communication style)
   lastInteraction DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -793,38 +795,38 @@ model CustomerContext {
 
 // Unified customer risk profile for AI insights
 model CustomerRiskProfile {
-  id                String    @id @default(cuid())
-  tenantId          String
-  customerId        String    @unique
+  id         String @id @default(cuid())
+  tenantId   String
+  customerId String @unique
 
   // Individual risk scores (0-100 scale)
-  noShowRisk        Float     @default(0)   // Probability of no-showing (0-100)
-  paymentRisk       Float     @default(0)   // Risk of late/non-payment (0-100)
-  churnRisk         Float     @default(0)   // Probability of churning (0-100)
+  noShowRisk  Float @default(0) // Probability of no-showing (0-100)
+  paymentRisk Float @default(0) // Risk of late/non-payment (0-100)
+  churnRisk   Float @default(0) // Probability of churning (0-100)
 
   // Composite score
-  overallRisk       Float     @default(0)   // Weighted average (0-100)
-  riskLevel         RiskLevel @default(LOW) // LOW, MEDIUM, HIGH, CRITICAL
+  overallRisk Float     @default(0) // Weighted average (0-100)
+  riskLevel   RiskLevel @default(LOW) // LOW, MEDIUM, HIGH, CRITICAL
 
   // Risk factors
-  noShowFactors     Json?     // { noShowCount, daysSinceLastNoShow, appointmentHistory }
-  paymentFactors    Json?     // { avgDaysLate, overdueCount, totalOwed }
-  churnFactors      Json?     // { daysSinceLastVisit, visitFrequencyTrend, engagementScore }
+  noShowFactors  Json? // { noShowCount, daysSinceLastNoShow, appointmentHistory }
+  paymentFactors Json? // { avgDaysLate, overdueCount, totalOwed }
+  churnFactors   Json? // { daysSinceLastVisit, visitFrequencyTrend, engagementScore }
 
   // AI insights
-  aiRiskSummary     String?   @db.Text  // AI-generated risk summary
-  recommendedAction String?   // Suggested next action
-  actionPriority    Int       @default(0) // Priority for outreach (0 = lowest)
+  aiRiskSummary     String? @db.Text // AI-generated risk summary
+  recommendedAction String? // Suggested next action
+  actionPriority    Int     @default(0) // Priority for outreach (0 = lowest)
 
   // Historical tracking
-  lastCalculatedAt  DateTime  @default(now())
-  riskHistory       Json?     // Array of { date, noShowRisk, paymentRisk, churnRisk, overallRisk }
+  lastCalculatedAt DateTime @default(now())
+  riskHistory      Json? // Array of { date, noShowRisk, paymentRisk, churnRisk, overallRisk }
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  customer          Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([customerId])
@@ -842,21 +844,21 @@ enum RiskLevel {
 
 // Outbound campaign management
 model OutboundCampaign {
-  id           String               @id @default(cuid())
+  id           String                 @id @default(cuid())
   tenantId     String
   name         String
   type         OutboundCampaignType
   status       OutboundCampaignStatus @default(DRAFT)
   scheduledFor DateTime?
   completedAt  DateTime?
-  targetCount  Int                  @default(0)
-  successCount Int                  @default(0)
-  failureCount Int                  @default(0)
-  template     String?              @db.Text  // Message/call script template
-  metadata     Json?                // Campaign-specific settings
+  targetCount  Int                    @default(0)
+  successCount Int                    @default(0)
+  failureCount Int                    @default(0)
+  template     String?                @db.Text // Message/call script template
+  metadata     Json? // Campaign-specific settings
   createdBy    String?
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
 
   // Relations
   calls OutboundCall[]
@@ -868,11 +870,11 @@ model OutboundCampaign {
 }
 
 enum OutboundCampaignType {
-  APPOINTMENT_REMINDER  // Remind about upcoming appointments
-  FOLLOW_UP_SURVEY      // Post-job satisfaction survey
-  PAYMENT_REMINDER      // Payment due reminders
-  MAINTENANCE_REMINDER  // Scheduled maintenance reminders
-  PROMOTIONAL           // Promotional campaigns
+  APPOINTMENT_REMINDER // Remind about upcoming appointments
+  FOLLOW_UP_SURVEY // Post-job satisfaction survey
+  PAYMENT_REMINDER // Payment due reminders
+  MAINTENANCE_REMINDER // Scheduled maintenance reminders
+  PROMOTIONAL // Promotional campaigns
 }
 
 enum OutboundCampaignStatus {
@@ -886,20 +888,20 @@ enum OutboundCampaignStatus {
 
 // Individual outbound calls within a campaign
 model OutboundCall {
-  id           String             @id @default(cuid())
-  campaignId   String
-  customerId   String
+  id            String             @id @default(cuid())
+  campaignId    String
+  customerId    String
   customerPhone String
-  status       OutboundCallStatus @default(PENDING)
-  scheduledFor DateTime?
-  attemptCount Int                @default(0)
+  status        OutboundCallStatus @default(PENDING)
+  scheduledFor  DateTime?
+  attemptCount  Int                @default(0)
   lastAttemptAt DateTime?
-  completedAt  DateTime?
-  vapiCallId   String?            // Link to Vapi call if initiated
-  outcome      String?            // Call outcome (answered, voicemail, no_answer, etc.)
-  notes        String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  completedAt   DateTime?
+  vapiCallId    String? // Link to Vapi call if initiated
+  outcome       String? // Call outcome (answered, voicemail, no_answer, etc.)
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   // Relations
   campaign OutboundCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -922,29 +924,29 @@ enum OutboundCallStatus {
 
 // Photo-based quote requests with AI analysis
 model PhotoQuoteRequest {
-  id                String              @id @default(cuid())
+  id                String           @id @default(cuid())
   tenantId          String
   customerId        String?
   customerPhone     String?
   customerEmail     String?
-  photoUrl          String              // S3/storage URL of uploaded photo
-  photoKey          String?             // Storage key for deletion
-  aiAnalysis        Json?               // Full AI analysis response
-  issueDescription  String?             // AI-identified issue description
-  suggestedService  String?             // Recommended service type
-  estimatedPriceMin Decimal?             @db.Decimal(10, 2) // Lower bound estimate
-  estimatedPriceMax Decimal?             @db.Decimal(10, 2) // Upper bound estimate
-  confidence        Float?              // AI confidence score (0-1)
-  complexity        PhotoComplexity     @default(MEDIUM)
-  status            PhotoQuoteStatus    @default(PENDING)
-  customerNotes     String?             // Customer's description of the issue
-  staffNotes        String?             // Staff follow-up notes
-  convertedToQuote  String?             // Quote ID if converted
+  photoUrl          String // S3/storage URL of uploaded photo
+  photoKey          String? // Storage key for deletion
+  aiAnalysis        Json? // Full AI analysis response
+  issueDescription  String? // AI-identified issue description
+  suggestedService  String? // Recommended service type
+  estimatedPriceMin Decimal?         @db.Decimal(10, 2) // Lower bound estimate
+  estimatedPriceMax Decimal?         @db.Decimal(10, 2) // Upper bound estimate
+  confidence        Float? // AI confidence score (0-1)
+  complexity        PhotoComplexity  @default(MEDIUM)
+  status            PhotoQuoteStatus @default(PENDING)
+  customerNotes     String? // Customer's description of the issue
+  staffNotes        String? // Staff follow-up notes
+  convertedToQuote  String? // Quote ID if converted
   expiresAt         DateTime
   viewedAt          DateTime?
   respondedAt       DateTime?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@index([tenantId])
   @@index([customerId])
@@ -954,19 +956,19 @@ model PhotoQuoteRequest {
 }
 
 enum PhotoQuoteStatus {
-  PENDING       // Uploaded, waiting for AI analysis
-  ANALYZING     // AI analysis in progress
-  READY         // Analysis complete, awaiting customer response
-  ACCEPTED      // Customer accepted the estimate
-  REJECTED      // Customer declined
-  CONVERTED     // Converted to formal quote
-  EXPIRED       // Request expired
+  PENDING // Uploaded, waiting for AI analysis
+  ANALYZING // AI analysis in progress
+  READY // Analysis complete, awaiting customer response
+  ACCEPTED // Customer accepted the estimate
+  REJECTED // Customer declined
+  CONVERTED // Converted to formal quote
+  EXPIRED // Request expired
 }
 
 enum PhotoComplexity {
-  SIMPLE        // Minor repair, quick fix
-  MEDIUM        // Standard job
-  COMPLEX       // Major repair, multiple issues
+  SIMPLE // Minor repair, quick fix
+  MEDIUM // Standard job
+  COMPLEX // Major repair, multiple issues
   REQUIRES_INSPECTION // Cannot estimate from photo alone
 }
 
@@ -976,19 +978,19 @@ enum PhotoComplexity {
 
 // Customer scheduling preferences (learned from behavior)
 model CustomerPreference {
-  id                 String   @id @default(cuid())
-  customerId         String   @unique
-  tenantId           String
-  preferredDays      Int[]    // 0=Sunday, 6=Saturday
-  preferredTimeStart String?  // e.g., "09:00"
-  preferredTimeEnd   String?  // e.g., "12:00"
+  id                  String   @id @default(cuid())
+  customerId          String   @unique
+  tenantId            String
+  preferredDays       Int[] // 0=Sunday, 6=Saturday
+  preferredTimeStart  String? // e.g., "09:00"
+  preferredTimeEnd    String? // e.g., "12:00"
   preferredTechnician String? // Preferred technician ID
-  avoidDays          Int[]    // Days to avoid
-  learningConfidence Float    @default(0)  // 0-1, increases with more data points
-  dataPoints         Int      @default(0)  // Number of appointments used for learning
-  lastUpdated        DateTime @default(now())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  avoidDays           Int[] // Days to avoid
+  learningConfidence  Float    @default(0) // 0-1, increases with more data points
+  dataPoints          Int      @default(0) // Number of appointments used for learning
+  lastUpdated         DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
@@ -999,16 +1001,16 @@ model CustomerPreference {
 
 // Real-time technician location tracking
 model TechnicianLocation {
-  id         String   @id @default(cuid())
+  id         String                   @id @default(cuid())
   userId     String
   tenantId   String
   latitude   Float
   longitude  Float
-  accuracy   Float?   // GPS accuracy in meters
-  heading    Float?   // Direction in degrees
-  speed      Float?   // Speed in m/s
+  accuracy   Float? // GPS accuracy in meters
+  heading    Float? // Direction in degrees
+  speed      Float? // Speed in m/s
   status     TechnicianLocationStatus @default(IDLE)
-  recordedAt DateTime @default(now())
+  recordedAt DateTime                 @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1019,29 +1021,29 @@ model TechnicianLocation {
 }
 
 enum TechnicianLocationStatus {
-  IDLE        // Not on a job
-  EN_ROUTE    // Traveling to customer
-  ON_SITE     // At customer location
-  BREAK       // On break
-  OFFLINE     // Not tracking
+  IDLE // Not on a job
+  EN_ROUTE // Traveling to customer
+  ON_SITE // At customer location
+  BREAK // On break
+  OFFLINE // Not tracking
 }
 
 // Customer address with geocoded coordinates
 model CustomerLocation {
-  id          String   @id @default(cuid())
-  customerId  String   @unique
-  tenantId    String
-  address     String
-  city        String?
-  state       String?
-  zipCode     String?
-  country     String   @default("US")
-  latitude    Float?
-  longitude   Float?
-  geocoded    Boolean  @default(false)
-  geocodedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(cuid())
+  customerId String    @unique
+  tenantId   String
+  address    String
+  city       String?
+  state      String?
+  zipCode    String?
+  country    String    @default("US")
+  latitude   Float?
+  longitude  Float?
+  geocoded   Boolean   @default(false)
+  geocodedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
@@ -1052,18 +1054,18 @@ model CustomerLocation {
 
 // Optimized route for a technician's day
 model OptimizedRoute {
-  id              String   @id @default(cuid())
-  tenantId        String
-  technicianId    String
-  date            DateTime @db.Date
-  totalDistance   Float?   // Total distance in km
-  totalDuration   Int?     // Total duration in minutes
-  stops           Json     // Array of stop objects with order
-  optimizedAt     DateTime @default(now())
-  appliedAt       DateTime?
-  status          RouteStatus @default(PENDING)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String      @id @default(cuid())
+  tenantId      String
+  technicianId  String
+  date          DateTime    @db.Date
+  totalDistance Float? // Total distance in km
+  totalDuration Int? // Total duration in minutes
+  stops         Json // Array of stop objects with order
+  optimizedAt   DateTime    @default(now())
+  appliedAt     DateTime?
+  status        RouteStatus @default(PENDING)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@unique([tenantId, technicianId, date])
   @@index([tenantId])
@@ -1073,11 +1075,11 @@ model OptimizedRoute {
 }
 
 enum RouteStatus {
-  PENDING     // Generated but not applied
-  APPLIED     // Technician accepted route
+  PENDING // Generated but not applied
+  APPLIED // Technician accepted route
   IN_PROGRESS // Route being executed
-  COMPLETED   // All stops completed
-  MODIFIED    // Manual changes made
+  COMPLETED // All stops completed
+  MODIFIED // Manual changes made
 }
 
 // ============================================
@@ -1086,23 +1088,23 @@ enum RouteStatus {
 
 // Customer authentication (separate from staff/Clerk auth)
 model CustomerAuth {
-  id               String   @id @default(cuid())
-  customerId       String   @unique
+  id               String    @id @default(cuid())
+  customerId       String    @unique
   tenantId         String
   email            String?
   phone            String
   verificationCode String?
   codeExpiry       DateTime?
-  magicLinkToken   String?  @unique
+  magicLinkToken   String?   @unique
   magicLinkExpiry  DateTime?
-  isVerified       Boolean  @default(false)
+  isVerified       Boolean   @default(false)
   lastLoginAt      DateTime?
-  failedAttempts   Int      @default(0)
+  failedAttempts   Int       @default(0)
   lockedUntil      DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
   sessions CustomerSession[]
 
   @@index([tenantId])
@@ -1115,14 +1117,14 @@ model CustomerAuth {
 
 // Customer portal sessions
 model CustomerSession {
-  id           String   @id @default(cuid())
-  customerId   String
+  id             String   @id @default(cuid())
+  customerId     String
   customerAuthId String
-  token        String   @unique
-  userAgent    String?
-  ipAddress    String?
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
+  token          String   @unique
+  userAgent      String?
+  ipAddress      String?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
 
   customerAuth CustomerAuth @relation(fields: [customerAuthId], references: [id], onDelete: Cascade)
 
@@ -1133,19 +1135,19 @@ model CustomerSession {
 
 // NPS Survey responses
 model NpsSurvey {
-  id            String   @id @default(cuid())
-  tenantId      String
-  jobId         String   @unique
-  customerId    String
-  score         Int?     // 1-10 NPS score
-  feedback      String?  @db.Text
-  sentAt        DateTime?
-  respondedAt   DateTime?
-  reviewClicked Boolean  @default(false)
-  reviewPlatform String?  // "google", "yelp", etc.
-  status        NpsSurveyStatus @default(PENDING)
-  token         String   @unique
-  createdAt     DateTime @default(now())
+  id             String          @id @default(cuid())
+  tenantId       String
+  jobId          String          @unique
+  customerId     String
+  score          Int? // 1-10 NPS score
+  feedback       String?         @db.Text
+  sentAt         DateTime?
+  respondedAt    DateTime?
+  reviewClicked  Boolean         @default(false)
+  reviewPlatform String? // "google", "yelp", etc.
+  status         NpsSurveyStatus @default(PENDING)
+  token          String          @unique
+  createdAt      DateTime        @default(now())
 
   job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
@@ -1157,12 +1159,12 @@ model NpsSurvey {
 }
 
 enum NpsSurveyStatus {
-  PENDING     // Not yet sent
-  SENT        // Survey sent to customer
-  RESPONDED   // Customer submitted score
+  PENDING // Not yet sent
+  SENT // Survey sent to customer
+  RESPONDED // Customer submitted score
   REVIEW_PROMPTED // Prompted for public review
-  REVIEW_CLICKED  // Customer clicked review link
-  EXPIRED     // Survey expired without response
+  REVIEW_CLICKED // Customer clicked review link
+  EXPIRED // Survey expired without response
 }
 
 // ============================================
@@ -1173,10 +1175,10 @@ enum NpsSurveyStatus {
 
 // Customer equipment tracking
 model CustomerEquipment {
-  id              String              @id @default(cuid())
+  id              String             @id @default(cuid())
   tenantId        String
   customerId      String
-  equipmentType   String              // e.g., "HVAC", "Water Heater", "Furnace"
+  equipmentType   String // e.g., "HVAC", "Water Heater", "Furnace"
   brand           String?
   model           String?
   serialNumber    String?
@@ -1184,17 +1186,17 @@ model CustomerEquipment {
   warrantyExpiry  DateTime?
   lastServiceDate DateTime?
   nextServiceDue  DateTime?
-  condition       EquipmentCondition  @default(GOOD)
-  notes           String?             @db.Text
-  metadata        Json?               // Additional equipment-specific data
-  isActive        Boolean             @default(true)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  condition       EquipmentCondition @default(GOOD)
+  notes           String?            @db.Text
+  metadata        Json? // Additional equipment-specific data
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   // Relations
-  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  serviceHistory  EquipmentServiceHistory[]
-  alerts          MaintenanceAlert[]
+  customer       Customer                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceHistory EquipmentServiceHistory[]
+  alerts         MaintenanceAlert[]
 
   @@index([tenantId])
   @@index([customerId])
@@ -1204,29 +1206,29 @@ model CustomerEquipment {
 }
 
 enum EquipmentCondition {
-  EXCELLENT   // Like new
-  GOOD        // Normal wear
-  FAIR        // Needs attention soon
-  POOR        // Requires immediate service
-  CRITICAL    // Non-functional or unsafe
+  EXCELLENT // Like new
+  GOOD // Normal wear
+  FAIR // Needs attention soon
+  POOR // Requires immediate service
+  CRITICAL // Non-functional or unsafe
 }
 
 // Equipment service history
 model EquipmentServiceHistory {
-  id           String   @id @default(cuid())
-  equipmentId  String
-  tenantId     String
-  jobId        String?  // Link to job if service was done through app
-  serviceDate  DateTime
-  serviceType  String   // e.g., "Routine Maintenance", "Repair", "Inspection"
-  description  String?  @db.Text
-  cost         Decimal? @db.Decimal(10, 2)
-  partsReplaced String?  @db.Text
-  technicianId String?
+  id             String              @id @default(cuid())
+  equipmentId    String
+  tenantId       String
+  jobId          String? // Link to job if service was done through app
+  serviceDate    DateTime
+  serviceType    String // e.g., "Routine Maintenance", "Repair", "Inspection"
+  description    String?             @db.Text
+  cost           Decimal?            @db.Decimal(10, 2)
+  partsReplaced  String?             @db.Text
+  technicianId   String?
   technicianName String?
-  condition    EquipmentCondition?  // Condition after service
-  notes        String?  @db.Text
-  createdAt    DateTime @default(now())
+  condition      EquipmentCondition? // Condition after service
+  notes          String?             @db.Text
+  createdAt      DateTime            @default(now())
 
   equipment CustomerEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
 
@@ -1238,24 +1240,24 @@ model EquipmentServiceHistory {
 
 // Maintenance alerts and predictions
 model MaintenanceAlert {
-  id           String              @id @default(cuid())
-  tenantId     String
-  customerId   String
-  equipmentId  String?             // Optional link to specific equipment
-  alertType    MaintenanceAlertType
-  priority     AlertPriority       @default(MEDIUM)
-  title        String
-  description  String              @db.Text
-  reasoning    String?             @db.Text  // AI reasoning for the prediction
-  confidence   Float?              // AI confidence score (0-1)
-  dueDate      DateTime?           // When maintenance should be performed
-  dismissedAt  DateTime?
-  dismissReason String?
-  convertedToCampaign String?      // Campaign ID if converted to outreach
-  status       MaintenanceAlertStatus @default(PENDING)
-  metadata     Json?               // Alert-specific data
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id                  String                 @id @default(cuid())
+  tenantId            String
+  customerId          String
+  equipmentId         String? // Optional link to specific equipment
+  alertType           MaintenanceAlertType
+  priority            AlertPriority          @default(MEDIUM)
+  title               String
+  description         String                 @db.Text
+  reasoning           String?                @db.Text // AI reasoning for the prediction
+  confidence          Float? // AI confidence score (0-1)
+  dueDate             DateTime? // When maintenance should be performed
+  dismissedAt         DateTime?
+  dismissReason       String?
+  convertedToCampaign String? // Campaign ID if converted to outreach
+  status              MaintenanceAlertStatus @default(PENDING)
+  metadata            Json? // Alert-specific data
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
   equipment CustomerEquipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
 
@@ -1269,51 +1271,51 @@ model MaintenanceAlert {
 }
 
 enum MaintenanceAlertType {
-  AGE_BASED           // Equipment reaching end of typical lifespan
-  USAGE_BASED         // Based on usage patterns
-  SEASONAL            // Seasonal maintenance (e.g., HVAC before summer)
-  WARRANTY_EXPIRING   // Warranty about to expire
-  OVERDUE_SERVICE     // Missed scheduled service
-  AI_PREDICTED        // AI-detected potential issue
-  RECALL              // Product recall or safety issue
-  EFFICIENCY          // Efficiency degradation detected
+  AGE_BASED // Equipment reaching end of typical lifespan
+  USAGE_BASED // Based on usage patterns
+  SEASONAL // Seasonal maintenance (e.g., HVAC before summer)
+  WARRANTY_EXPIRING // Warranty about to expire
+  OVERDUE_SERVICE // Missed scheduled service
+  AI_PREDICTED // AI-detected potential issue
+  RECALL // Product recall or safety issue
+  EFFICIENCY // Efficiency degradation detected
 }
 
 enum AlertPriority {
-  LOW       // Informational, can wait
-  MEDIUM    // Should be addressed within weeks
-  HIGH      // Should be addressed soon
-  URGENT    // Requires immediate attention
+  LOW // Informational, can wait
+  MEDIUM // Should be addressed within weeks
+  HIGH // Should be addressed soon
+  URGENT // Requires immediate attention
 }
 
 enum MaintenanceAlertStatus {
-  PENDING     // Alert created, awaiting action
-  NOTIFIED    // Customer has been notified
-  SCHEDULED   // Maintenance appointment scheduled
+  PENDING // Alert created, awaiting action
+  NOTIFIED // Customer has been notified
+  SCHEDULED // Maintenance appointment scheduled
   IN_PROGRESS // Work in progress
-  COMPLETED   // Maintenance completed
-  DISMISSED   // Alert dismissed (not needed)
-  EXPIRED     // Alert expired without action
+  COMPLETED // Maintenance completed
+  DISMISSED // Alert dismissed (not needed)
+  EXPIRED // Alert expired without action
 }
 
 // Sprint 4.2: Dynamic Pricing
 
 // Demand metrics for pricing calculations
 model DemandMetrics {
-  id           String   @id @default(cuid())
-  tenantId     String
-  date         DateTime @db.Date
-  hour         Int?     // 0-23, null for daily aggregate
-  dayOfWeek    Int?     // 0-6, Sunday to Saturday
-  bookingCount Int      @default(0)
-  completedJobs Int     @default(0)
-  cancelledJobs Int     @default(0)
-  capacityUsed Float    @default(0)  // Percentage of available slots used
-  revenue      Decimal  @default(0) @db.Decimal(10, 2)
-  avgJobDuration Int?   // Average job duration in minutes
-  peakHour     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  tenantId       String
+  date           DateTime @db.Date
+  hour           Int? // 0-23, null for daily aggregate
+  dayOfWeek      Int? // 0-6, Sunday to Saturday
+  bookingCount   Int      @default(0)
+  completedJobs  Int      @default(0)
+  cancelledJobs  Int      @default(0)
+  capacityUsed   Float    @default(0) // Percentage of available slots used
+  revenue        Decimal  @default(0) @db.Decimal(10, 2)
+  avgJobDuration Int? // Average job duration in minutes
+  peakHour       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@unique([tenantId, date, hour])
   @@index([tenantId])
@@ -1324,23 +1326,23 @@ model DemandMetrics {
 
 // Pricing rules for dynamic pricing
 model PricingRule {
-  id            String          @id @default(cuid())
-  tenantId      String
-  name          String
-  description   String?
-  ruleType      PricingRuleType
-  conditions    Json            // Rule conditions (time, demand, urgency, etc.)
-  multiplierMin Decimal         @default(1.0) @db.Decimal(5, 2)  // Minimum multiplier
-  multiplierMax Decimal         @default(1.5) @db.Decimal(5, 2)  // Maximum multiplier
-  flatAdjustment Decimal?       @db.Decimal(10, 2) // Flat fee adjustment (optional)
-  priority      Int             @default(0)    // Higher priority rules apply first
-  isActive      Boolean         @default(true)
-  startsAt      DateTime?       // Optional rule validity period
-  endsAt        DateTime?
-  appliedCount  Int             @default(0)    // How many times this rule was applied
-  totalRevenue  Decimal         @default(0) @db.Decimal(10, 2)    // Revenue attributed to this rule
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id             String          @id @default(cuid())
+  tenantId       String
+  name           String
+  description    String?
+  ruleType       PricingRuleType
+  conditions     Json // Rule conditions (time, demand, urgency, etc.)
+  multiplierMin  Decimal         @default(1.0) @db.Decimal(5, 2) // Minimum multiplier
+  multiplierMax  Decimal         @default(1.5) @db.Decimal(5, 2) // Maximum multiplier
+  flatAdjustment Decimal?        @db.Decimal(10, 2) // Flat fee adjustment (optional)
+  priority       Int             @default(0) // Higher priority rules apply first
+  isActive       Boolean         @default(true)
+  startsAt       DateTime? // Optional rule validity period
+  endsAt         DateTime?
+  appliedCount   Int             @default(0) // How many times this rule was applied
+  totalRevenue   Decimal         @default(0) @db.Decimal(10, 2) // Revenue attributed to this rule
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([tenantId])
   @@index([ruleType])
@@ -1350,29 +1352,29 @@ model PricingRule {
 }
 
 enum PricingRuleType {
-  TIME_OF_DAY       // Different prices for morning/afternoon/evening
-  DAY_OF_WEEK       // Weekend vs weekday pricing
-  DEMAND_BASED      // Price increases with demand
-  URGENCY           // Emergency/urgent service premium
-  SEASONAL          // Holiday or seasonal pricing
-  EARLY_BIRD        // Discount for booking in advance
-  LOYALTY           // Customer loyalty discounts
-  PROMOTIONAL       // Promotional pricing campaigns
+  TIME_OF_DAY // Different prices for morning/afternoon/evening
+  DAY_OF_WEEK // Weekend vs weekday pricing
+  DEMAND_BASED // Price increases with demand
+  URGENCY // Emergency/urgent service premium
+  SEASONAL // Holiday or seasonal pricing
+  EARLY_BIRD // Discount for booking in advance
+  LOYALTY // Customer loyalty discounts
+  PROMOTIONAL // Promotional pricing campaigns
 }
 
 // Service pricing configuration
 model ServicePricing {
-  id              String   @id @default(cuid())
-  tenantId        String
-  serviceId       String
-  basePrice       Decimal  @db.Decimal(10, 2)
-  minPrice        Decimal? @db.Decimal(10, 2)   // Floor price
-  maxPrice        Decimal? @db.Decimal(10, 2)   // Ceiling price
-  urgentMultiplier Decimal @default(1.5) @db.Decimal(5, 2)  // Standard urgency multiplier
-  emergencyMultiplier Decimal @default(2.0) @db.Decimal(5, 2) // Emergency multiplier
-  dynamicPricingEnabled Boolean @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  tenantId              String
+  serviceId             String
+  basePrice             Decimal  @db.Decimal(10, 2)
+  minPrice              Decimal? @db.Decimal(10, 2) // Floor price
+  maxPrice              Decimal? @db.Decimal(10, 2) // Ceiling price
+  urgentMultiplier      Decimal  @default(1.5) @db.Decimal(5, 2) // Standard urgency multiplier
+  emergencyMultiplier   Decimal  @default(2.0) @db.Decimal(5, 2) // Emergency multiplier
+  dynamicPricingEnabled Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@unique([tenantId, serviceId])
   @@index([tenantId])
@@ -1382,19 +1384,19 @@ model ServicePricing {
 
 // Price quote history for auditing
 model PriceQuoteHistory {
-  id              String   @id @default(cuid())
-  tenantId        String
-  customerId      String?
-  serviceId       String?
-  basePrice       Decimal  @db.Decimal(10, 2)
-  finalPrice      Decimal  @db.Decimal(10, 2)
-  appliedRules    Json     // Array of rule IDs and their effects
-  urgencyLevel    UrgencyLevel @default(STANDARD)
-  demandFactor    Float    @default(1.0)
-  requestedAt     DateTime
-  scheduledFor    DateTime?
-  converted       Boolean  @default(false)  // Whether this led to a booking
-  createdAt       DateTime @default(now())
+  id           String       @id @default(cuid())
+  tenantId     String
+  customerId   String?
+  serviceId    String?
+  basePrice    Decimal      @db.Decimal(10, 2)
+  finalPrice   Decimal      @db.Decimal(10, 2)
+  appliedRules Json // Array of rule IDs and their effects
+  urgencyLevel UrgencyLevel @default(STANDARD)
+  demandFactor Float        @default(1.0)
+  requestedAt  DateTime
+  scheduledFor DateTime?
+  converted    Boolean      @default(false) // Whether this led to a booking
+  createdAt    DateTime     @default(now())
 
   @@index([tenantId])
   @@index([customerId])
@@ -1404,28 +1406,28 @@ model PriceQuoteHistory {
 }
 
 enum UrgencyLevel {
-  STANDARD      // Normal booking
-  NEXT_DAY      // Next day service
-  SAME_DAY      // Same day service
-  URGENT        // Within hours
-  EMERGENCY     // Immediate response
+  STANDARD // Normal booking
+  NEXT_DAY // Next day service
+  SAME_DAY // Same day service
+  URGENT // Within hours
+  EMERGENCY // Immediate response
 }
 
 // Sprint 4.3: WhatsApp & Unified Messaging
 
 // Customer messaging channels
 model MessageChannel {
-  id         String         @id @default(cuid())
-  tenantId   String
-  customerId String
-  channel    ChannelType
-  channelId  String         // Phone number for SMS/WhatsApp, email for email
-  isActive   Boolean        @default(true)
-  isVerified Boolean        @default(false)
-  verifiedAt DateTime?
-  preferences Json?         // Channel-specific preferences
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id          String      @id @default(cuid())
+  tenantId    String
+  customerId  String
+  channel     ChannelType
+  channelId   String // Phone number for SMS/WhatsApp, email for email
+  isActive    Boolean     @default(true)
+  isVerified  Boolean     @default(false)
+  verifiedAt  DateTime?
+  preferences Json? // Channel-specific preferences
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   @@unique([tenantId, customerId, channel])
   @@index([tenantId])
@@ -1443,28 +1445,28 @@ enum ChannelType {
 
 // Conversation threads
 model ConversationThread {
-  id             String             @id @default(cuid())
-  tenantId       String
-  customerId     String
-  customerName   String?
-  customerPhone  String
-  channel        ChannelType
-  status         ConversationStatus @default(OPEN)
-  priority       ConversationPriority @default(NORMAL)
-  assignedTo     String?            // Staff user ID
-  subject        String?
-  lastMessageAt  DateTime?
+  id                 String               @id @default(cuid())
+  tenantId           String
+  customerId         String
+  customerName       String?
+  customerPhone      String
+  channel            ChannelType
+  status             ConversationStatus   @default(OPEN)
+  priority           ConversationPriority @default(NORMAL)
+  assignedTo         String? // Staff user ID
+  subject            String?
+  lastMessageAt      DateTime?
   lastMessagePreview String?
-  unreadCount    Int               @default(0)
-  tags           String[]
-  metadata       Json?
-  closedAt       DateTime?
-  closedBy       String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  unreadCount        Int                  @default(0)
+  tags               String[]
+  metadata           Json?
+  closedAt           DateTime?
+  closedBy           String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
-  messages Message[]
-  classifications MessageClassification[]
+  messages           Message[]
+  classifications    MessageClassification[]
   suggestedResponses SuggestedResponse[]
 
   @@index([tenantId])
@@ -1476,11 +1478,11 @@ model ConversationThread {
 }
 
 enum ConversationStatus {
-  OPEN          // Active conversation
-  PENDING       // Awaiting response
-  RESOLVED      // Completed/resolved
-  CLOSED        // Closed without resolution
-  SPAM          // Marked as spam
+  OPEN // Active conversation
+  PENDING // Awaiting response
+  RESOLVED // Completed/resolved
+  CLOSED // Closed without resolution
+  SPAM // Marked as spam
 }
 
 enum ConversationPriority {
@@ -1492,28 +1494,28 @@ enum ConversationPriority {
 
 // Individual messages
 model Message {
-  id           String           @id @default(cuid())
-  threadId     String
-  tenantId     String
-  direction    MessageDirection
-  content      String           @db.Text
-  contentType  MessageContentType @default(TEXT)
-  mediaUrl     String?
-  mediaType    String?          // MIME type
-  mediaSize    Int?             // Size in bytes
-  status       MessageStatus    @default(PENDING)
-  sentAt       DateTime?
-  deliveredAt  DateTime?
-  readAt       DateTime?
-  failedAt     DateTime?
+  id            String             @id @default(cuid())
+  threadId      String
+  tenantId      String
+  direction     MessageDirection
+  content       String             @db.Text
+  contentType   MessageContentType @default(TEXT)
+  mediaUrl      String?
+  mediaType     String? // MIME type
+  mediaSize     Int? // Size in bytes
+  status        MessageStatus      @default(PENDING)
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  readAt        DateTime?
+  failedAt      DateTime?
   failureReason String?
-  externalId   String?          // Twilio message SID, WhatsApp ID, etc.
-  senderName   String?
-  senderPhone  String?
-  metadata     Json?
-  createdAt    DateTime         @default(now())
+  externalId    String? // Twilio message SID, WhatsApp ID, etc.
+  senderName    String?
+  senderPhone   String?
+  metadata      Json?
+  createdAt     DateTime           @default(now())
 
-  thread ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  thread             ConversationThread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
   suggestedResponses SuggestedResponse[]
 
   @@index([threadId])
@@ -1525,8 +1527,8 @@ model Message {
 }
 
 enum MessageDirection {
-  INBOUND    // From customer
-  OUTBOUND   // To customer
+  INBOUND // From customer
+  OUTBOUND // To customer
 }
 
 enum MessageContentType {
@@ -1537,40 +1539,40 @@ enum MessageContentType {
   DOCUMENT
   LOCATION
   CONTACT
-  TEMPLATE     // WhatsApp template message
+  TEMPLATE // WhatsApp template message
 }
 
 enum MessageStatus {
-  PENDING      // Not yet sent
-  QUEUED       // In send queue
-  SENT         // Sent to provider
-  DELIVERED    // Delivered to recipient
-  READ         // Read by recipient
-  FAILED       // Failed to send
+  PENDING // Not yet sent
+  QUEUED // In send queue
+  SENT // Sent to provider
+  DELIVERED // Delivered to recipient
+  READ // Read by recipient
+  FAILED // Failed to send
 }
 
 // WhatsApp message templates (required by WhatsApp Business API)
 model WhatsAppTemplate {
-  id            String               @id @default(cuid())
-  tenantId      String
-  name          String               // Template name (alphanumeric + underscore only)
-  language      String               @default("en")
-  category      WhatsAppTemplateCategory
-  status        WhatsAppTemplateStatus @default(DRAFT)
-  headerType    String?              // TEXT, IMAGE, VIDEO, DOCUMENT
-  headerContent String?
-  bodyText      String               @db.Text
-  footerText    String?
-  buttons       Json?                // Array of button configurations
-  exampleValues Json?                // Sample values for template variables
-  whatsappId    String?              // Template ID from WhatsApp
-  submittedAt   DateTime?
-  approvedAt    DateTime?
-  rejectedAt    DateTime?
+  id              String                   @id @default(cuid())
+  tenantId        String
+  name            String // Template name (alphanumeric + underscore only)
+  language        String                   @default("en")
+  category        WhatsAppTemplateCategory
+  status          WhatsAppTemplateStatus   @default(DRAFT)
+  headerType      String? // TEXT, IMAGE, VIDEO, DOCUMENT
+  headerContent   String?
+  bodyText        String                   @db.Text
+  footerText      String?
+  buttons         Json? // Array of button configurations
+  exampleValues   Json? // Sample values for template variables
+  whatsappId      String? // Template ID from WhatsApp
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
   rejectionReason String?
-  usageCount    Int                  @default(0)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  usageCount      Int                      @default(0)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
 
   @@unique([tenantId, name, language])
   @@index([tenantId])
@@ -1580,33 +1582,33 @@ model WhatsAppTemplate {
 }
 
 enum WhatsAppTemplateCategory {
-  MARKETING        // Promotional messages
-  UTILITY          // Transactional messages (confirmations, reminders)
-  AUTHENTICATION   // OTP and verification codes
+  MARKETING // Promotional messages
+  UTILITY // Transactional messages (confirmations, reminders)
+  AUTHENTICATION // OTP and verification codes
 }
 
 enum WhatsAppTemplateStatus {
-  DRAFT            // Not yet submitted
-  PENDING          // Submitted, awaiting approval
-  APPROVED         // Approved for use
-  REJECTED         // Rejected by WhatsApp
-  DISABLED         // Disabled by tenant
+  DRAFT // Not yet submitted
+  PENDING // Submitted, awaiting approval
+  APPROVED // Approved for use
+  REJECTED // Rejected by WhatsApp
+  DISABLED // Disabled by tenant
 }
 
 // Quick reply templates for agents
 model QuickReply {
-  id           String   @id @default(cuid())
-  tenantId     String
-  title        String   // Short title for display
-  content      String   @db.Text
-  category     String?  // Grouping category
-  shortcut     String?  // Keyboard shortcut (e.g., "/greeting")
-  channels     ChannelType[]  // Which channels this can be used on
-  usageCount   Int      @default(0)
-  createdBy    String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         String        @id @default(cuid())
+  tenantId   String
+  title      String // Short title for display
+  content    String        @db.Text
+  category   String? // Grouping category
+  shortcut   String? // Keyboard shortcut (e.g., "/greeting")
+  channels   ChannelType[] // Which channels this can be used on
+  usageCount Int           @default(0)
+  createdBy  String?
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   @@index([tenantId])
   @@index([category])
@@ -1670,9 +1672,9 @@ model RetentionCampaign {
   id           String    @id @default(cuid())
   tenantId     String
   customerId   String
-  type         String    // DORMANT_WINBACK, SEASONAL, MAINTENANCE
+  type         String // DORMANT_WINBACK, SEASONAL, MAINTENANCE
   step         Int
-  channel      String    // SMS, EMAIL, BOTH
+  channel      String // SMS, EMAIL, BOTH
   scheduledAt  DateTime
   sentAt       DateTime?
   status       String    @default("PENDING") // PENDING, SENT, CANCELLED, FAILED
@@ -1767,11 +1769,11 @@ model MessageClassification {
   confidence     Float
   urgencyScore   Int              @default(0) // 0-100
   keywords       String[]
-  suggestedRoute String?          // e.g., "sales", "support", "scheduling"
+  suggestedRoute String? // e.g., "sales", "support", "scheduling"
   processedAt    DateTime         @default(now())
 
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  conversation   ConversationThread @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation ConversationThread @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([conversationId])
@@ -1786,7 +1788,7 @@ model AutoResponderRule {
   id               String            @id @default(cuid())
   tenantId         String
   name             String
-  intent           MessageIntent?    // null = any intent
+  intent           MessageIntent? // null = any intent
   sentiment        MessageSentiment? // null = any sentiment
   minUrgency       Int               @default(0)
   maxUrgency       Int               @default(100)
@@ -1796,7 +1798,7 @@ model AutoResponderRule {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([isActive])
@@ -1817,9 +1819,9 @@ model SuggestedResponse {
   editedText     String?
   createdAt      DateTime @default(now())
 
-  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  conversation  ConversationThread @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  message       Message?           @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation ConversationThread @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      Message?           @relation(fields: [messageId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([conversationId])
@@ -1836,11 +1838,11 @@ model CopilotConversation {
   id        String   @id @default(cuid())
   tenantId  String
   userId    String
-  messages  Json     // Array of {role, content, toolCalls, toolResults}
+  messages  Json // Array of {role, content, toolCalls, toolResults}
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([tenantId, userId])
@@ -1852,12 +1854,12 @@ model WeeklyReport {
   id        String    @id @default(cuid())
   tenantId  String
   weekStart DateTime  @db.Date
-  report    Json      // Structured report: metrics, wins, actions, forecast
+  report    Json // Structured report: metrics, wins, actions, forecast
   sent      Boolean   @default(false)
   sentAt    DateTime?
   createdAt DateTime  @default(now())
 
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, weekStart])
   @@index([tenantId])
@@ -1894,7 +1896,7 @@ model BusinessAnomaly {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([status])
@@ -1940,12 +1942,12 @@ enum ActionType {
 }
 
 enum ActionStatus {
-  PENDING       // Awaiting user approval
-  APPROVED      // Approved, queued for execution
-  EXECUTING     // Currently running
-  COMPLETED     // Done
-  FAILED        // Error occurred
-  CANCELLED     // User cancelled
+  PENDING // Awaiting user approval
+  APPROVED // Approved, queued for execution
+  EXECUTING // Currently running
+  COMPLETED // Done
+  FAILED // Error occurred
+  CANCELLED // User cancelled
 }
 
 enum TaskOwnerType {
@@ -1982,20 +1984,20 @@ model AgentInsight {
   id                String          @id @default(cuid())
   tenantId          String
   agentType         AgentType
-  entityType        String          // "quote", "customer", "appointment", "campaign"
+  entityType        String // "quote", "customer", "appointment", "campaign"
   entityId          String
-  insightType       String          // "follow_up_urgency", "churn_risk", "no_show_risk", etc.
+  insightType       String // "follow_up_urgency", "churn_risk", "no_show_risk", etc.
   title             String
   description       String          @db.Text
-  confidenceScore   Float           // 0.0-1.0
-  impactScore       Float           // 0.0-1.0
+  confidenceScore   Float // 0.0-1.0
+  impactScore       Float // 0.0-1.0
   priority          InsightPriority
   recommendedAction String          @db.Text
-  actionParams      Json?           // Parameters for executing the action
-  actionLabel       String          // Button label e.g., "Call Now", "Send Reminder"
+  actionParams      Json? // Parameters for executing the action
+  actionLabel       String // Button label e.g., "Call Now", "Send Reminder"
   status            InsightStatus   @default(PENDING)
   expiresAt         DateTime?
-  aiReasoning       String?         @db.Text  // AI explanation of the insight
+  aiReasoning       String?         @db.Text // AI explanation of the insight
   approvedAt        DateTime?
   approvedBy        String?
   rejectedAt        DateTime?
@@ -2004,8 +2006,8 @@ model AgentInsight {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  action            AIAction?       // Linked action if approved
+  tenant Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  action AIAction? // Linked action if approved
 
   @@index([tenantId])
   @@index([tenantId, agentType])
@@ -2021,8 +2023,8 @@ model AgentRun {
   id                String    @id @default(cuid())
   tenantId          String
   agentType         AgentType
-  triggeredBy       String    // "schedule", "event", "manual"
-  triggerEvent      String?   // Event name if triggered by event
+  triggeredBy       String // "schedule", "event", "manual"
+  triggerEvent      String? // Event name if triggered by event
   entitiesAnalyzed  Int       @default(0)
   insightsGenerated Int       @default(0)
   status            String    @default("RUNNING") // RUNNING, COMPLETED, FAILED
@@ -2044,68 +2046,68 @@ model AgentRun {
 
 // Per-tenant agent configuration
 model AgentSettings {
-  id                      String          @id @default(cuid())
-  tenantId                String          @unique
+  id       String @id @default(cuid())
+  tenantId String @unique
 
   // Agent enable/disable
-  revenueAgentEnabled     Boolean         @default(true)
-  customerAgentEnabled    Boolean         @default(true)
-  operationsAgentEnabled  Boolean         @default(true)
-  marketingAgentEnabled   Boolean         @default(true)
-  autopilotMode           String          @default("DRAFT")
-  maxDiscountPercent      Float           @default(10)
+  revenueAgentEnabled    Boolean @default(true)
+  customerAgentEnabled   Boolean @default(true)
+  operationsAgentEnabled Boolean @default(true)
+  marketingAgentEnabled  Boolean @default(true)
+  autopilotMode          String  @default("DRAFT")
+  maxDiscountPercent     Float   @default(10)
 
   // Notification settings
-  dashboardNotifications  Boolean         @default(true)
-  pushNotifications       Boolean         @default(true)
-  pushMinPriority         InsightPriority @default(HIGH)
-  emailDigestEnabled      Boolean         @default(true)
-  emailDigestFrequency    String          @default("DAILY") // DAILY, WEEKLY
-  emailDigestRecipients   String[]        // User IDs to receive digests
+  dashboardNotifications Boolean         @default(true)
+  pushNotifications      Boolean         @default(true)
+  pushMinPriority        InsightPriority @default(HIGH)
+  emailDigestEnabled     Boolean         @default(true)
+  emailDigestFrequency   String          @default("DAILY") // DAILY, WEEKLY
+  emailDigestRecipients  String[] // User IDs to receive digests
 
   // Agent schedule configuration
-  revenueAgentSchedule    String          @default("0 8 * * *")  // Daily at 8am
-  customerAgentSchedule   String          @default("0 9 * * *")  // Daily at 9am
-  operationsAgentSchedule String          @default("0 20 * * *") // Nightly at 8pm
-  marketingAgentSchedule  String          @default("0 10 * * 1") // Weekly Monday 10am
+  revenueAgentSchedule    String @default("0 8 * * *") // Daily at 8am
+  customerAgentSchedule   String @default("0 9 * * *") // Daily at 9am
+  operationsAgentSchedule String @default("0 20 * * *") // Nightly at 8pm
+  marketingAgentSchedule  String @default("0 10 * * 1") // Weekly Monday 10am
 
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("agent_settings")
 }
 
 // AI Actions - executable actions from insights, copilot, or suggestions
 model AIAction {
-  id                String        @id @default(cuid())
-  tenantId          String
-  insightId         String?       @unique  // From specialist agent insight
-  copilotSessionId  String?       // From chat copilot
+  id               String  @id @default(cuid())
+  tenantId         String
+  insightId        String? @unique // From specialist agent insight
+  copilotSessionId String? // From chat copilot
 
-  actionType        ActionType
-  title             String
-  description       String        @db.Text
-  params            Json          // Action-specific parameters
+  actionType  ActionType
+  title       String
+  description String     @db.Text
+  params      Json // Action-specific parameters
 
   // Approval & execution
-  requiresApproval  Boolean       @default(true)
-  status            ActionStatus  @default(PENDING)
-  executedAt        DateTime?
-  executedBy        String?
-  result            Json?
-  errorMessage      String?       @db.Text
+  requiresApproval Boolean      @default(true)
+  status           ActionStatus @default(PENDING)
+  executedAt       DateTime?
+  executedBy       String?
+  result           Json?
+  errorMessage     String?      @db.Text
 
   // Impact estimation
-  estimatedImpact   String?       // "Reach 45 customers"
-  riskLevel         String        @default("LOW") // LOW, MEDIUM, HIGH
+  estimatedImpact String? // "Reach 45 customers"
+  riskLevel       String  @default("LOW") // LOW, MEDIUM, HIGH
 
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  expiresAt         DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
 
   // Relations
-  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  insight           AgentInsight? @relation(fields: [insightId], references: [id], onDelete: SetNull)
+  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  insight AgentInsight? @relation(fields: [insightId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -2116,12 +2118,12 @@ model AIAction {
 
 // Ownership and accountability tasks for AI + humans
 model AgentTask {
-  id             String       @id @default(cuid())
-  tenantId       String
-  title          String
-  description    String?      @db.Text
-  status         TaskStatus   @default(PENDING)
-  priority       TaskPriority @default(MEDIUM)
+  id          String       @id @default(cuid())
+  tenantId    String
+  title       String
+  description String?      @db.Text
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
 
   ownerType      TaskOwnerType
   ownerAgentType AgentType?
@@ -2131,21 +2133,21 @@ model AgentTask {
   createdByAgentType AgentType?
   createdByUserId    String?
 
-  dueAt          DateTime?
-  startedAt      DateTime?
-  completedAt    DateTime?
-  blockedReason  String?      @db.Text
+  dueAt         DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  blockedReason String?   @db.Text
 
-  sourceType     TaskSourceType?
-  sourceId       String?
-  metadata       Json?
+  sourceType TaskSourceType?
+  sourceId   String?
+  metadata   Json?
 
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  ownerUser      User?        @relation("AgentTaskOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
-  createdByUser  User?        @relation("AgentTaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ownerUser     User?  @relation("AgentTaskOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  createdByUser User?  @relation("AgentTaskCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -2158,21 +2160,119 @@ model AgentTask {
 
 // Contextual suggestions - cached per-page suggestions
 model ContextualSuggestion {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   tenantId    String
-  context     String    // "marketing_empty", "quote_form", etc.
-  suggestions Json      // Array of suggestion objects
+  context     String // "marketing_empty", "quote_form", etc.
+  suggestions Json // Array of suggestion objects
   validUntil  DateTime
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, context])
   @@index([tenantId])
   @@index([validUntil])
   @@map("contextual_suggestions")
+}
+
+// ============================================
+// Task Ledger - Unified Task Queue
+// ============================================
+
+// Unified task/action queue for Command Center
+// Consolidates AI actions, system tasks, human tasks, and approvals
+model TaskLedgerEntry {
+  id       String @id @default(cuid())
+  tenantId String
+
+  // Classification
+  type     TaskLedgerType
+  category TaskLedgerCategory
+  status   TaskLedgerStatus   @default(PENDING)
+  priority Int                @default(50) // 1-100, higher = more urgent
+
+  // Display
+  title       String
+  description String? @db.Text
+  icon        String? // Icon identifier for UI
+
+  // Entity linking
+  entityType String? // Quote, Invoice, Appointment, Customer, Job
+  entityId   String?
+
+  // Action definition
+  actionType     String? // SEND_REMINDER, APPLY_LATE_FEE, CONFIRM_APPOINTMENT, etc.
+  actionEndpoint String? // API endpoint to execute
+  payload        Json? // Action payload
+
+  // Execution tracking
+  idempotencyKey String @unique
+  traceId        String
+
+  // Scheduling
+  scheduledFor DateTime? // null = immediate
+
+  // Undo capability
+  undoWindowMins Int? // Minutes after execution when undo is allowed
+  undoEndpoint   String? // API endpoint to undo
+  undoPayload    Json?
+  undoneAt       DateTime?
+  undoneBy       String?
+
+  // Execution details
+  executedAt    DateTime?
+  executedBy    String? // userId, 'SYSTEM', or 'AI'
+  failureReason String?   @db.Text
+  result        Json? // Execution result data
+  retryCount    Int       @default(0)
+  maxRetries    Int       @default(3)
+
+  // AI-specific fields
+  aiConfidence Float? // 0-1 confidence score for AI actions
+  aiReasoning  String? @db.Text // Why AI suggested this action
+  aiModel      String? // Model that generated suggestion
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, priority])
+  @@index([tenantId, category, status])
+  @@index([tenantId, type, status])
+  @@index([entityType, entityId])
+  @@index([scheduledFor, status])
+  @@index([traceId])
+  @@index([createdAt])
+  @@map("task_ledger_entries")
+}
+
+enum TaskLedgerType {
+  AI_ACTION // AI-proposed action requiring approval
+  SYSTEM_TASK // Automated task (scheduled, cron-triggered)
+  HUMAN_TASK // Manual task for team member
+  APPROVAL // Item requiring owner approval
+}
+
+enum TaskLedgerCategory {
+  BILLING // Invoices, payments, reminders
+  SCHEDULING // Appointments, confirmations
+  MESSAGING // SMS, email, communications
+  MARKETING // Reviews, win-back, campaigns
+  OPERATIONS // Dispatch, jobs, technicians
+}
+
+enum TaskLedgerStatus {
+  PENDING // Waiting to be processed
+  SCHEDULED // Scheduled for future execution
+  IN_PROGRESS // Currently being executed
+  COMPLETED // Successfully finished
+  FAILED // Failed (may retry)
+  CANCELLED // Manually cancelled
+  UNDONE // Was completed, then undone
 }
 
 // ============================================
@@ -2198,54 +2298,54 @@ enum CampaignStatus {
 
 // Marketing campaigns (SMS, email, drip sequences)
 model MarketingCampaign {
-  id                String         @id @default(cuid())
-  tenantId          String
-  name              String
-  description       String?
-  type              CampaignType
-  status            CampaignStatus @default(DRAFT)
+  id          String         @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  type        CampaignType
+  status      CampaignStatus @default(DRAFT)
 
   // Audience targeting
   audienceSegmentId String?
-  audienceQuery     Json?          // Dynamic segment rules for ad-hoc targeting
+  audienceQuery     Json? // Dynamic segment rules for ad-hoc targeting
 
   // Scheduling
-  scheduledAt       DateTime?
-  startedAt         DateTime?
-  completedAt       DateTime?
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
 
   // A/B Testing
-  isAbTest          Boolean        @default(false)
-  variants          Json?          // { "A": { content: "...", weight: 50 }, "B": { ... } }
-  winningVariant    String?
+  isAbTest       Boolean @default(false)
+  variants       Json? // { "A": { content: "...", weight: 50 }, "B": { ... } }
+  winningVariant String?
 
   // Content (for simple campaigns)
-  channel           String?        // SMS, EMAIL
-  subject           String?        // For email
-  content           String?        @db.Text
-  senderName        String?
+  channel    String? // SMS, EMAIL
+  subject    String? // For email
+  content    String? @db.Text
+  senderName String?
 
   // Metrics
-  totalRecipients   Int            @default(0)
-  sentCount         Int            @default(0)
-  deliveredCount    Int            @default(0)
-  openCount         Int            @default(0)
-  clickCount        Int            @default(0)
-  replyCount        Int            @default(0)
-  unsubscribeCount  Int            @default(0)
-  bounceCount       Int            @default(0)
-  conversionCount   Int            @default(0)
-  revenue           Decimal        @default(0) @db.Decimal(10, 2)
+  totalRecipients  Int     @default(0)
+  sentCount        Int     @default(0)
+  deliveredCount   Int     @default(0)
+  openCount        Int     @default(0)
+  clickCount       Int     @default(0)
+  replyCount       Int     @default(0)
+  unsubscribeCount Int     @default(0)
+  bounceCount      Int     @default(0)
+  conversionCount  Int     @default(0)
+  revenue          Decimal @default(0) @db.Decimal(10, 2)
 
-  createdBy         String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  segment           AudienceSegment? @relation(fields: [audienceSegmentId], references: [id], onDelete: SetNull)
-  steps             CampaignStep[]
-  recipients        CampaignRecipient[]
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  segment    AudienceSegment?    @relation(fields: [audienceSegmentId], references: [id], onDelete: SetNull)
+  steps      CampaignStep[]
+  recipients CampaignRecipient[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -2256,34 +2356,34 @@ model MarketingCampaign {
 
 // Multi-step drip campaign steps
 model CampaignStep {
-  id              String            @id @default(cuid())
-  campaignId      String
-  stepNumber      Int
-  name            String?
+  id         String  @id @default(cuid())
+  campaignId String
+  stepNumber Int
+  name       String?
 
   // Timing
-  delayDays       Int               @default(0)
-  delayHours      Int               @default(0)
+  delayDays  Int @default(0)
+  delayHours Int @default(0)
 
   // Content
-  channel         String            // SMS, EMAIL
-  subject         String?           // For email
-  content         String            @db.Text
+  channel String // SMS, EMAIL
+  subject String? // For email
+  content String  @db.Text
 
   // Conditional logic
-  conditions      Json?             // { "ifOpened": true, "ifClicked": false, "ifReplied": false }
+  conditions Json? // { "ifOpened": true, "ifClicked": false, "ifReplied": false }
 
   // Metrics
-  sentCount       Int               @default(0)
-  openCount       Int               @default(0)
-  clickCount      Int               @default(0)
-  conversionCount Int               @default(0)
+  sentCount       Int @default(0)
+  openCount       Int @default(0)
+  clickCount      Int @default(0)
+  conversionCount Int @default(0)
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  campaign        MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, stepNumber])
   @@index([campaignId])
@@ -2292,35 +2392,35 @@ model CampaignStep {
 
 // Track individual campaign recipients
 model CampaignRecipient {
-  id              String            @id @default(cuid())
-  campaignId      String
-  customerId      String
-  stepNumber      Int               @default(1)
-  variant         String?           // For A/B tests
+  id         String  @id @default(cuid())
+  campaignId String
+  customerId String
+  stepNumber Int     @default(1)
+  variant    String? // For A/B tests
 
   // Status tracking
-  status          String            @default("PENDING") // PENDING, SENT, DELIVERED, OPENED, CLICKED, CONVERTED, FAILED, UNSUBSCRIBED
-  sentAt          DateTime?
-  deliveredAt     DateTime?
-  openedAt        DateTime?
-  clickedAt       DateTime?
-  convertedAt     DateTime?
-  unsubscribedAt  DateTime?
+  status         String    @default("PENDING") // PENDING, SENT, DELIVERED, OPENED, CLICKED, CONVERTED, FAILED, UNSUBSCRIBED
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  convertedAt    DateTime?
+  unsubscribedAt DateTime?
 
   // Error tracking
-  errorMessage    String?
-  bounceType      String?           // hard, soft
+  errorMessage String?
+  bounceType   String? // hard, soft
 
   // Attribution
-  conversionValue Decimal?          @db.Decimal(10, 2)
-  conversionType  String?           // appointment, quote, invoice
+  conversionValue Decimal? @db.Decimal(10, 2)
+  conversionType  String? // appointment, quote, invoice
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  campaign        MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  customer        Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, customerId, stepNumber])
   @@index([campaignId])
@@ -2331,30 +2431,30 @@ model CampaignRecipient {
 
 // Audience segments for targeting
 model AudienceSegment {
-  id              String              @id @default(cuid())
-  tenantId        String
-  name            String
-  description     String?
+  id          String  @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
 
   // Segment rules (JSON structure)
-  rules           Json                // { conditions: [...], logic: "AND" | "OR" }
+  rules Json // { conditions: [...], logic: "AND" | "OR" }
 
   // AI-generated segments
-  aiGenerated     Boolean             @default(false)
-  aiReasoning     String?
+  aiGenerated Boolean @default(false)
+  aiReasoning String?
 
   // Cached member count (updated periodically)
-  memberCount     Int                 @default(0)
+  memberCount      Int       @default(0)
   lastCalculatedAt DateTime?
 
-  isActive        Boolean             @default(true)
-  createdBy       String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  isActive  Boolean  @default(true)
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  campaigns       MarketingCampaign[]
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaigns MarketingCampaign[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -2364,35 +2464,35 @@ model AudienceSegment {
 
 // Referral tracking
 model Referral {
-  id              String    @id @default(cuid())
-  tenantId        String
-  referrerId      String    // Customer who referred
-  referralCode    String    @unique
+  id           String @id @default(cuid())
+  tenantId     String
+  referrerId   String // Customer who referred
+  referralCode String @unique
 
   // Referred customer (null until converted)
-  referredId      String?
-  referredEmail   String?
-  referredPhone   String?
+  referredId    String?
+  referredEmail String?
+  referredPhone String?
 
   // Status
-  status          String    @default("PENDING") // PENDING, CONVERTED, REWARDED, EXPIRED
-  convertedAt     DateTime?
-  rewardedAt      DateTime?
+  status      String    @default("PENDING") // PENDING, CONVERTED, REWARDED, EXPIRED
+  convertedAt DateTime?
+  rewardedAt  DateTime?
 
   // Rewards
-  referrerReward  String?   // e.g., "$25 credit"
-  referredReward  String?   // e.g., "10% off first service"
+  referrerReward      String? // e.g., "$25 credit"
+  referredReward      String? // e.g., "10% off first service"
   referrerRewardValue Decimal? @db.Decimal(10, 2)
   referredRewardValue Decimal? @db.Decimal(10, 2)
 
-  expiresAt       DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Relations
-  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  referrer        Customer  @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
-  referred        Customer? @relation("ReferralsReceived", fields: [referredId], references: [id], onDelete: SetNull)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  referrer Customer  @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred Customer? @relation("ReferralsReceived", fields: [referredId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([referrerId])
@@ -2404,50 +2504,50 @@ model Referral {
 
 // Referral program settings per tenant
 model ReferralSettings {
-  id                    String    @id @default(cuid())
-  tenantId              String    @unique
-  isEnabled             Boolean   @default(false)
+  id        String  @id @default(cuid())
+  tenantId  String  @unique
+  isEnabled Boolean @default(false)
 
   // Reward configuration
-  referrerRewardType    String    @default("CREDIT") // CREDIT, DISCOUNT_PERCENT, DISCOUNT_FLAT
-  referrerRewardValue   Decimal   @default(25) @db.Decimal(10, 2)
-  referredRewardType    String    @default("DISCOUNT_PERCENT")
-  referredRewardValue   Decimal   @default(10) @db.Decimal(10, 2)
+  referrerRewardType  String  @default("CREDIT") // CREDIT, DISCOUNT_PERCENT, DISCOUNT_FLAT
+  referrerRewardValue Decimal @default(25) @db.Decimal(10, 2)
+  referredRewardType  String  @default("DISCOUNT_PERCENT")
+  referredRewardValue Decimal @default(10) @db.Decimal(10, 2)
 
   // Limits
-  maxReferralsPerCustomer Int?    // null = unlimited
-  referralExpiryDays    Int       @default(90)
-  minPurchaseForReward  Decimal?  @db.Decimal(10, 2)
+  maxReferralsPerCustomer Int? // null = unlimited
+  referralExpiryDays      Int      @default(90)
+  minPurchaseForReward    Decimal? @db.Decimal(10, 2)
 
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("referral_settings")
 }
 
 // Seasonal demand tracking for campaign timing
 model SeasonalDemand {
-  id              String    @id @default(cuid())
-  tenantId        String
-  year            Int
-  month           Int       // 1-12
-  week            Int?      // 1-52 (optional for weekly granularity)
+  id       String @id @default(cuid())
+  tenantId String
+  year     Int
+  month    Int // 1-12
+  week     Int? // 1-52 (optional for weekly granularity)
 
   // Metrics
   appointmentCount Int      @default(0)
-  revenue         Decimal   @default(0) @db.Decimal(10, 2)
-  newCustomers    Int       @default(0)
-  avgBookingValue Decimal?  @db.Decimal(10, 2)
+  revenue          Decimal  @default(0) @db.Decimal(10, 2)
+  newCustomers     Int      @default(0)
+  avgBookingValue  Decimal? @db.Decimal(10, 2)
 
   // Calculated indices (1.0 = average)
-  demandIndex     Float     @default(1.0)
-  revenueIndex    Float     @default(1.0)
+  demandIndex  Float @default(1.0)
+  revenueIndex Float @default(1.0)
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, year, month])
   @@index([tenantId])
@@ -2471,133 +2571,133 @@ enum OnboardingMode {
 }
 
 enum ConversationState {
-  IDLE              // Waiting for user input
-  USER_TYPING       // User composing (debounced)
-  PROCESSING        // AI generating response
-  STREAMING         // Response streaming to client
-  EXTRACTING        // Background extraction
-  ERROR             // Recoverable error
-  LOCKED            // Another session active
+  IDLE // Waiting for user input
+  USER_TYPING // User composing (debounced)
+  PROCESSING // AI generating response
+  STREAMING // Response streaming to client
+  EXTRACTING // Background extraction
+  ERROR // Recoverable error
+  LOCKED // Another session active
 }
 
 // Business profile with 3-layer intelligence system
 model BusinessProfile {
-  id                    String   @id @default(cuid())
-  tenantId              String   @unique
+  id       String @id @default(cuid())
+  tenantId String @unique
 
   // ═══════════════════════════════════════════════════════════════
   // LAYER 1: EXPLICIT KNOWLEDGE (from interview)
   // ═══════════════════════════════════════════════════════════════
 
   // Business Identity
-  industry              String?              // "plumbing", "hvac", "landscaping"
-  yearsInBusiness       Int?                 // Years in operation
-  businessDescription   String?  @db.Text    // User's own words + AI enhancement
-  targetMarket          String?              // "residential", "commercial", "both"
-  serviceArea           String?              // Geographic description
-  serviceAreaRadius     Int?                 // Miles from base
-  timezone              String?              // Detected/confirmed timezone
+  industry            String? // "plumbing", "hvac", "landscaping"
+  yearsInBusiness     Int? // Years in operation
+  businessDescription String? @db.Text // User's own words + AI enhancement
+  targetMarket        String? // "residential", "commercial", "both"
+  serviceArea         String? // Geographic description
+  serviceAreaRadius   Int? // Miles from base
+  timezone            String? // Detected/confirmed timezone
 
   // Financials
-  revenueRange          String?              // "under_100k", "100k_500k", etc.
-  averageJobValue       Decimal? @db.Decimal(10, 2)
-  pricingModel          String?              // "flat_rate", "hourly", "mixed"
-  pricingPosition       String?              // "budget", "mid_range", "premium"
+  revenueRange    String? // "under_100k", "100k_500k", etc.
+  averageJobValue Decimal? @db.Decimal(10, 2)
+  pricingModel    String? // "flat_rate", "hourly", "mixed"
+  pricingPosition String? // "budget", "mid_range", "premium"
 
   // Customers
-  repeatCustomerPercent Int?                 // 0-100 percentage
+  repeatCustomerPercent Int? // 0-100 percentage
 
   // Team & Operations
-  teamSize              Int?
-  hasFieldTechnicians   Boolean  @default(false)
-  hasOfficeStaff        Boolean  @default(false)
-  ownerRole             String?              // "field", "office", "both"
-  jobsPerWeek           Int?                 // Average jobs completed per week
-  currentTools          Json?                // Array of tools/software used
+  teamSize            Int?
+  hasFieldTechnicians Boolean @default(false)
+  hasOfficeStaff      Boolean @default(false)
+  ownerRole           String? // "field", "office", "both"
+  jobsPerWeek         Int? // Average jobs completed per week
+  currentTools        Json? // Array of tools/software used
 
   // Marketing & Lead Sources
-  leadSources           Json?                // Array of lead sources
-  topLeadSource         String?              // Primary lead source
+  leadSources   Json? // Array of lead sources
+  topLeadSource String? // Primary lead source
 
   // Communication & Brand
-  communicationStyle    String?              // "professional", "friendly", "casual"
-  brandVoice            String?  @db.Text    // AI-generated brand voice guide
-  preferredChannels     String[]             // ["sms", "email", "phone"]
+  communicationStyle String? // "professional", "friendly", "casual"
+  brandVoice         String?  @db.Text // AI-generated brand voice guide
+  preferredChannels  String[] // ["sms", "email", "phone"]
 
   // Business Goals
-  primaryGoals          Json?                // Array of goals
-  currentChallenges     Json?                // Array of challenges
-  growthStage           String?              // "startup", "growing", "established", "mature"
-  revenueGoal           String?              // Revenue target
+  primaryGoals      Json? // Array of goals
+  currentChallenges Json? // Array of challenges
+  growthStage       String? // "startup", "growing", "established", "mature"
+  revenueGoal       String? // Revenue target
 
   // Seasonal Patterns (stated)
-  peakSeasons           Json?                // Array of peak months
-  slowSeasons           Json?                // Array of slow months
-  busyDays              Int[]                // Days of week (0-6)
+  peakSeasons Json? // Array of peak months
+  slowSeasons Json? // Array of slow months
+  busyDays    Int[] // Days of week (0-6)
 
   // Competitive Intelligence
-  knownCompetitors      Json?                // [{name, strengths, weaknesses}]
-  marketPosition        String?              // "leader", "challenger", "niche", "new"
-  competitiveAdvantage  String?  @db.Text    // AI-generated analysis
-  winReasons            Json?                // Why customers choose you
-  loseReasons           Json?                // Why you lose deals
-  priceVsMarket         String?              // "below", "at", "above"
+  knownCompetitors     Json? // [{name, strengths, weaknesses}]
+  marketPosition       String? // "leader", "challenger", "niche", "new"
+  competitiveAdvantage String? @db.Text // AI-generated analysis
+  winReasons           Json? // Why customers choose you
+  loseReasons          Json? // Why you lose deals
+  priceVsMarket        String? // "below", "at", "above"
 
   // Unique Value Proposition
-  uniqueSellingPoints   Json?                // Array of differentiators
+  uniqueSellingPoints Json? // Array of differentiators
 
   // ═══════════════════════════════════════════════════════════════
   // LAYER 2: OBSERVED BEHAVIOR (automatic updates)
   // ═══════════════════════════════════════════════════════════════
 
-  observedPeakMonths    Int[]                // Months with highest bookings
-  observedSlowMonths    Int[]                // Months with lowest bookings
-  observedAvgJobValue   Decimal? @db.Decimal(10, 2)  // Calculated from invoices
-  observedJobsPerWeek   Float?               // Rolling average
-  observedResponseTime  Int?                 // Avg minutes to respond
-  observedChannelMix    Json?                // {sms: 0.6, email: 0.3, phone: 0.1}
-  observedServiceMix    Json?                // {service_id: percentage}
-  lastBehaviorUpdate    DateTime?            // When observations last refreshed
+  observedPeakMonths   Int[] // Months with highest bookings
+  observedSlowMonths   Int[] // Months with lowest bookings
+  observedAvgJobValue  Decimal?  @db.Decimal(10, 2) // Calculated from invoices
+  observedJobsPerWeek  Float? // Rolling average
+  observedResponseTime Int? // Avg minutes to respond
+  observedChannelMix   Json? // {sms: 0.6, email: 0.3, phone: 0.1}
+  observedServiceMix   Json? // {service_id: percentage}
+  lastBehaviorUpdate   DateTime? // When observations last refreshed
 
   // ═══════════════════════════════════════════════════════════════
   // LAYER 3: INFERRED INTELLIGENCE (AI-generated)
   // ═══════════════════════════════════════════════════════════════
 
-  aiSummary             String?  @db.Text    // Full AI-generated business summary
-  aiRecommendations     Json?                // Platform feature recommendations
-  industryBenchmarks    Json?                // How they compare to similar businesses
-  growthTrajectory      String?              // "accelerating", "stable", "declining"
-  predictedPeakMonths   Int[]                // AI-predicted busy months
+  aiSummary           String? @db.Text // Full AI-generated business summary
+  aiRecommendations   Json? // Platform feature recommendations
+  industryBenchmarks  Json? // How they compare to similar businesses
+  growthTrajectory    String? // "accelerating", "stable", "declining"
+  predictedPeakMonths Int[] // AI-predicted busy months
 
   // ═══════════════════════════════════════════════════════════════
   // PROFILE QUALITY & CONFIDENCE
   // ═══════════════════════════════════════════════════════════════
 
-  profileCompleteness   Float    @default(0)     // 0-1 how complete
-  profileConfidence     Float    @default(0)     // 0-1 overall confidence
-  fieldConfidence       Json?                     // {field: confidence} per field
-  inferredFields        String[]                  // Fields inferred vs explicitly stated
-  needsValidation       String[]                  // Low-confidence fields to confirm
-  lastValidated         DateTime?                 // Last user confirmation
+  profileCompleteness Float     @default(0) // 0-1 how complete
+  profileConfidence   Float     @default(0) // 0-1 overall confidence
+  fieldConfidence     Json? // {field: confidence} per field
+  inferredFields      String[] // Fields inferred vs explicitly stated
+  needsValidation     String[] // Low-confidence fields to confirm
+  lastValidated       DateTime? // Last user confirmation
 
   // ═══════════════════════════════════════════════════════════════
   // ONBOARDING PROGRESS
   // ═══════════════════════════════════════════════════════════════
 
-  onboardingStatus      OnboardingStatus     @default(NOT_STARTED)
-  onboardingMode        OnboardingMode       @default(CHAT)
-  completedQuestions    Int                  @default(0)
-  totalQuestions        Int                  @default(8)
-  interviewStartedAt    DateTime?
-  interviewCompletedAt  DateTime?
-  quickWinsDelivered    Boolean  @default(false)
+  onboardingStatus     OnboardingStatus @default(NOT_STARTED)
+  onboardingMode       OnboardingMode   @default(CHAT)
+  completedQuestions   Int              @default(0)
+  totalQuestions       Int              @default(8)
+  interviewStartedAt   DateTime?
+  interviewCompletedAt DateTime?
+  quickWinsDelivered   Boolean          @default(false)
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  conversation          OnboardingConversation?
+  tenant       Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversation OnboardingConversation?
 
   @@index([tenantId])
   @@index([industry])
@@ -2606,63 +2706,63 @@ model BusinessProfile {
 
 // Store the onboarding conversation with state machine support
 model OnboardingConversation {
-  id                String   @id @default(cuid())
-  businessProfileId String   @unique
+  id                String @id @default(cuid())
+  businessProfileId String @unique
 
   // Conversation State
-  messages          Json                  // [{role, content, timestamp, questionId, extractedFields}]
+  messages          Json // [{role, content, timestamp, questionId, extractedFields}]
   currentQuestionId String?
-  extractedData     Json?                 // Cumulative extracted data
+  extractedData     Json? // Cumulative extracted data
 
   // State Machine
-  state             ConversationState     @default(IDLE)
+  state ConversationState @default(IDLE)
 
   // Multi-Device Locking
-  version           Int      @default(0)  // Optimistic locking
-  lockedBy          String?               // Session ID
-  lockedAt          DateTime?
-  lastActivityAt    DateTime @default(now())
+  version        Int       @default(0) // Optimistic locking
+  lockedBy       String? // Session ID
+  lockedAt       DateTime?
+  lastActivityAt DateTime  @default(now())
 
   // Voice/Call Metadata
-  vapiCallId        String?               // If using phone call mode
-  voiceTranscript   Json?                 // Full voice transcript
+  vapiCallId      String? // If using phone call mode
+  voiceTranscript Json? // Full voice transcript
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  businessProfile   BusinessProfile @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
+  businessProfile BusinessProfile @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
 
   @@map("onboarding_conversations")
 }
 
 // Industry templates for benchmarking and defaults
 model IndustryTemplate {
-  id                    String   @id @default(cuid())
-  industrySlug          String   @unique  // "plumbing", "hvac", etc.
-  displayName           String              // "Plumbing & Drain"
+  id           String @id @default(cuid())
+  industrySlug String @unique // "plumbing", "hvac", etc.
+  displayName  String // "Plumbing & Drain"
 
   // Typical Patterns
-  typicalPeakMonths     Int[]               // [5, 6, 7, 8]
-  typicalSlowMonths     Int[]               // [1, 2]
+  typicalPeakMonths      Int[] // [5, 6, 7, 8]
+  typicalSlowMonths      Int[] // [1, 2]
   avgJobValueResidential Decimal? @db.Decimal(10, 2)
   avgJobValueCommercial  Decimal? @db.Decimal(10, 2)
-  typicalTeamSize       Json?               // {solo: 0.4, small: 0.35, ...}
-  emergencyMix          Float?              // 0-1 portion that's emergency
+  typicalTeamSize        Json? // {solo: 0.4, small: 0.35, ...}
+  emergencyMix           Float? // 0-1 portion that's emergency
 
   // Defaults
-  suggestedServices     Json?               // Default service catalog
-  communicationNorms    String?             // Typical style for industry
-  typicalLeadSources    Json?               // Common lead sources
+  suggestedServices  Json? // Default service catalog
+  communicationNorms String? // Typical style for industry
+  typicalLeadSources Json? // Common lead sources
 
   // Industry-Specific Questions
-  followUpQuestions     Json?               // Additional questions for this industry
+  followUpQuestions Json? // Additional questions for this industry
 
   // Benchmarks (aggregated, anonymized)
-  benchmarkData         Json?               // Anonymized industry benchmarks
-  benchmarkUpdatedAt    DateTime?
+  benchmarkData      Json? // Anonymized industry benchmarks
+  benchmarkUpdatedAt DateTime?
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("industry_templates")
 }

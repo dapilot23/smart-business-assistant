@@ -2,19 +2,54 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { getAgentTasks, updateAgentTask } from "@/lib/api/agent-tasks";
-import { approveAction, cancelAction, getActions, type AIAction } from "@/lib/api/ai-actions";
-import { getDashboardStats, type DashboardStats } from "@/lib/api/reports";
-import type { AgentTask } from "@/lib/types/agent-task";
+import {
+  approveTaskLedger,
+  completeTaskLedger,
+  createTaskLedger,
+  declineTaskLedger,
+  getCommandCenterDashboard,
+  type ApprovalItem,
+  type CommandCenterDashboard,
+  type DashboardSignal,
+  type OneTapWin,
+  type QuickAction,
+  type TaskItem,
+} from "@/lib/api/command-center";
+import { fetchWithAuth, getApiUrl } from "@/lib/api/client";
 import { AskBar } from "./_components/ask-bar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { Icon } from "@/app/components/Icon";
 
 type SignalConfig = {
   id: "revenue" | "appointments" | "quotes";
   enabled: boolean;
 };
+
+type SignalDefinition = {
+  id: SignalConfig["id"];
+  label: string;
+  value: string;
+  note: string;
+};
+
+const SIGNAL_ICON_MAP: Record<string, Parameters<typeof Icon>[0]["name"]> = {
+  "calendar-alert": "calendar-days",
+  "dollar-alert": "dollar-sign",
+  "file-text": "file-text",
+  star: "sparkles",
+  success: "check",
+  warning: "alert-circle",
+};
+
+const SIGNAL_PRIORITY_STYLES: Record<DashboardSignal["priority"], string> = {
+  high: "border-rose-400/30 bg-rose-400/5",
+  medium: "border-amber-400/30 bg-amber-400/5",
+  low: "border-emerald-400/30 bg-emerald-400/5",
+};
+
+type IconName = Parameters<typeof Icon>[0]["name"];
 
 const DEFAULT_SIGNAL_CONFIG: SignalConfig[] = [
   { id: "revenue", enabled: true },
@@ -66,29 +101,25 @@ const formatCurrency = (value?: number) =>
   typeof value === "number" ? value.toLocaleString() : "--";
 
 export default function TodayPage() {
-  const [tasks, setTasks] = useState<AgentTask[]>([]);
-  const [actions, setActions] = useState<AIAction[]>([]);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [dashboard, setDashboard] = useState<CommandCenterDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
+  const [workingQuickAction, setWorkingQuickAction] = useState<string | null>(null);
   const [signalConfig, setSignalConfig] = useState<SignalConfig[]>([
     ...DEFAULT_SIGNAL_CONFIG,
   ]);
-  const primaryActionsRef = useRef<AIAction[]>([]);
+  const primaryApprovalsRef = useRef<ApprovalItem[]>([]);
   const workingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        const [taskData, statsData, actionData] = await Promise.all([
-          getAgentTasks({ status: "PENDING", limit: 8 }),
-          getDashboardStats(),
-          getActions("PENDING"),
-        ]);
-        setTasks(taskData ?? []);
-        setStats(statsData ?? null);
-        setActions(actionData ?? []);
+        const dashboardData = await getCommandCenterDashboard({
+          approvalsLimit: 3,
+          tasksLimit: 5,
+        });
+        setDashboard(dashboardData ?? null);
       } catch (error) {
         console.error("Failed to load today data", error);
       } finally {
@@ -118,81 +149,111 @@ export default function TodayPage() {
     }
   }, [signalConfig]);
 
-  const refreshQueues = useCallback(async () => {
-    const [taskData, actionData] = await Promise.all([
-      getAgentTasks({ status: "PENDING", limit: 8 }),
-      getActions("PENDING"),
-    ]);
-    setTasks(taskData ?? []);
-    setActions(actionData ?? []);
+  const refreshDashboard = useCallback(async () => {
+    const dashboardData = await getCommandCenterDashboard({
+      approvalsLimit: 3,
+      tasksLimit: 5,
+    });
+    setDashboard(dashboardData ?? null);
   }, []);
+
+  const handleRunPrompt = useCallback(
+    async (prompt: string) => {
+      try {
+        await createTaskLedger({
+          type: "APPROVAL",
+          category: "OPERATIONS",
+          title: prompt,
+          description: "Requested via Ask Bar",
+          icon: "sparkles",
+          actionType: "ASK_BAR",
+          payload: { prompt, source: "ask-bar" },
+        });
+        await refreshDashboard();
+      } catch (error) {
+        console.error("Failed to run prompt", error);
+      }
+    },
+    [refreshDashboard]
+  );
 
   const handleApproveAction = useCallback(
     async (actionId: string) => {
       try {
         setWorkingId(actionId);
-        await approveAction(actionId);
-        await refreshQueues();
+        await approveTaskLedger(actionId);
+        await refreshDashboard();
       } catch (error) {
         console.error("Failed to approve action", error);
       } finally {
         setWorkingId(null);
       }
     },
-    [refreshQueues]
+    [refreshDashboard]
   );
 
   const handleDeclineAction = useCallback(
     async (actionId: string) => {
       try {
         setWorkingId(actionId);
-        await cancelAction(actionId);
-        await refreshQueues();
+        await declineTaskLedger(actionId, "Declined in Command Center");
+        await refreshDashboard();
       } catch (error) {
         console.error("Failed to decline action", error);
       } finally {
         setWorkingId(null);
       }
     },
-    [refreshQueues]
+    [refreshDashboard]
   );
 
   const handleCompleteTask = useCallback(
     async (taskId: string) => {
       try {
         setWorkingId(taskId);
-        await updateAgentTask(taskId, { status: "COMPLETED" });
-        await refreshQueues();
+        await completeTaskLedger(taskId);
+        await refreshDashboard();
       } catch (error) {
         console.error("Failed to complete task", error);
       } finally {
         setWorkingId(null);
       }
     },
-    [refreshQueues]
+    [refreshDashboard]
   );
 
   const handleSkipTask = useCallback(
     async (taskId: string) => {
       try {
         setWorkingId(taskId);
-        await updateAgentTask(taskId, { status: "CANCELLED" });
-        await refreshQueues();
+        await declineTaskLedger(taskId, "Skipped in Command Center");
+        await refreshDashboard();
       } catch (error) {
         console.error("Failed to skip task", error);
       } finally {
         setWorkingId(null);
       }
     },
-    [refreshQueues]
+    [refreshDashboard]
   );
 
-  const primaryActions = useMemo(() => actions.slice(0, 3), [actions]);
-  const secondaryTasks = useMemo(() => tasks.slice(0, 5), [tasks]);
+  const primaryApprovals = useMemo<ApprovalItem[]>(
+    () => dashboard?.approvals ?? [],
+    [dashboard]
+  );
+  const secondaryTasks = useMemo<TaskItem[]>(
+    () => dashboard?.tasks ?? [],
+    [dashboard]
+  );
+  const quickActions = useMemo<QuickAction[]>(
+    () => dashboard?.quickActions ?? [],
+    [dashboard]
+  );
+  const oneTapWin = dashboard?.oneTapWin ?? null;
 
   useEffect(() => {
-    primaryActionsRef.current = primaryActions;
-  }, [primaryActions]);
+    primaryApprovalsRef.current = primaryApprovals;
+  }, [primaryApprovals]);
 
   useEffect(() => {
     workingIdRef.current = workingId;
@@ -201,7 +262,7 @@ export default function TodayPage() {
   useEffect(() => {
     const handleApproveNext = () => {
       if (workingIdRef.current) return;
-      const next = primaryActionsRef.current[0];
+      const next = primaryApprovalsRef.current[0];
       if (next) {
         handleApproveAction(next.id);
       }
@@ -209,7 +270,7 @@ export default function TodayPage() {
 
     const handleDeclineNext = () => {
       if (workingIdRef.current) return;
-      const next = primaryActionsRef.current[0];
+      const next = primaryApprovalsRef.current[0];
       if (next) {
         handleDeclineAction(next.id);
       }
@@ -223,36 +284,124 @@ export default function TodayPage() {
     };
   }, [handleApproveAction, handleDeclineAction]);
 
-  const statusText = loading ? "Loading..." : `${actions.length} actions waiting`;
+  const approvalsCount = dashboard?.taskStats?.approvals ?? primaryApprovals.length;
+  const tasksCount = dashboard?.taskStats?.pending ?? secondaryTasks.length;
+  const attentionSignals = useMemo<DashboardSignal[]>(
+    () => dashboard?.signals ?? [],
+    [dashboard]
+  );
+  const statusText = loading
+    ? "Loading..."
+    : `${approvalsCount} approvals • ${tasksCount} tasks`;
   const weekRange = formatWeekRange();
 
-  const revenueChange =
-    typeof stats?.revenue?.change === "number"
-      ? `${stats.revenue.change}% vs last month`
-      : "No trend yet";
+  const metrics = dashboard?.metrics;
+  const statusBar = dashboard?.statusBar;
+  const greeting = statusBar?.greeting ?? "Welcome back";
+  const todayAppointments =
+    typeof statusBar?.todayAppointments === "number" ? statusBar.todayAppointments : "--";
+  const outstandingAmount =
+    typeof statusBar?.outstandingAmount === "number"
+      ? `$${formatCurrency(statusBar.outstandingAmount)}`
+      : "--";
+  const pulseScore =
+    typeof statusBar?.businessPulseScore === "number" ? statusBar.businessPulseScore : "--";
+  const pulseTrend = statusBar?.trend ?? "stable";
+  const pulseIcon =
+    pulseTrend === "up" ? "trending-up" : pulseTrend === "down" ? "trending-down" : "bar-chart-3";
 
-  const signalDefinitions = useMemo(
+  const handleQuickAction = useCallback(
+    async (action: QuickAction, actionId?: string) => {
+      if (action.confirmation && !window.confirm(action.confirmation)) return;
+      const id = actionId ?? action.id;
+      try {
+        setWorkingQuickAction(id);
+        const url = getApiUrl(action.endpoint);
+        const options: RequestInit = {
+          method: action.method,
+        };
+        if (action.method !== "GET") {
+          options.body = JSON.stringify(action.payload ?? {});
+        }
+        await fetchWithAuth(url, options);
+        await refreshDashboard();
+      } catch (error) {
+        console.error("Failed to run quick action", error);
+      } finally {
+        setWorkingQuickAction(null);
+      }
+    },
+    [refreshDashboard]
+  );
+
+  const handleOneTapWin = useCallback(
+    async (win: OneTapWin) => {
+      const id = win.id;
+      try {
+        setWorkingQuickAction(id);
+        const url = getApiUrl(win.action.endpoint);
+        const options: RequestInit = {
+          method: win.action.method,
+        };
+        if (win.action.method !== "GET") {
+          options.body = JSON.stringify(win.action.payload ?? {});
+        }
+        const created = await fetchWithAuth(url, options);
+        if (win.action.endpoint === "/task-ledger" && win.action.method === "POST") {
+          const taskId = created && typeof created === "object" ? (created as { id?: string }).id : undefined;
+          if (taskId) {
+            await approveTaskLedger(taskId);
+          }
+        }
+        await refreshDashboard();
+      } catch (error) {
+        console.error("Failed to run one-tap win", error);
+      } finally {
+        setWorkingQuickAction(null);
+      }
+    },
+    [refreshDashboard]
+  );
+  const revenueNote =
+    typeof metrics?.todayRevenueTarget === "number"
+      ? `Target $${formatCurrency(metrics.todayRevenueTarget)}`
+      : "Today";
+  const quotesNote =
+    typeof metrics?.pendingQuotesAmount === "number"
+      ? `$${formatCurrency(metrics.pendingQuotesAmount)} pending`
+      : "Need follow-up";
+
+  const signalDefinitions = useMemo<SignalDefinition[]>(
     () => [
       {
         id: "revenue" as const,
         label: SIGNAL_LABELS.revenue,
-        value: `$${formatCurrency(stats?.revenue?.current)}`,
-        note: revenueChange,
+        value:
+          typeof metrics?.todayRevenue === "number"
+            ? `$${formatCurrency(metrics.todayRevenue)}`
+            : "--",
+        note: revenueNote,
       },
       {
         id: "appointments" as const,
         label: SIGNAL_LABELS.appointments,
-        value: `${stats?.appointments?.current ?? "--"}`,
-        note: "This month",
+        value:
+          typeof statusBar?.todayAppointments === "number"
+            ? `${statusBar.todayAppointments}`
+            : "--",
+        note: "Today",
       },
       {
         id: "quotes" as const,
         label: SIGNAL_LABELS.quotes,
-        value: `${stats?.quotes?.pending ?? "--"}`,
-        note: "Need follow-up",
+        value:
+          typeof metrics?.pendingQuotesCount === "number"
+            ? `${metrics.pendingQuotesCount}`
+            : "--",
+        note: quotesNote,
       },
     ],
-    [revenueChange, stats?.appointments?.current, stats?.quotes?.pending, stats?.revenue?.current]
+    [metrics?.pendingQuotesCount, metrics?.todayRevenue, statusBar?.todayAppointments, quotesNote, revenueNote]
   );
 
   const signalMap = useMemo(() => {
@@ -263,8 +412,8 @@ export default function TodayPage() {
     return signalConfig
       .filter((config) => config.enabled)
       .map((config) => signalMap.get(config.id))
-      .filter((signal): signal is (typeof signalDefinitions)[number] => Boolean(signal));
-  }, [signalConfig, signalMap, signalDefinitions]);
+      .filter((signal): signal is SignalDefinition => Boolean(signal));
+  }, [signalConfig, signalMap]);
 
   const toggleSignal = useCallback((id: SignalConfig["id"]) => {
     setSignalConfig((prev) =>
@@ -294,16 +443,28 @@ export default function TodayPage() {
   return (
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-400">
-          <span className="text-slate-200">Status:</span>
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Command center</p>
+          <h1 className="mt-2 font-display text-3xl text-slate-100 sm:text-4xl">{greeting}</h1>
+          <p className="text-sm text-slate-400">Approve the next steps and move on.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-400">
+          <span className="text-slate-200">Queue:</span>
           <span>{statusText}</span>
           <span className="text-slate-600">|</span>
-          <span className="text-slate-200">Range:</span>
-          <span>{weekRange}</span>
-        </div>
-        <div>
-          <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Today</h1>
-          <p className="text-sm text-slate-400">Approve the next steps and move on.</p>
+          <span>Today:</span>
+          <span className="text-slate-200">{todayAppointments} appts</span>
+          <span className="text-slate-600">|</span>
+          <span>Outstanding:</span>
+          <span className="text-slate-200">{outstandingAmount}</span>
+          <span className="text-slate-600">|</span>
+          <span className="flex items-center gap-1 text-slate-200">
+            <Icon name={pulseIcon} size={12} className="text-emerald-300" />
+            Pulse {pulseScore}
+          </span>
+          <span className="text-slate-600">|</span>
+          <span>Range:</span>
+          <span className="text-slate-200">{weekRange}</span>
         </div>
       </section>
 
@@ -313,30 +474,37 @@ export default function TodayPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Primary queue</p>
-                <h2 className="mt-2 font-display text-lg text-slate-100">Top actions</h2>
+                <h2 className="mt-2 font-display text-lg text-slate-100">Top approvals</h2>
               </div>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
-                {primaryActions.length}
+                {approvalsCount}
               </span>
             </div>
 
             <div className="mt-4 grid gap-3">
               {loading ? (
-                <div className="text-sm text-slate-400">Loading actions...</div>
-              ) : primaryActions.length === 0 ? (
+                <div className="text-sm text-slate-400">Loading approvals...</div>
+              ) : primaryApprovals.length === 0 ? (
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
-                  No actions waiting.
+                  No approvals waiting.
                 </div>
               ) : (
-                primaryActions.map((action) => (
+                primaryApprovals.map((action) => (
                   <div
                     key={action.id}
                     className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
                   >
                     <p className="text-sm font-semibold text-slate-100">{action.title}</p>
-                    <p className="mt-1 text-xs text-slate-400">{action.description}</p>
-                    {action.estimatedImpact && (
-                      <p className="mt-2 text-xs text-slate-500">Impact: {action.estimatedImpact}</p>
+                    {action.description && (
+                      <p className="mt-1 text-xs text-slate-400">{action.description}</p>
+                    )}
+                    {typeof action.aiConfidence === "number" && (
+                      <p className="mt-2 text-xs text-slate-500">
+                        Confidence: {Math.round(action.aiConfidence * 100)}%
+                      </p>
+                    )}
+                    {action.aiReasoning && (
+                      <p className="mt-1 text-xs text-slate-500">Why: {action.aiReasoning}</p>
                     )}
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
@@ -367,7 +535,7 @@ export default function TodayPage() {
                 <h2 className="mt-2 font-display text-lg text-slate-100">Next tasks</h2>
               </div>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
-                {secondaryTasks.length}
+                {tasksCount}
               </span>
             </div>
 
@@ -410,6 +578,98 @@ export default function TodayPage() {
             </div>
           </div>
 
+          {oneTapWin && (
+            <div className="glass-panel rounded-3xl p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 rounded-full border border-white/10 bg-white/10 p-2">
+                    <Icon
+                      name={
+                        (oneTapWin.entityType === "invoice"
+                          ? "dollar-sign"
+                          : oneTapWin.entityType === "appointment"
+                          ? "calendar-days"
+                          : oneTapWin.entityType === "quote"
+                          ? "file-text"
+                          : "sparkles") as IconName
+                      }
+                      size={18}
+                      className="text-emerald-200"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      One tap win
+                    </p>
+                    <h2 className="mt-2 font-display text-lg text-slate-100">
+                      {oneTapWin.headline}
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-400">{oneTapWin.subtext}</p>
+                  </div>
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                  {oneTapWin.impact.label}
+                </span>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => handleOneTapWin(oneTapWin)}
+                  disabled={workingQuickAction === oneTapWin.id}
+                  className="rounded-full bg-emerald-400 px-4 py-1.5 text-xs font-semibold text-slate-950 hover:bg-emerald-300 disabled:opacity-60"
+                >
+                  {workingQuickAction === oneTapWin.id ? "Working..." : oneTapWin.action.label}
+                </button>
+                {typeof oneTapWin.impact.revenue === "number" && (
+                  <span className="text-xs text-slate-500">
+                    Potential impact: ${formatCurrency(oneTapWin.impact.revenue)}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Shortcuts</p>
+                <h2 className="mt-2 font-display text-lg text-slate-100">Quick actions</h2>
+              </div>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                {quickActions.length}
+              </span>
+            </div>
+            <div className="mt-4 grid gap-2">
+              {quickActions.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
+                  No quick actions right now.
+                </div>
+              ) : (
+                quickActions.map((action) => {
+                  const iconName = (action.icon as IconName) || "sparkles";
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onClick={() => handleQuickAction(action)}
+                      disabled={workingQuickAction === action.id}
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-slate-100 hover:border-white/20 disabled:opacity-60"
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="rounded-full border border-white/10 bg-white/10 p-2">
+                          <Icon name={iconName} size={16} className="text-slate-100" />
+                        </span>
+                        {action.label}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {workingQuickAction === action.id ? "Working..." : "Queue"}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
           <div className="glass-panel rounded-3xl p-6">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Command center</p>
@@ -425,114 +685,170 @@ export default function TodayPage() {
                   "Follow up new leads",
                   "Close open tickets",
                 ]}
+                onRun={handleRunPrompt}
               />
             </div>
           </div>
         </div>
 
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Insights</p>
-              <h2 className="mt-2 font-display text-lg text-slate-100">Key signals</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <button className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-300 hover:border-white/30">
-                    Customize
-                  </button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md border border-white/10 bg-[#0b0d12] text-slate-100">
-                  <DialogHeader>
-                    <DialogTitle className="font-display text-lg text-slate-100">
-                      Customize signals
-                    </DialogTitle>
-                    <p className="text-sm text-slate-400">
-                      Show, hide, and reorder the dashboard signals.
-                    </p>
-                  </DialogHeader>
-                  <div className="mt-2 space-y-3">
-                    {signalConfig.map((signal, index) => (
-                      <div
-                        key={signal.id}
-                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-slate-100">
-                            {SIGNAL_LABELS[signal.id]}
-                          </p>
-                          <p className="text-xs text-slate-500">Widget</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => moveSignal(signal.id, "up")}
-                            disabled={index === 0}
-                            className="rounded-full border border-white/10 bg-white/5 p-1 text-slate-300 disabled:opacity-40"
-                            aria-label="Move up"
-                          >
-                            <ChevronUp className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveSignal(signal.id, "down")}
-                            disabled={index === signalConfig.length - 1}
-                            className="rounded-full border border-white/10 bg-white/5 p-1 text-slate-300 disabled:opacity-40"
-                            aria-label="Move down"
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </button>
-                          <Switch
-                            checked={signal.enabled}
-                            onCheckedChange={() => toggleSignal(signal.id)}
-                            className="bg-white/10"
-                            aria-label={`Toggle ${SIGNAL_LABELS[signal.id]}`}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={resetSignals}
-                      className="text-xs font-semibold text-slate-400 hover:text-slate-200"
-                    >
-                      Reset defaults
+        <div className="space-y-6">
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Insights</p>
+                <h2 className="mt-2 font-display text-lg text-slate-100">Key metrics</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-300 hover:border-white/30">
+                      Customize
                     </button>
-                    <p className="text-xs text-slate-500">Changes save instantly.</p>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md border border-white/10 bg-[#0b0d12] text-slate-100">
+                    <DialogHeader>
+                      <DialogTitle className="font-display text-lg text-slate-100">
+                        Customize metrics
+                      </DialogTitle>
+                      <p className="text-sm text-slate-400">
+                        Show, hide, and reorder the dashboard metrics.
+                      </p>
+                    </DialogHeader>
+                    <div className="mt-2 space-y-3">
+                      {signalConfig.map((signal, index) => (
+                        <div
+                          key={signal.id}
+                          className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-slate-100">
+                              {SIGNAL_LABELS[signal.id]}
+                            </p>
+                            <p className="text-xs text-slate-500">Widget</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => moveSignal(signal.id, "up")}
+                              disabled={index === 0}
+                              className="rounded-full border border-white/10 bg-white/5 p-1 text-slate-300 disabled:opacity-40"
+                              aria-label="Move up"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveSignal(signal.id, "down")}
+                              disabled={index === signalConfig.length - 1}
+                              className="rounded-full border border-white/10 bg-white/5 p-1 text-slate-300 disabled:opacity-40"
+                              aria-label="Move down"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                            <Switch
+                              checked={signal.enabled}
+                              onCheckedChange={() => toggleSignal(signal.id)}
+                              className="bg-white/10"
+                              aria-label={`Toggle ${SIGNAL_LABELS[signal.id]}`}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={resetSignals}
+                        className="text-xs font-semibold text-slate-400 hover:text-slate-200"
+                      >
+                        Reset defaults
+                      </button>
+                      <p className="text-xs text-slate-500">Changes save instantly.</p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Link
+                  href="/dashboard/insights"
+                  className="text-xs font-semibold text-emerald-200 hover:text-emerald-100"
+                >
+                  View report
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {visibleSignals.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
+                  No metrics selected.
+                </div>
+              ) : (
+                visibleSignals.map((signal) => (
+                  <div
+                    key={signal.id}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                  >
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      {signal.label}
+                    </p>
+                    <p className="mt-2 text-xl font-semibold text-slate-100">{signal.value}</p>
+                    <p className="text-xs text-slate-400">{signal.note}</p>
                   </div>
-                </DialogContent>
-              </Dialog>
-              <Link
-                href="/dashboard/insights"
-                className="text-xs font-semibold text-emerald-200 hover:text-emerald-100"
-              >
-                View report
-              </Link>
+                ))
+              )}
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3">
-            {visibleSignals.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
-                No signals selected.
+          <div className="glass-panel rounded-3xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Signals</p>
+                <h2 className="mt-2 font-display text-lg text-slate-100">Attention needed</h2>
               </div>
-            ) : (
-              visibleSignals.map((signal) => (
-                <div
-                  key={signal.id}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-                >
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                    {signal.label}
-                  </p>
-                  <p className="mt-2 text-xl font-semibold text-slate-100">{signal.value}</p>
-                  <p className="text-xs text-slate-400">{signal.note}</p>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                {attentionSignals.length}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {loading ? (
+                <div className="text-sm text-slate-400">Loading signals...</div>
+              ) : attentionSignals.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
+                  No signals requiring attention.
                 </div>
-              ))
-            )}
+              ) : (
+                attentionSignals.map((signal) => {
+                  const iconName =
+                    SIGNAL_ICON_MAP[signal.icon] ?? SIGNAL_ICON_MAP[signal.type.toLowerCase()] ?? "alert-circle";
+                  return (
+                    <div
+                      key={signal.id}
+                      className={`rounded-2xl border px-4 py-4 ${SIGNAL_PRIORITY_STYLES[signal.priority]}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 rounded-full border border-white/10 bg-white/10 p-2">
+                          <Icon name={iconName} size={16} className="text-slate-100" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-100">{signal.title}</p>
+                            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                              {signal.priority}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-400">{signal.detail}</p>
+                          {signal.action?.label && (
+                            <p className="mt-2 text-xs text-slate-500">
+                              Next: {signal.action.label}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       </section>

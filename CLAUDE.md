@@ -539,9 +539,31 @@ AWS_SECRET_ACCESS_KEY=
 
 ## Implementation Plan
 
-Active sprint plan at: `~/.claude/plans/polymorphic-dreaming-nebula.md`
+### Plan Documents
 
-**Sprint progress:**
+| Plan | Purpose | Priority |
+|------|---------|----------|
+| `~/.claude/plans/command-center-architecture.md` | **Command Center & Strategic Enhancements** - Task Ledger, Command Center UI, Morning Briefing, Business Pulse, Ghost Customer Detection, Revenue Leakage Radar | **Phase 0-1 (Execute First)** |
+| `~/.claude/plans/polymorphic-dreaming-nebula.md` | Pain Point Solutions - AI Engine Foundation, Quote Follow-up, Payment Automation, No-Show Prevention, Reviews, Retention, Dispatch, AI Communication | Phase 2-3 |
+| `~/.claude/plans/jaunty-mixing-starlight.md` | Sprint 7.4 Detail - Smart Review Pipeline implementation | Complete |
+
+### Current Sprint Progress
+
+**Phase 0: Foundation (Next)**
+- [ ] Task Ledger schema + service + processor
+- [ ] Dashboard cache service
+- [ ] Queue priority lanes
+- [ ] Circuit breaker expansion
+- [ ] Remove deprecated features (dynamic pricing, predictive maintenance)
+
+**Phase 1: Command Center Core**
+- [ ] Command Center API endpoints
+- [ ] Command Center UI components
+- [ ] Morning Briefing generation
+- [ ] One-Tap Win calculation
+- [ ] Status bar + signals
+
+**Automation Sprints (7.x):**
 - 7.0 AI Engine Foundation - not started
 - 7.1 Quote Follow-Up Pipeline - complete (automation base)
 - 7.2 Payment Automation - complete (automation base)
@@ -549,7 +571,24 @@ Active sprint plan at: `~/.claude/plans/polymorphic-dreaming-nebula.md`
 - 7.4 Smart Review Pipeline - complete (automation base)
 - 7.5-7.8 - not started
 
-Active sprint plan details at: `~/.claude/plans/jaunty-mixing-starlight.md`
+### Key Architectural Additions
+
+| Component | Purpose |
+|-----------|---------|
+| **Task Ledger** | Unified queue for all AI actions, system tasks, human tasks, and approvals |
+| **Dashboard Cache** | Read model with 30s TTL for Command Center performance |
+| **Business Pulse** | Real-time 0-100 health score with component breakdown |
+| **Morning Briefing** | AI-generated daily summary with voice TTS option |
+| **Ghost Customer Detection** | Predictive churn scoring before customers explicitly leave |
+| **Revenue Leakage Radar** | Continuous scan for money left on table |
+
+### Features Removed/Deferred
+
+| Feature | Status | Reason |
+|---------|--------|--------|
+| Dynamic Pricing | Removed | Target market prefers price transparency; complexity without clear ROI |
+| Predictive Maintenance | Removed | Requires data small businesses don't track; service intervals sufficient |
+| Full Financing Integration | Simplified | Compliance burden; link-to-partner approach sufficient for MVP |
 
 ## Architecture Patterns
 1. **Multi-Tenant SaaS** - All data isolated by tenantId, enforced at middleware + query level

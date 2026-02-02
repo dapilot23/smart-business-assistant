@@ -4,20 +4,36 @@ import { useCallback, useEffect, useState } from "react";
 import { ChatButton } from "@/components/ai-copilot";
 import { Icon } from "../../components/Icon";
 
-export function AskBar({ suggestions = [] }: { suggestions?: string[] }) {
+type AskBarProps = {
+  suggestions?: string[];
+  onRun?: (prompt: string) => Promise<void> | void;
+};
+
+export function AskBar({ suggestions = [], onRun }: AskBarProps) {
   const [prompt, setPrompt] = useState("");
   const [queuedPrompt, setQueuedPrompt] = useState<string | undefined>(undefined);
   const [promptKey, setPromptKey] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const runPrompt = useCallback(
-    (value?: string) => {
+    async (value?: string) => {
+      if (isSubmitting) return;
       const nextPrompt = (value ?? prompt).trim();
       if (!nextPrompt) return;
       setQueuedPrompt(nextPrompt);
       setPromptKey((prev) => prev + 1);
       setPrompt("");
+      if (!onRun) return;
+      try {
+        setIsSubmitting(true);
+        await onRun(nextPrompt);
+      } catch (error) {
+        console.error("Failed to run prompt", error);
+      } finally {
+        setIsSubmitting(false);
+      }
     },
-    [prompt]
+    [isSubmitting, onRun, prompt]
   );
 
   useEffect(() => {
@@ -52,14 +68,16 @@ export function AskBar({ suggestions = [] }: { suggestions?: string[] }) {
               }
             }}
             placeholder="Ask the AI to run a task..."
-            className="h-11 w-full rounded-full border border-white/10 bg-white/5 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
+            disabled={isSubmitting}
+            className="h-11 w-full rounded-full border border-white/10 bg-white/5 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none disabled:opacity-60"
           />
         </div>
         <button
           onClick={() => runPrompt()}
+          disabled={isSubmitting}
           className="h-11 rounded-full bg-emerald-400 px-5 text-sm font-semibold text-slate-950 hover:bg-emerald-300"
         >
-          Run
+          {isSubmitting ? "Working..." : "Run"}
         </button>
         <ChatButton initialPrompt={queuedPrompt} promptKey={promptKey} />
       </div>

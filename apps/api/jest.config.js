@@ -5,7 +5,7 @@ module.exports = {
   rootDir: '.',
   testRegex: 'src/.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': [tsJest, { isolatedModules: true }],
+    '^.+\\.(t|j)s$': tsJest,
   },
   collectCoverageFrom: ['src/**/*.(t|j)s'],
   coverageDirectory: 'coverage',

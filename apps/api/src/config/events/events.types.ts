@@ -55,6 +55,33 @@ export const EVENTS = {
   PROFILE_OBSERVATION_UPDATED: 'business_profile.observation_updated',
   PROFILE_DISCREPANCY_DETECTED: 'business_profile.discrepancy_detected',
   PROFILE_CONFIDENCE_LOW: 'business_profile.confidence_low',
+
+  // Task Ledger Events
+  TASK_LEDGER_CREATED: 'task_ledger.created',
+  TASK_LEDGER_APPROVED: 'task_ledger.approved',
+  TASK_LEDGER_DECLINED: 'task_ledger.declined',
+  TASK_LEDGER_COMPLETED: 'task_ledger.completed',
+  TASK_LEDGER_FAILED: 'task_ledger.failed',
+  TASK_LEDGER_UNDONE: 'task_ledger.undone',
+  TASK_LEDGER_EXECUTED: 'task_ledger.executed',
+  TASK_LEDGER_UNDO_REQUESTED: 'task_ledger.undo_requested',
+
+  // Task Ledger Action Events (emitted by processor)
+  PAYMENT_REMINDER_REQUESTED: 'task_ledger.action.payment_reminder',
+  LATE_FEE_REQUESTED: 'task_ledger.action.late_fee',
+  QUOTE_FOLLOWUP_REQUESTED: 'task_ledger.action.quote_followup',
+  APPOINTMENT_CONFIRMATION_REQUESTED: 'task_ledger.action.appointment_confirmation',
+  APPOINTMENT_REMINDER_REQUESTED: 'task_ledger.action.appointment_reminder',
+  NO_SHOW_REQUESTED: 'task_ledger.action.no_show',
+  SMS_REQUESTED: 'task_ledger.action.sms',
+  EMAIL_REQUESTED: 'task_ledger.action.email',
+  AI_RESPONSE_REQUESTED: 'task_ledger.action.ai_response',
+  REVIEW_REQUEST_REQUESTED: 'task_ledger.action.review_request',
+  WINBACK_REQUESTED: 'task_ledger.action.winback',
+  CAMPAIGN_SEND_REQUESTED: 'task_ledger.action.campaign_send',
+  TECHNICIAN_ASSIGNMENT_REQUESTED: 'task_ledger.action.technician_assignment',
+  JOB_STATUS_UPDATE_REQUESTED: 'task_ledger.action.job_status_update',
+  TASK_ACTION_REQUESTED: 'task_ledger.action.generic',
 } as const;
 
 export type EventType = (typeof EVENTS)[keyof typeof EVENTS];
@@ -189,4 +216,35 @@ export interface ProfileObservationPayload extends BaseEventPayload {
     channelMix?: Record<string, number>;
     serviceMix?: Record<string, number>;
   };
+}
+
+// Task Ledger Events
+export interface TaskLedgerEventPayload extends BaseEventPayload {
+  taskId?: string;
+  type?: string | null;
+  category?: string | null;
+  actionType?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  success?: boolean;
+  error?: string;
+  approvedBy?: string;
+  declinedBy?: string;
+  reason?: string;
+  endpoint?: string | null;
+  payload?: unknown;
+}
+
+export interface TaskActionEventPayload extends BaseEventPayload {
+  actionType?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  payload?: Record<string, unknown> | unknown;
+  // Specific entity IDs based on action type
+  invoiceId?: string | null;
+  quoteId?: string | null;
+  appointmentId?: string | null;
+  customerId?: string | null;
+  campaignId?: string | null;
+  jobId?: string | null;
 }

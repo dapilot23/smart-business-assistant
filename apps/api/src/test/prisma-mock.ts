@@ -73,11 +73,13 @@ export function createMockPrismaService(): MockPrismaService {
     weeklyReport: createModelMock(),
     businessAnomaly: createModelMock(),
     agentTask: createModelMock(),
+    taskLedgerEntry: createModelMock(),
     $transaction: jest.fn((cb) => cb(createMockPrismaService())),
     $executeRaw: jest.fn(),
     $queryRaw: jest.fn(),
     setTenantContext: jest.fn(),
     clearTenantContext: jest.fn(),
-    withTenantContext: jest.fn(),
+    withTenantContext: jest.fn((_tenantId, callback) => callback()),
+    withSystemContext: jest.fn((callback) => callback()),
   } as any;
 }

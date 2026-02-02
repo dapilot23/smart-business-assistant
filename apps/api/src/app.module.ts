@@ -55,6 +55,8 @@ import { AiSuggestionsModule } from './modules/ai-suggestions/ai-suggestions.mod
 import { AgentTasksModule } from './modules/agent-tasks/agent-tasks.module';
 import { CeoAgentModule } from './modules/ceo-agent/ceo-agent.module';
 import { OnboardingInterviewModule } from './modules/onboarding-interview/onboarding-interview.module';
+import { TaskLedgerModule } from './modules/task-ledger/task-ledger.module';
+import { CommandCenterModule } from './modules/command-center/command-center.module';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { ClerkAuthGuard } from './common/guards/clerk-auth.guard';
@@ -118,6 +120,8 @@ import { RolesGuard } from './common/guards/roles.guard';
     AgentTasksModule,
     CeoAgentModule,
     OnboardingInterviewModule,
+    TaskLedgerModule,
+    CommandCenterModule,
   ],
   controllers: [AppController],
   providers: [

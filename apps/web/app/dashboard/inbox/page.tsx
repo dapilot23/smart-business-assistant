@@ -10,6 +10,13 @@ import {
   sendMessage,
   markConversationRead,
 } from "@/lib/api/messaging";
+import {
+  acceptSuggestedResponse,
+  dismissSuggestedResponse,
+  generateSuggestedResponses,
+  listSuggestedResponses,
+} from "@/lib/api/ai-communication";
+import type { SuggestedResponse } from "@/lib/types/ai-communication";
 
 function formatRecentRange(days = 7) {
   const end = new Date();
@@ -33,7 +40,32 @@ export default function InboxPage() {
   const [messageInput, setMessageInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [suggestions, setSuggestions] = useState<SuggestedResponse[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionEdits, setSuggestionEdits] = useState<Record<string, string>>({});
   const replyInputRef = useRef<HTMLInputElement | null>(null);
+
+  const selectConversation = useCallback(async (id: string) => {
+    setSelectedId(id);
+    setLoadingThread(true);
+    setSuggestions([]);
+    setSuggestionsLoading(true);
+    try {
+      const conversation = await getConversation(id);
+      setCurrent(conversation);
+      setMessages(conversation.messages ?? []);
+      await markConversationRead(id);
+      const data = await listSuggestedResponses(id);
+      setSuggestions(data);
+      setSuggestionEdits({});
+    } catch (error) {
+      console.error("Failed to load conversation", error);
+      setSuggestions([]);
+    } finally {
+      setLoadingThread(false);
+      setSuggestionsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     async function loadConversations() {
@@ -54,20 +86,64 @@ export default function InboxPage() {
     loadConversations();
   }, [selectConversation]);
 
-  const selectConversation = useCallback(async (id: string) => {
-    setSelectedId(id);
-    setLoadingThread(true);
+  const refreshSuggestions = useCallback(
+    async (conversationId: string) => {
+      try {
+        setSuggestionsLoading(true);
+        const data = await listSuggestedResponses(conversationId);
+        setSuggestions(data);
+      } catch (error) {
+        console.error("Failed to load suggestions", error);
+        setSuggestions([]);
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    },
+    []
+  );
+
+  const handleGenerateSuggestions = useCallback(async () => {
+    if (!current) return;
     try {
-      const conversation = await getConversation(id);
-      setCurrent(conversation);
-      setMessages(conversation.messages ?? []);
-      await markConversationRead(id);
+      setSuggestionsLoading(true);
+      const data = await generateSuggestedResponses(current.id, { count: 3 });
+      setSuggestions(data);
+      setSuggestionEdits({});
     } catch (error) {
-      console.error("Failed to load conversation", error);
+      console.error("Failed to generate suggestions", error);
     } finally {
-      setLoadingThread(false);
+      setSuggestionsLoading(false);
     }
-  }, []);
+  }, [current]);
+
+  const handleAcceptSuggestion = useCallback(
+    async (suggestionId: string) => {
+      const editedText = suggestionEdits[suggestionId]?.trim();
+      try {
+        await acceptSuggestedResponse(suggestionId, editedText);
+        if (current) {
+          await selectConversation(current.id);
+        }
+      } catch (error) {
+        console.error("Failed to accept suggestion", error);
+      }
+    },
+    [current, selectConversation, suggestionEdits]
+  );
+
+  const handleDismissSuggestion = useCallback(
+    async (suggestionId: string) => {
+      try {
+        await dismissSuggestedResponse(suggestionId);
+        if (current) {
+          await refreshSuggestions(current.id);
+        }
+      } catch (error) {
+        console.error("Failed to dismiss suggestion", error);
+      }
+    },
+    [current, refreshSuggestions]
+  );
 
   const handleSend = useCallback(async () => {
     if (!current || !messageInput.trim()) return;
@@ -150,6 +226,10 @@ export default function InboxPage() {
       return bTime - aTime;
     });
   }, [conversations]);
+
+  const sortedSuggestions = useMemo(() => {
+    return [...suggestions].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [suggestions]);
 
   const rangeLabel = formatRecentRange();
   const needsReplyCount = conversations.filter((thread) => thread.unreadCount > 0).length;
@@ -376,6 +456,91 @@ export default function InboxPage() {
             >
               Send
             </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                  AI suggested replies
+                </p>
+                <p className="text-xs text-slate-400">
+                  Drafts you can send in one tap.
+                </p>
+              </div>
+              <button
+                onClick={handleGenerateSuggestions}
+                disabled={suggestionsLoading || !current}
+                className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold text-emerald-100 hover:border-emerald-300/60 disabled:opacity-60"
+              >
+                {suggestionsLoading ? "Generating..." : "Generate"}
+              </button>
+            </div>
+
+            <div className="mt-3 grid gap-3">
+              {suggestionsLoading ? (
+                <div className="flex items-center gap-2 text-sm text-slate-400">
+                  <Icon name="loader-2" size={16} className="animate-spin" />
+                  Generating suggestions...
+                </div>
+              ) : sortedSuggestions.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
+                  No suggestions yet. Generate drafts for this thread.
+                </div>
+              ) : (
+                sortedSuggestions.map((suggestion) => {
+                  const edited =
+                    suggestionEdits[suggestion.id] ?? suggestion.suggestion;
+                  return (
+                    <div
+                      key={suggestion.id}
+                      className="rounded-2xl border border-white/10 bg-white/5 p-3"
+                    >
+                      <textarea
+                        value={edited}
+                        onChange={(event) =>
+                          setSuggestionEdits((prev) => ({
+                            ...prev,
+                            [suggestion.id]: event.target.value,
+                          }))
+                        }
+                        className="min-h-[92px] w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
+                      />
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span>
+                            {suggestion.tone
+                              ? `Tone: ${suggestion.tone}`
+                              : "Tone: balanced"}
+                          </span>
+                          {suggestion.confidence !== null &&
+                            suggestion.confidence !== undefined && (
+                              <span>
+                                Confidence:{" "}
+                                {Math.round(suggestion.confidence * 100)}%
+                              </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDismissSuggestion(suggestion.id)}
+                            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-slate-300 hover:border-white/20"
+                          >
+                            Dismiss
+                          </button>
+                          <button
+                            onClick={() => handleAcceptSuggestion(suggestion.id)}
+                            className="rounded-full bg-emerald-400 px-3 py-1 text-[11px] font-semibold text-slate-950 hover:bg-emerald-300"
+                          >
+                            Send reply
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </section>
       </div>
