@@ -47,12 +47,14 @@ Build a simple, reliable AI employee OS for small service and product businesses
 6. **Data you can act on**: every metric must map to a next step.
 
 ### System Overview
-- **Command Center (Dashboard)**: status line, approvals, tasks, and signals.
+- **Command Center (Dashboard)**: one-line status + time range, approvals, tasks, and signals.
 - **Task Ledger**: unified queue for AI actions, system tasks, and human tasks.
 - **Action Engine**: idempotent execution, guardrails, undo windows, and audit logs.
-- **Engagement Hub**: inbox, SMS, voice, and reviews in one place.
+- **Engagement Hub**: inbox with AI summary, status badges, SMS, voice, and reviews in one place.
 - **Money Control**: quotes, invoices, payments, and collections workflow.
-- **Insights + Goals**: weekly reports and mission tracking.
+- **Insights + Goals**: 2-3 key signals with a link to full reports and mission tracking.
+- **Command Palette + Global Search**: Cmd/Ctrl+K to find anything, run actions, and jump to records.
+- **Customization Layer**: pin/arrange key widgets and quick actions on the Command Center.
 
 ### Architecture and Reliability Upgrades
 - Unified Task Ledger with a clear state machine and trace IDs.
@@ -67,6 +69,7 @@ Build a simple, reliable AI employee OS for small service and product businesses
 2. Approve or decline the top 3 actions.
 3. Complete or skip the next 5 tasks.
 4. Review 2-3 signals and click into detail only if needed.
+5. Use Command Center to run one new task if needed.
 
 ### Automation Model and Trust
 - **Suggest mode**: AI drafts; user approves.
@@ -81,14 +84,22 @@ Build a simple, reliable AI employee OS for small service and product businesses
 - Default to a single primary action per card.
 - Every metric must map to a next step.
 - All visible buttons must do real work.
+- One-line status + time range at the top of every screen.
+- Inbox always shows an AI summary and a clear next step for each thread.
+- Insights lead with 2-3 key signals plus a link to the full report.
+- Command palette and keyboard shortcuts are first-class (discoverable and always available).
 
 ### MVP Scope (Must Ship)
-- Command Center with unified Task Ledger, approvals, and undo window.
+- Command Center with unified Task Ledger, one-line status bar, approvals, and undo window.
+- Command Center input with 3 quick prompts for common actions.
+- Command palette with global search, recent actions, and contextual commands.
+- Keyboard shortcuts for navigation, approvals, and inbox actions.
 - Appointments with smart confirmations and no-show prompts.
 - Quotes and invoices with follow-up actions and payment reminders.
-- Inbox with draft-first responses and one-click approve.
+- Inbox with AI summary, status badges, draft-first responses, one-click approve, and explicit handoff/escalation states.
 - Autopilot settings with per-category trust and guardrails.
-- Insights summary with action buttons and weekly report generation.
+- Insights summary with 2-3 key signals, link to full report, and weekly report generation.
+- Customizable dashboard widgets (pin, reorder, hide).
 - SMS and email sending, review requests.
 - Observability: logs, queue health, and error recovery UI.
 
