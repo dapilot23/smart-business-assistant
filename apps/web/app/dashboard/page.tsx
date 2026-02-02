@@ -6,6 +6,7 @@ import { getAgentTasks, updateAgentTask } from "@/lib/api/agent-tasks";
 import { approveAction, cancelAction, getActions, type AIAction } from "@/lib/api/ai-actions";
 import { getDashboardStats, type DashboardStats } from "@/lib/api/reports";
 import type { AgentTask } from "@/lib/types/agent-task";
+import { AskBar } from "./_components/ask-bar";
 
 function formatWeekRange(date = new Date()) {
   const start = new Date(date);
@@ -129,14 +130,12 @@ export default function TodayPage() {
           <span className="text-slate-200">Status:</span>
           <span>{statusText}</span>
           <span className="text-slate-600">|</span>
-          <span className="text-slate-200">This week:</span>
+          <span className="text-slate-200">Range:</span>
           <span>{weekRange}</span>
         </div>
         <div>
           <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Today</h1>
-          <p className="text-sm text-slate-400">
-            Review what needs your approval, then move on.
-          </p>
+          <p className="text-sm text-slate-400">Approve the next steps and move on.</p>
         </div>
       </section>
 
@@ -146,7 +145,7 @@ export default function TodayPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Primary queue</p>
-                <h2 className="mt-2 font-display text-lg text-slate-100">Actions to approve</h2>
+                <h2 className="mt-2 font-display text-lg text-slate-100">Top actions</h2>
               </div>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
                 {primaryActions.length}
@@ -197,7 +196,7 @@ export default function TodayPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Secondary queue</p>
-                <h2 className="mt-2 font-display text-lg text-slate-100">Other tasks</h2>
+                <h2 className="mt-2 font-display text-lg text-slate-100">Next tasks</h2>
               </div>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">
                 {secondaryTasks.length}
@@ -240,6 +239,25 @@ export default function TodayPage() {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+
+          <div className="glass-panel rounded-3xl p-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Command center</p>
+              <h2 className="mt-2 font-display text-lg text-slate-100">Ask the AI to act</h2>
+              <p className="mt-1 text-xs text-slate-400">
+                One line is enough. Approvals still come to you.
+              </p>
+            </div>
+            <div className="mt-4">
+              <AskBar
+                suggestions={[
+                  "Send overdue invoices",
+                  "Follow up new leads",
+                  "Close open tickets",
+                ]}
+              />
             </div>
           </div>
         </div>

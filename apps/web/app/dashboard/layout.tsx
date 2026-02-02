@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiAuthProvider } from "@/components/providers/api-auth-provider";
 import { Icon } from "../components/Icon";
-import { AskBar } from "./_components/ask-bar";
 import { getAgentSettings, type AutopilotMode } from "@/lib/api/agents";
 
 const navItems = [
@@ -109,21 +108,6 @@ export default function DashboardLayout({
               ))}
             </nav>
 
-            <div className="glass-panel rounded-3xl p-4">
-              <AskBar />
-            </div>
-
-            <div className="flex flex-wrap gap-2 text-xs text-slate-400">
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                Clear overdue invoices
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                Lock next-week schedule
-              </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                Queue review requests
-              </span>
-            </div>
           </div>
         </header>
 

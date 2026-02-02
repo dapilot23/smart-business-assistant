@@ -11,6 +11,20 @@ import {
   markConversationRead,
 } from "@/lib/api/messaging";
 
+function formatRecentRange(days = 7) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - (days - 1));
+
+  const format = (value: Date) =>
+    value.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+
+  return `${format(start)} - ${format(end)}`;
+}
+
 export default function InboxPage() {
   const [conversations, setConversations] = useState<ConversationThread[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -65,6 +79,36 @@ export default function InboxPage() {
     }
   }
 
+  const getThreadBadge = (thread: ConversationThread) => {
+    const status = thread.status?.toLowerCase() ?? "";
+
+    if (status.includes("urgent") || status.includes("high")) {
+      return {
+        label: "Urgent",
+        classes: "border-rose-400/40 bg-rose-400/10 text-rose-200",
+      };
+    }
+
+    if (thread.unreadCount > 0) {
+      return {
+        label: "Needs reply",
+        classes: "border-emerald-400/40 bg-emerald-400/10 text-emerald-200",
+      };
+    }
+
+    if (status.includes("done") || status.includes("closed") || status.includes("resolved")) {
+      return {
+        label: "Done",
+        classes: "border-white/10 bg-white/5 text-slate-400",
+      };
+    }
+
+    return {
+      label: "Waiting",
+      classes: "border-white/10 bg-white/5 text-slate-300",
+    };
+  };
+
   const sortedConversations = useMemo(() => {
     return [...conversations].sort((a, b) => {
       const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
@@ -73,11 +117,44 @@ export default function InboxPage() {
     });
   }, [conversations]);
 
+  const rangeLabel = formatRecentRange();
+  const needsReplyCount = conversations.filter((thread) => thread.unreadCount > 0).length;
+  const urgentCount = conversations.filter((thread) => {
+    const status = thread.status?.toLowerCase() ?? "";
+    return status.includes("urgent") || status.includes("high");
+  }).length;
+  const waitingCount = Math.max(conversations.length - needsReplyCount, 0);
+  const statusText = loading ? "Loading..." : `${needsReplyCount} need reply`;
+  const summaryText = loading
+    ? "Loading..."
+    : `${needsReplyCount} need reply, ${urgentCount} urgent, ${waitingCount} waiting`;
+
+  const currentBadge = current ? getThreadBadge(current) : null;
+  const nextStep =
+    currentBadge?.label === "Needs reply"
+      ? "Reply to customer"
+      : currentBadge?.label === "Urgent"
+        ? "Respond now"
+        : currentBadge?.label === "Waiting"
+          ? "Waiting on customer"
+          : currentBadge?.label === "Done"
+            ? "No action"
+            : "Select a thread";
+
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-2">
-        <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Inbox</h1>
-        <p className="text-sm text-slate-400">Messages from customers.</p>
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-400">
+          <span className="text-slate-200">Status:</span>
+          <span>{statusText}</span>
+          <span className="text-slate-600">|</span>
+          <span className="text-slate-200">Range:</span>
+          <span>{rangeLabel}</span>
+        </div>
+        <div>
+          <h1 className="font-display text-3xl text-slate-100 sm:text-4xl">Inbox</h1>
+          <p className="text-sm text-slate-400">Customer messages, sorted by need.</p>
+        </div>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
@@ -90,6 +167,11 @@ export default function InboxPage() {
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-slate-400">
               {conversations.length} total
             </span>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">AI summary</p>
+            <p className="mt-2 text-sm text-slate-200">{summaryText}</p>
           </div>
 
           <div className="mt-4 grid gap-2">
@@ -117,19 +199,28 @@ export default function InboxPage() {
                     <span className="text-sm font-semibold text-slate-100">
                       {thread.customerName ?? "Unknown customer"}
                     </span>
-                    {thread.unreadCount > 0 && (
-                      <span className="rounded-full bg-emerald-400 px-2 py-0.5 text-[10px] font-semibold text-slate-950">
-                        {thread.unreadCount}
-                      </span>
-                    )}
+                    {(() => {
+                      const badge = getThreadBadge(thread);
+                      return (
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badge.classes}`}
+                        >
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <span className="text-xs text-slate-400">
                     {thread.lastMessagePreview ?? "No messages yet"}
                   </span>
                   <div className="flex items-center gap-2 text-[11px] text-slate-500">
                     <span>{thread.channel}</span>
-                    <span>•</span>
-                    <span>{thread.status}</span>
+                    {thread.unreadCount > 0 && (
+                      <>
+                        <span>•</span>
+                        <span>{thread.unreadCount} new</span>
+                      </>
+                    )}
                   </div>
                 </button>
               ))
@@ -141,12 +232,26 @@ export default function InboxPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Conversation</p>
-              <h2 className="mt-2 font-display text-lg text-slate-100">Thread</h2>
+              <h2 className="mt-2 font-display text-lg text-slate-100">Thread detail</h2>
               <p className="text-xs text-slate-400">
                 {current ? `Talking with ${current.customerName ?? "customer"}` : "Select a thread"}
               </p>
             </div>
           </div>
+
+          {current && (
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Summary</p>
+              <p className="mt-2 text-sm text-slate-200">
+                {current.lastMessagePreview ?? "No summary yet."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                  Next: {nextStep}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 flex h-[420px] flex-col gap-3 overflow-y-auto rounded-2xl border border-white/10 bg-white/5 p-4">
             {loadingThread ? (
@@ -176,7 +281,7 @@ export default function InboxPage() {
             <input
               value={messageInput}
               onChange={(event) => setMessageInput(event.target.value)}
-              placeholder="Type a response..."
+              placeholder="Write a reply..."
               className="h-11 flex-1 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
             />
             <button
