@@ -63,7 +63,11 @@ async function runEdgeCaseTests() {
           // Simulate slow network
           await page.route('**/*', async route => {
             await new Promise(r => setTimeout(r, 100));
-            await route.continue();
+            try {
+              await route.continue();
+            } catch (error) {
+              // Ignore double-handling in some runtimes
+            }
           });
           const response = await page.goto(`${BASE_URL}/dashboard`, { timeout: 45000, waitUntil: 'domcontentloaded' });
           if (response.status() >= 500) throw new Error('Server error on slow network');
