@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiAuthProvider } from "@/components/providers/api-auth-provider";
 import { Icon } from "../components/Icon";
+import { CommandPalette } from "./_components/command-palette";
 import { getAgentSettings, type AutopilotMode } from "@/lib/api/agents";
 
 const navItems = [
@@ -114,6 +115,7 @@ export default function DashboardLayout({
         <main className="relative z-10 mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
           {children}
         </main>
+        <CommandPalette />
       </div>
     </ApiAuthProvider>
   );

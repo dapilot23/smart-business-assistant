@@ -1,6 +1,7 @@
 'use client';
 
 import { RefreshCw, BarChart3 } from 'lucide-react';
+import { useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useWeeklyReports } from '@/lib/hooks/use-weekly-reports';
 import {
@@ -54,13 +55,21 @@ export default function InsightsPage() {
     triggerGeneration,
   } = useWeeklyReports();
 
-  const handleGenerateReport = async () => {
+  const handleGenerateReport = useCallback(async () => {
     try {
       await triggerGeneration();
     } catch (err) {
       console.error('Failed to generate report:', err);
     }
-  };
+  }, [triggerGeneration]);
+
+  useEffect(() => {
+    const handler = () => {
+      handleGenerateReport();
+    };
+    window.addEventListener('insights:generate-report', handler as EventListener);
+    return () => window.removeEventListener('insights:generate-report', handler as EventListener);
+  }, [handleGenerateReport]);
 
   const rangeLabel = formatWeekRange(currentReport?.weekStart);
   const statusText = isLoading ? 'Loading...' : currentReport ? 'Report ready' : 'No report yet';

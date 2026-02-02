@@ -1,12 +1,51 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { getAgentTasks, updateAgentTask } from "@/lib/api/agent-tasks";
 import { approveAction, cancelAction, getActions, type AIAction } from "@/lib/api/ai-actions";
 import { getDashboardStats, type DashboardStats } from "@/lib/api/reports";
 import type { AgentTask } from "@/lib/types/agent-task";
 import { AskBar } from "./_components/ask-bar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+type SignalConfig = {
+  id: "revenue" | "appointments" | "quotes";
+  enabled: boolean;
+};
+
+const DEFAULT_SIGNAL_CONFIG: SignalConfig[] = [
+  { id: "revenue", enabled: true },
+  { id: "appointments", enabled: true },
+  { id: "quotes", enabled: true },
+];
+
+const SIGNAL_LABELS: Record<SignalConfig["id"], string> = {
+  revenue: "Revenue",
+  appointments: "Appointments",
+  quotes: "Quotes waiting",
+};
+
+function normalizeSignalConfig(raw: unknown): SignalConfig[] {
+  if (!Array.isArray(raw)) return [...DEFAULT_SIGNAL_CONFIG];
+  const seen = new Set<SignalConfig["id"]>();
+  const cleaned: SignalConfig[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const id = (entry as SignalConfig).id;
+    if (!SIGNAL_LABELS[id] || seen.has(id)) continue;
+    cleaned.push({ id, enabled: Boolean((entry as SignalConfig).enabled) });
+    seen.add(id);
+  }
+  for (const fallback of DEFAULT_SIGNAL_CONFIG) {
+    if (!seen.has(fallback.id)) {
+      cleaned.push({ ...fallback });
+    }
+  }
+  return cleaned;
+}
 
 function formatWeekRange(date = new Date()) {
   const start = new Date(date);
@@ -32,6 +71,11 @@ export default function TodayPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
+  const [signalConfig, setSignalConfig] = useState<SignalConfig[]>([
+    ...DEFAULT_SIGNAL_CONFIG,
+  ]);
+  const primaryActionsRef = useRef<AIAction[]>([]);
+  const workingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -55,65 +99,129 @@ export default function TodayPage() {
     load();
   }, []);
 
-  const refreshQueues = async () => {
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("dashboard:signals");
+      if (stored) {
+        setSignalConfig(normalizeSignalConfig(JSON.parse(stored)));
+      }
+    } catch (error) {
+      console.error("Failed to load dashboard signal config", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("dashboard:signals", JSON.stringify(signalConfig));
+    } catch (error) {
+      console.error("Failed to save dashboard signal config", error);
+    }
+  }, [signalConfig]);
+
+  const refreshQueues = useCallback(async () => {
     const [taskData, actionData] = await Promise.all([
       getAgentTasks({ status: "PENDING", limit: 8 }),
       getActions("PENDING"),
     ]);
     setTasks(taskData ?? []);
     setActions(actionData ?? []);
-  };
+  }, []);
 
-  const handleApproveAction = async (actionId: string) => {
-    try {
-      setWorkingId(actionId);
-      await approveAction(actionId);
-      await refreshQueues();
-    } catch (error) {
-      console.error("Failed to approve action", error);
-    } finally {
-      setWorkingId(null);
-    }
-  };
+  const handleApproveAction = useCallback(
+    async (actionId: string) => {
+      try {
+        setWorkingId(actionId);
+        await approveAction(actionId);
+        await refreshQueues();
+      } catch (error) {
+        console.error("Failed to approve action", error);
+      } finally {
+        setWorkingId(null);
+      }
+    },
+    [refreshQueues]
+  );
 
-  const handleDeclineAction = async (actionId: string) => {
-    try {
-      setWorkingId(actionId);
-      await cancelAction(actionId);
-      await refreshQueues();
-    } catch (error) {
-      console.error("Failed to decline action", error);
-    } finally {
-      setWorkingId(null);
-    }
-  };
+  const handleDeclineAction = useCallback(
+    async (actionId: string) => {
+      try {
+        setWorkingId(actionId);
+        await cancelAction(actionId);
+        await refreshQueues();
+      } catch (error) {
+        console.error("Failed to decline action", error);
+      } finally {
+        setWorkingId(null);
+      }
+    },
+    [refreshQueues]
+  );
 
-  const handleCompleteTask = async (taskId: string) => {
-    try {
-      setWorkingId(taskId);
-      await updateAgentTask(taskId, { status: "COMPLETED" });
-      await refreshQueues();
-    } catch (error) {
-      console.error("Failed to complete task", error);
-    } finally {
-      setWorkingId(null);
-    }
-  };
+  const handleCompleteTask = useCallback(
+    async (taskId: string) => {
+      try {
+        setWorkingId(taskId);
+        await updateAgentTask(taskId, { status: "COMPLETED" });
+        await refreshQueues();
+      } catch (error) {
+        console.error("Failed to complete task", error);
+      } finally {
+        setWorkingId(null);
+      }
+    },
+    [refreshQueues]
+  );
 
-  const handleSkipTask = async (taskId: string) => {
-    try {
-      setWorkingId(taskId);
-      await updateAgentTask(taskId, { status: "CANCELLED" });
-      await refreshQueues();
-    } catch (error) {
-      console.error("Failed to skip task", error);
-    } finally {
-      setWorkingId(null);
-    }
-  };
+  const handleSkipTask = useCallback(
+    async (taskId: string) => {
+      try {
+        setWorkingId(taskId);
+        await updateAgentTask(taskId, { status: "CANCELLED" });
+        await refreshQueues();
+      } catch (error) {
+        console.error("Failed to skip task", error);
+      } finally {
+        setWorkingId(null);
+      }
+    },
+    [refreshQueues]
+  );
 
   const primaryActions = useMemo(() => actions.slice(0, 3), [actions]);
   const secondaryTasks = useMemo(() => tasks.slice(0, 5), [tasks]);
+
+  useEffect(() => {
+    primaryActionsRef.current = primaryActions;
+  }, [primaryActions]);
+
+  useEffect(() => {
+    workingIdRef.current = workingId;
+  }, [workingId]);
+
+  useEffect(() => {
+    const handleApproveNext = () => {
+      if (workingIdRef.current) return;
+      const next = primaryActionsRef.current[0];
+      if (next) {
+        handleApproveAction(next.id);
+      }
+    };
+
+    const handleDeclineNext = () => {
+      if (workingIdRef.current) return;
+      const next = primaryActionsRef.current[0];
+      if (next) {
+        handleDeclineAction(next.id);
+      }
+    };
+
+    window.addEventListener("command-center:approve-next", handleApproveNext as EventListener);
+    window.addEventListener("command-center:decline-next", handleDeclineNext as EventListener);
+    return () => {
+      window.removeEventListener("command-center:approve-next", handleApproveNext as EventListener);
+      window.removeEventListener("command-center:decline-next", handleDeclineNext as EventListener);
+    };
+  }, [handleApproveAction, handleDeclineAction]);
 
   const statusText = loading ? "Loading..." : `${actions.length} actions waiting`;
   const weekRange = formatWeekRange();
@@ -122,6 +230,66 @@ export default function TodayPage() {
     typeof stats?.revenue?.change === "number"
       ? `${stats.revenue.change}% vs last month`
       : "No trend yet";
+
+  const signalDefinitions = useMemo(
+    () => [
+      {
+        id: "revenue" as const,
+        label: SIGNAL_LABELS.revenue,
+        value: `$${formatCurrency(stats?.revenue?.current)}`,
+        note: revenueChange,
+      },
+      {
+        id: "appointments" as const,
+        label: SIGNAL_LABELS.appointments,
+        value: `${stats?.appointments?.current ?? "--"}`,
+        note: "This month",
+      },
+      {
+        id: "quotes" as const,
+        label: SIGNAL_LABELS.quotes,
+        value: `${stats?.quotes?.pending ?? "--"}`,
+        note: "Need follow-up",
+      },
+    ],
+    [revenueChange, stats?.appointments?.current, stats?.quotes?.pending, stats?.revenue?.current]
+  );
+
+  const signalMap = useMemo(() => {
+    return new Map(signalDefinitions.map((signal) => [signal.id, signal]));
+  }, [signalDefinitions]);
+
+  const visibleSignals = useMemo(() => {
+    return signalConfig
+      .filter((config) => config.enabled)
+      .map((config) => signalMap.get(config.id))
+      .filter((signal): signal is (typeof signalDefinitions)[number] => Boolean(signal));
+  }, [signalConfig, signalMap, signalDefinitions]);
+
+  const toggleSignal = useCallback((id: SignalConfig["id"]) => {
+    setSignalConfig((prev) =>
+      prev.map((config) =>
+        config.id === id ? { ...config, enabled: !config.enabled } : config
+      )
+    );
+  }, []);
+
+  const moveSignal = useCallback((id: SignalConfig["id"], direction: "up" | "down") => {
+    setSignalConfig((prev) => {
+      const index = prev.findIndex((config) => config.id === id);
+      if (index === -1) return prev;
+      const nextIndex = direction === "up" ? index - 1 : index + 1;
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev;
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.splice(nextIndex, 0, item);
+      return next;
+    });
+  }, []);
+
+  const resetSignals = useCallback(() => {
+    setSignalConfig([...DEFAULT_SIGNAL_CONFIG]);
+  }, []);
 
   return (
     <div className="flex flex-col gap-8">
@@ -263,41 +431,108 @@ export default function TodayPage() {
         </div>
 
         <div className="glass-panel rounded-3xl p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Insights</p>
               <h2 className="mt-2 font-display text-lg text-slate-100">Key signals</h2>
             </div>
-            <Link
-              href="/dashboard/insights"
-              className="text-xs font-semibold text-emerald-200 hover:text-emerald-100"
-            >
-              View report
-            </Link>
+            <div className="flex items-center gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-300 hover:border-white/30">
+                    Customize
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md border border-white/10 bg-[#0b0d12] text-slate-100">
+                  <DialogHeader>
+                    <DialogTitle className="font-display text-lg text-slate-100">
+                      Customize signals
+                    </DialogTitle>
+                    <p className="text-sm text-slate-400">
+                      Show, hide, and reorder the dashboard signals.
+                    </p>
+                  </DialogHeader>
+                  <div className="mt-2 space-y-3">
+                    {signalConfig.map((signal, index) => (
+                      <div
+                        key={signal.id}
+                        className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-slate-100">
+                            {SIGNAL_LABELS[signal.id]}
+                          </p>
+                          <p className="text-xs text-slate-500">Widget</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => moveSignal(signal.id, "up")}
+                            disabled={index === 0}
+                            className="rounded-full border border-white/10 bg-white/5 p-1 text-slate-300 disabled:opacity-40"
+                            aria-label="Move up"
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveSignal(signal.id, "down")}
+                            disabled={index === signalConfig.length - 1}
+                            className="rounded-full border border-white/10 bg-white/5 p-1 text-slate-300 disabled:opacity-40"
+                            aria-label="Move down"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </button>
+                          <Switch
+                            checked={signal.enabled}
+                            onCheckedChange={() => toggleSignal(signal.id)}
+                            className="bg-white/10"
+                            aria-label={`Toggle ${SIGNAL_LABELS[signal.id]}`}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={resetSignals}
+                      className="text-xs font-semibold text-slate-400 hover:text-slate-200"
+                    >
+                      Reset defaults
+                    </button>
+                    <p className="text-xs text-slate-500">Changes save instantly.</p>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Link
+                href="/dashboard/insights"
+                className="text-xs font-semibold text-emerald-200 hover:text-emerald-100"
+              >
+                View report
+              </Link>
+            </div>
           </div>
 
           <div className="mt-4 grid gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Revenue</p>
-              <p className="mt-2 text-xl font-semibold text-slate-100">
-                ${formatCurrency(stats?.revenue?.current)}
-              </p>
-              <p className="text-xs text-slate-400">{revenueChange}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Appointments</p>
-              <p className="mt-2 text-xl font-semibold text-slate-100">
-                {stats?.appointments?.current ?? "--"}
-              </p>
-              <p className="text-xs text-slate-400">This month</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Quotes waiting</p>
-              <p className="mt-2 text-xl font-semibold text-slate-100">
-                {stats?.quotes?.pending ?? "--"}
-              </p>
-              <p className="text-xs text-slate-400">Need follow-up</p>
-            </div>
+            {visibleSignals.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-400">
+                No signals selected.
+              </div>
+            ) : (
+              visibleSignals.map((signal) => (
+                <div
+                  key={signal.id}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                >
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                    {signal.label}
+                  </p>
+                  <p className="mt-2 text-xl font-semibold text-slate-100">{signal.value}</p>
+                  <p className="text-xs text-slate-400">{signal.note}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

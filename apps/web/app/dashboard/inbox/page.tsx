@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../../components/Icon";
 import {
   ConversationThread,
@@ -33,6 +33,7 @@ export default function InboxPage() {
   const [messageInput, setMessageInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingThread, setLoadingThread] = useState(false);
+  const replyInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     async function loadConversations() {
@@ -51,9 +52,9 @@ export default function InboxPage() {
     }
 
     loadConversations();
-  }, []);
+  }, [selectConversation]);
 
-  async function selectConversation(id: string) {
+  const selectConversation = useCallback(async (id: string) => {
     setSelectedId(id);
     setLoadingThread(true);
     try {
@@ -66,9 +67,9 @@ export default function InboxPage() {
     } finally {
       setLoadingThread(false);
     }
-  }
+  }, []);
 
-  async function handleSend() {
+  const handleSend = useCallback(async () => {
     if (!current || !messageInput.trim()) return;
     try {
       await sendMessage(current.id, messageInput.trim());
@@ -77,12 +78,45 @@ export default function InboxPage() {
     } catch (error) {
       console.error("Failed to send message", error);
     }
-  }
+  }, [current, messageInput, selectConversation]);
+
+  useEffect(() => {
+    const handleFocusReply = () => replyInputRef.current?.focus();
+    const handleSendReply = () => handleSend();
+
+    window.addEventListener("inbox:focus-reply", handleFocusReply as EventListener);
+    window.addEventListener("inbox:send-reply", handleSendReply as EventListener);
+    return () => {
+      window.removeEventListener("inbox:focus-reply", handleFocusReply as EventListener);
+      window.removeEventListener("inbox:send-reply", handleSendReply as EventListener);
+    };
+  }, [handleSend]);
 
   const getThreadBadge = (thread: ConversationThread) => {
     const status = thread.status?.toLowerCase() ?? "";
+    const priority = thread.priority?.toLowerCase?.() ?? "";
+    const hasTag = (tag: string) =>
+      thread.tags?.some((entry) => entry?.toLowerCase().includes(tag)) ?? false;
 
-    if (status.includes("urgent") || status.includes("high")) {
+    const isEscalated = status.includes("escalat") || hasTag("escalat");
+    const isHandoff = status.includes("handoff") || hasTag("handoff") || Boolean(thread.assignedTo);
+    const isUrgent = status.includes("urgent") || status.includes("high") || priority.includes("high");
+
+    if (isEscalated) {
+      return {
+        label: "Escalated",
+        classes: "border-amber-400/40 bg-amber-400/10 text-amber-200",
+      };
+    }
+
+    if (isHandoff) {
+      return {
+        label: "Handoff",
+        classes: "border-sky-400/40 bg-sky-400/10 text-sky-200",
+      };
+    }
+
+    if (isUrgent) {
       return {
         label: "Urgent",
         classes: "border-rose-400/40 bg-rose-400/10 text-rose-200",
@@ -121,25 +155,56 @@ export default function InboxPage() {
   const needsReplyCount = conversations.filter((thread) => thread.unreadCount > 0).length;
   const urgentCount = conversations.filter((thread) => {
     const status = thread.status?.toLowerCase() ?? "";
-    return status.includes("urgent") || status.includes("high");
+    const priority = thread.priority?.toLowerCase?.() ?? "";
+    return status.includes("urgent") || status.includes("high") || priority.includes("high");
   }).length;
-  const waitingCount = Math.max(conversations.length - needsReplyCount, 0);
+  const escalatedCount = conversations.filter((thread) => {
+    const status = thread.status?.toLowerCase() ?? "";
+    const hasTag = (tag: string) =>
+      thread.tags?.some((entry) => entry?.toLowerCase().includes(tag)) ?? false;
+    return status.includes("escalat") || hasTag("escalat");
+  }).length;
+  const handoffCount = conversations.filter((thread) => {
+    const status = thread.status?.toLowerCase() ?? "";
+    const hasTag = (tag: string) =>
+      thread.tags?.some((entry) => entry?.toLowerCase().includes(tag)) ?? false;
+    return status.includes("handoff") || hasTag("handoff") || Boolean(thread.assignedTo);
+  }).length;
+  const waitingCount = Math.max(
+    conversations.length - needsReplyCount - urgentCount - escalatedCount - handoffCount,
+    0
+  );
   const statusText = loading ? "Loading..." : `${needsReplyCount} need reply`;
-  const summaryText = loading
-    ? "Loading..."
-    : `${needsReplyCount} need reply, ${urgentCount} urgent, ${waitingCount} waiting`;
+  const summarySegments = [
+    `${needsReplyCount} need reply`,
+    urgentCount > 0 ? `${urgentCount} urgent` : null,
+    escalatedCount > 0 ? `${escalatedCount} escalated` : null,
+    handoffCount > 0 ? `${handoffCount} handoff` : null,
+    `${waitingCount} waiting`,
+  ].filter(Boolean);
+  const summaryText = loading ? "Loading..." : summarySegments.join(", ");
 
   const currentBadge = current ? getThreadBadge(current) : null;
   const nextStep =
-    currentBadge?.label === "Needs reply"
-      ? "Reply to customer"
-      : currentBadge?.label === "Urgent"
-        ? "Respond now"
-        : currentBadge?.label === "Waiting"
-          ? "Waiting on customer"
-          : currentBadge?.label === "Done"
-            ? "No action"
-            : "Select a thread";
+    currentBadge?.label === "Escalated"
+      ? "Owner review"
+      : currentBadge?.label === "Handoff"
+        ? "Assigned follow-up"
+        : currentBadge?.label === "Needs reply"
+          ? "Reply to customer"
+          : currentBadge?.label === "Urgent"
+            ? "Respond now"
+            : currentBadge?.label === "Waiting"
+              ? "Waiting on customer"
+              : currentBadge?.label === "Done"
+                ? "No action"
+                : "Select a thread";
+
+  const statusTags: string[] = [];
+  if (currentBadge?.label === "Escalated") statusTags.push("Escalated");
+  if (currentBadge?.label === "Handoff") {
+    statusTags.push(current?.assignedTo ? `Assigned to ${current.assignedTo}` : "Handoff");
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -221,6 +286,12 @@ export default function InboxPage() {
                         <span>{thread.unreadCount} new</span>
                       </>
                     )}
+                    {thread.assignedTo && (
+                      <>
+                        <span>•</span>
+                        <span>Assigned to {thread.assignedTo}</span>
+                      </>
+                    )}
                   </div>
                 </button>
               ))
@@ -249,6 +320,14 @@ export default function InboxPage() {
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                   Next: {nextStep}
                 </span>
+                {statusTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
           )}
@@ -279,9 +358,16 @@ export default function InboxPage() {
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <input
+              ref={replyInputRef}
               value={messageInput}
               onChange={(event) => setMessageInput(event.target.value)}
               placeholder="Write a reply..."
+              onKeyDown={(event) => {
+                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                  event.preventDefault();
+                  handleSend();
+                }
+              }}
               className="h-11 flex-1 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400/60 focus:outline-none"
             />
             <button

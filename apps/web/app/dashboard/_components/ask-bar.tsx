@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ChatButton } from "@/components/ai-copilot";
 import { Icon } from "../../components/Icon";
 
@@ -9,13 +9,28 @@ export function AskBar({ suggestions = [] }: { suggestions?: string[] }) {
   const [queuedPrompt, setQueuedPrompt] = useState<string | undefined>(undefined);
   const [promptKey, setPromptKey] = useState(0);
 
-  const runPrompt = (value?: string) => {
-    const nextPrompt = (value ?? prompt).trim();
-    if (!nextPrompt) return;
-    setQueuedPrompt(nextPrompt);
-    setPromptKey((prev) => prev + 1);
-    setPrompt("");
-  };
+  const runPrompt = useCallback(
+    (value?: string) => {
+      const nextPrompt = (value ?? prompt).trim();
+      if (!nextPrompt) return;
+      setQueuedPrompt(nextPrompt);
+      setPromptKey((prev) => prev + 1);
+      setPrompt("");
+    },
+    [prompt]
+  );
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ prompt?: string }>).detail;
+      if (detail?.prompt) {
+        runPrompt(detail.prompt);
+      }
+    };
+
+    window.addEventListener("command-center:run-task", handler as EventListener);
+    return () => window.removeEventListener("command-center:run-task", handler as EventListener);
+  }, [runPrompt]);
 
   return (
     <div className="flex flex-col gap-3">
